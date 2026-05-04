@@ -1,0 +1,9 @@
+name: Push to Main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    uses: ./.github/workflows/_unit_tests.yml

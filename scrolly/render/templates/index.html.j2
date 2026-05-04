@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  {%- if inline %}
+  <style>{{ bundled_css | safe }}</style>
+  {%- else %}
+  <link rel="stylesheet" href="canvas.css">
+  {%- endif %}
+  {%- for css in scoped_css_blocks %}
+  <style>{{ css | safe }}</style>
+  {%- endfor %}
+</head>
+<body>
+  <div class="canvas">
+    <svg class="canvas-edges" preserveAspectRatio="none">
+      <defs>
+        <marker id="edge-dot"
+                markerUnits="userSpaceOnUse"
+                markerWidth="0.001" markerHeight="0.001"
+                refX="0" refY="0"
+                overflow="visible">
+          <line x1="0" y1="0" x2="0" y2="0"
+                stroke="var(--connector-color)"
+                stroke-width="15"
+                stroke-linecap="round"
+                vector-effect="non-scaling-stroke"/>
+        </marker>
+      </defs>
+    </svg>
+
+    {%- for slide in slides %}
+    <div class="slide-container"
+         data-id="{{ slide.id }}"
+         style="--cell-x: {{ slide.position.x }}; --cell-y: {{ slide.position.y }};{% if chunks[slide.id].font_scale != 1.0 %} --font-scale: {{ chunks[slide.id].font_scale }};{% endif %}">
+      <div class="subcanvas">
+        <div class="chunk">
+          {{ chunks[slide.id].html | safe }}
+        </div>
+      </div>
+      <div class="slide-scrollbar" aria-hidden="true">
+        <div class="slide-scrollbar-thumb"></div>
+      </div>
+    </div>
+    {%- endfor %}
+  </div>
+
+  <div class="navigation">
+    <button type="button" class="zoom-out-control" aria-label="Go to deck">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4V4zM20 14v6h-6v-2h4v-4h2zM10 20H4v-6h2v4h4v2z" fill="currentColor"/></svg>
+    </button>
+    {#- edge arrows are rebuilt by canvas.js on selected_slide change -#}
+
+    {#- Snap-position control: prev / toggle / next.
+        Hidden by default; canvas.js shows it when the current slide has snap positions. -#}
+    <div class="snap-control" aria-label="Snap position controls" style="display: none;">
+      <button type="button" class="snap-control-prev" aria-label="Previous snap position">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 15l-6-6-6 6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="snap-control-toggle" aria-label="Toggle snap positions">
+        <div class="snap-control-dot"></div>
+      </button>
+      <button type="button" class="snap-control-next" aria-label="Next snap position">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <script type="application/json" id="scrolly-deck">{{ nav_data_json | safe }}</script>
+  {%- if has_mermaid %}
+  {%- if inline %}
+  <script>{{ mermaid_js_content | safe }}</script>
+  {%- else %}
+  <script src="mermaid.min.js"></script>
+  {%- endif %}
+  <script>mermaid.initialize({ startOnLoad: true });</script>
+  {%- endif %}
+  {%- if inline %}
+  <script>{{ bundled_js | safe }}</script>
+  {%- else %}
+  <script src="canvas.js"></script>
+  {%- endif %}
+</body>
+</html>

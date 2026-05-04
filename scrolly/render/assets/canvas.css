@@ -1,0 +1,770 @@
+/*
+ * scrolly canvas — Layer A styles.
+ *
+ * The outer canvas does not scroll. Trackpad / wheel / touch input is the
+ * within-slide scrolling channel. All canvas movement is transform-driven
+ * by canvas.js writing the three view-parameter custom properties below
+ * (--view-cx, --view-cy, --view-scale; the auxiliary --view-zoom too)
+ * from the (selected_slide, zoom_level) tuple.
+ */
+
+/* ---- Viewport-proportional rem baseline -----------------------------
+ *
+ * Slide content (text and chunk-level padding) scales as a linear
+ * combination of viewport width and height: rem = 1vw + 1vh, i.e.
+ * 1% of W plus 1% of H. Both dimensions contribute, so big external
+ * monitors get noticeably bigger text than laptops while narrow
+ * split-views still produce smaller text without falling off a
+ * cliff. UA-stylesheet em-keyed headings (h1, h2, ...) inherit this
+ * scaling automatically since their sizes are em-multiples of the
+ * body font. Layer A chrome (edge arrows, zoom-out control, glow
+ * bands, scrollbar, edge-arrow labels) is intentionally not affected
+ * — it uses fixed pixel or vmin sizing, so chrome readability stays
+ * consistent across viewport sizes regardless of how slide content
+ * scales.
+ *
+ * Pure proportional, no clamp() — mobile is not a target platform;
+ * the realistic viewport range (small laptop → 4K display) does not
+ * produce degenerate font sizes at this coefficient.
+ */
+:root {
+  font-size: calc(1vw + 1vh);
+}
+
+/* ---- Chrome-safe insets ----------------------------------------------
+ *
+ * Layer A's nav UI reach on each viewport side, in absolute pixels.
+ * Acts as a floor for per-slide-type padding policies — slide-type
+ * renderers (Layer B) can read `var(--chrome-safe-{side})` from their
+ * scoped_css, e.g. static uses
+ * `padding-{side}: max(<aesthetic>, var(--chrome-safe-{side}))`.
+ * Types wanting immersive edge-to-edge layouts simply ignore them.
+ *
+ * All sides: 64px (8px offset + 48px element + 8px breathing room).
+ * Left side increases to 74px when the scrollbar is visible (elements
+ * shift right by 10px to clear the scrollbar track). The left value
+ * is toggled via :has() — see the scrollbar-conditional rule below.
+ */
+:root {
+  --chrome-safe-top: 64px;
+  --chrome-safe-right: 64px;
+  --chrome-safe-bottom: 64px;
+  --chrome-safe-left: 64px;
+}
+
+body.view-slide:has(.slide-container.selected.has-scroll) {
+  --chrome-safe-left: 74px;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+  /* Slightly darker than slide background — only visible between slides in
+   * deck view; in slide view the current slide fills the viewport. */
+  background: #ededed;
+}
+
+/* ---- View-parameter CSS custom properties -----------------------------
+ *
+ * Registered via @property so the browser can interpolate them smoothly
+ * during transitions and keyframe animations. Without this, the browser
+ * treats custom properties as opaque strings that snap between values.
+ * Initial values match the CSS-level fallbacks used in var(..., ...).
+ */
+
+@property --view-cx {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.5;
+}
+
+@property --view-cy {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.5;
+}
+
+@property --view-scale {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+/* `--view-zoom` is the raw zoom_level scalar (0 in deck view, 1 in slide
+ * view). Distinct from `--view-scale` (which interpolates between
+ * fit-all and 1). Used by `.canvas-edges` to fade connectors out across
+ * the last 1% of the zoom-in transition so endpoint dots never peek
+ * through in slide view. `inherits: true` so descendants of `.canvas`
+ * see it without an explicit re-declaration. */
+@property --view-zoom {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+/* ---- Canvas ------------------------------------------------------------ */
+
+.canvas {
+  position: relative;
+  width: 100dvw;
+  height: 100dvh;
+  /* Single transform driven by the (selected_slide, zoom_level) tuple:
+   *   cx, cy  — interpolated viewport centre in grid units
+   *   scale   — interpolated scale, 1 at slide view, fit-all at deck view
+   * Both rest states (deck / slide) are specific evaluations of this one
+   * formula. transform-origin must be 0 0 so the scale is around the
+   * canvas's top-left, not its own centre. */
+  transform-origin: 0 0;
+  transform: translate(
+    calc(50dvw - var(--view-scale, 1) * var(--view-cx, 0.5) * 100dvw),
+    calc(50dvh - var(--view-scale, 1) * var(--view-cy, 0.5) * 100dvh)
+  ) scale(var(--view-scale, 1));
+  /* All view-parameter changes animate through the three registered
+   * custom properties at this duration / easing. The slide-to-slide pan
+   * additionally overlays a brief scale dip — see body.pan-transitioning
+   * below. Zoom toggles use this transition plainly. */
+  transition:
+    --view-cx 300ms ease,
+    --view-cy 300ms ease,
+    --view-scale 300ms ease,
+    --view-zoom 300ms ease;
+}
+
+/* ---- Slide container --------------------------------------------------- */
+
+.slide-container {
+  position: absolute;
+  width: 100dvw;
+  height: 100dvh;
+  box-sizing: border-box;
+  left: calc(var(--cell-x, 0) * 100dvw + var(--gap-x, 0) * 1dvmax);
+  top: calc(var(--cell-y, 0) * 100dvh + var(--gap-y, 0) * 1dvmax);
+}
+
+.slide-container .subcanvas {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #ffffff;
+  /* Sandbox the chunk's stacking context — any z-index a chunk uses
+   * internally is local and cannot compete with sibling Layer A
+   * elements (e.g. .canvas-edges, future within-canvas overlays). */
+  isolation: isolate;
+}
+
+.slide-container .chunk {
+  width: 100%;
+  /* Height intentionally not fixed: the chunk grows to its natural
+   * content height. The subcanvas (overflow:hidden) clips visible bounds,
+   * canvas.js measures `chunk_height − subcanvas_height` via ResizeObserver
+   * for content-driven scroll, and translates the chunk via the
+   * `--scroll-position` custom property so content scrolls into view.
+   * For short slides whose content fits, the chunk is shorter than the
+   * subcanvas — visually unchanged from a 100%-height chunk because the
+   * subcanvas background colour matches. */
+  min-height: 100%;
+  /* Per-slide font-size = global rem baseline × --font-scale (defaults
+   * to 1 when the slide-container does not set the property). The
+   * assembler emits --font-scale as an inline style on .slide-container
+   * only when the chunk's font_scale differs from 1.0. Stays in
+   * canvas.css (not per-type scoped_css) because --font-scale is
+   * universal Layer A plumbing — every chunk's metadata supplies a
+   * font_scale, and the consumption rule is part of that plumbing.
+   * Per-type renderers can override in their own scoped_css if they
+   * want different font-scaling behaviour. */
+  font-size: calc(1rem * var(--font-scale, 1));
+  /* No padding declaration here — content-presentation framing is a
+   * per-slide-type concern, carried in SlideHTML.scoped_css. Layer A
+   * publishes the chrome-safe inset (`--chrome-safe-{side}` on :root)
+   * as a floor each type can opt into. See layer_b_slide/slide_types.md
+   * for the per-type contract. */
+  box-sizing: border-box;
+}
+
+/* ---- Custom left-edge scrollbar -----------------------------------------
+ *
+ * Always in the DOM (per slide-container) but hidden unless we're in slide
+ * view, the container is .selected, and canvas.js has marked it
+ * .has-scroll (= live scroll range > 0). The thumb's height and top
+ * position are written by JS as inline styles based on the live range and
+ * --scroll-position. Layered below left-edge edge arrows when both are
+ * present (per the design — edge arrows live in .navigation at z-index 20,
+ * which sits above .canvas).
+ */
+.slide-scrollbar {
+  position: absolute;
+  /* macOS-native feel: nearly flush with the viewport edge. 2px inset
+   * on all three sides (left, top, bottom). The 8px track + 2px gap
+   * keeps clear of the left-shifted nav elements (at 18px). */
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  width: 8px;
+  border-radius: 4px;
+  background: rgba(215, 215, 215, 0.25);
+  display: none;
+  pointer-events: auto;
+}
+
+body.view-slide .slide-container.selected.has-scroll .slide-scrollbar {
+  display: block;
+}
+
+.slide-scrollbar-snap {
+  position: absolute;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(160, 160, 160, 0.5);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.3);
+  transform: translateY(-50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.slide-scrollbar-thumb {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  z-index: 1;
+  border-radius: 4px;
+  background: rgba(130, 130, 130, 0.75);
+  transition: background-color 150ms ease;
+  cursor: grab;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  /* JS writes inline `top` and `height`. */
+}
+
+.slide-scrollbar-thumb:hover,
+.slide-scrollbar-thumb.dragging {
+  background: rgba(90, 90, 90, 0.87);
+}
+
+.slide-scrollbar-thumb.dragging {
+  cursor: grabbing;
+}
+
+/* The chunk content reads --scroll-position from .slide-container so
+ * content-driven slides translate vertically with scroll. The variable is
+ * written in scroll-range units (pixels for content-driven mode) by
+ * canvas.js. */
+.slide-container.has-scroll .chunk {
+  transform: translateY(calc(-1px * var(--scroll-position, 0)));
+  /* The translate moves the chunk inside its already-clipping subcanvas;
+   * no compositor surprises since translate is GPU-accelerated. */
+}
+
+/* ---- Edge glows (no-target + disambiguation) -------------------------- */
+
+/* Two side-edge glow effects share shape, size, and animation: the red
+ * `.no-target-glow` pulses when an arrow key is pressed with zero edges
+ * on that side; the green `.disambiguation-glow` pulses when an arrow
+ * key is pressed with two or more edges on that side, prompting the
+ * viewer to click. Hue is the only difference, controlled per class via
+ * `--glow-color`. Use vmin so the bands are physically equal in
+ * thickness regardless of viewport aspect ratio. */
+
+.no-target-glow,
+.disambiguation-glow {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 100;
+}
+
+.no-target-glow      { --glow-color: rgba(255, 0, 0, 0.4); }
+.disambiguation-glow { --glow-color: rgba(34, 197, 94, 0.55); }
+
+.no-target-glow.top,
+.disambiguation-glow.top {
+  top: 0; left: 0; right: 0;
+  height: 15vmin;
+  background: linear-gradient(to bottom, var(--glow-color), transparent);
+}
+
+.no-target-glow.bottom,
+.disambiguation-glow.bottom {
+  bottom: 0; left: 0; right: 0;
+  height: 15vmin;
+  background: linear-gradient(to top, var(--glow-color), transparent);
+}
+
+.no-target-glow.left,
+.disambiguation-glow.left {
+  top: 0; bottom: 0; left: 0;
+  width: 15vmin;
+  background: linear-gradient(to right, var(--glow-color), transparent);
+}
+
+.no-target-glow.right,
+.disambiguation-glow.right {
+  top: 0; bottom: 0; right: 0;
+  width: 15vmin;
+  background: linear-gradient(to left, var(--glow-color), transparent);
+}
+
+.no-target-glow.pulse,
+.disambiguation-glow.pulse {
+  animation: scrolly-glow-pulse 250ms ease-out;
+}
+
+@keyframes scrolly-glow-pulse {
+  0%   { opacity: 0; }
+  40%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---- Navigation layer -------------------------------------------------- */
+
+/* Fixed-coordinate container for the edge arrows, zoom-out control, and
+ * no-target glow. Covers the viewport but is pointer-events transparent by
+ * default; only its interactive children catch clicks. */
+.navigation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100dvw;
+  height: 100dvh;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.navigation > *:not(.no-target-glow):not(.disambiguation-glow) {
+  pointer-events: auto;
+}
+
+/* ---- Container-chrome controls (edge arrows + zoom-out) ---------------- */
+
+/* Shared look-and-feel for every clickable container-level affordance. */
+.edge-arrow,
+.zoom-out-control {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0.15;
+  transition: opacity 150ms ease-out;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 1);
+}
+
+.edge-arrow:hover,
+.edge-arrow:focus-visible,
+.zoom-out-control:hover,
+.zoom-out-control:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+/* ---- Edge arrows ------------------------------------------------------- */
+
+.edge-arrow {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  z-index: 10;
+}
+
+/* Fan placement. `--fan-offset` is a number in [0, 1] written by canvas.js
+ * per arrow: 0.5 for single-edge sides (centred); spread along a centred
+ * band for multi-edge sides (see fan.py). On the side's *variable* axis
+ * (top/bottom → x; left/right → y) the arrow sits at
+ * `--fan-offset * 100%` of the viewport, then backs off by half the
+ * arrow's 48 px width so it centres on that point. The fallback `0.5`
+ * keeps any arrow rendered without the property visually centred. */
+.edge-arrow-top    { top: 8px;    left: calc(var(--fan-offset, 0.5) * 100% - 24px); }
+.edge-arrow-bottom { bottom: 8px; left: calc(var(--fan-offset, 0.5) * 100% - 24px); }
+.edge-arrow-left   { left: 8px;   top: calc(var(--fan-offset, 0.5) * 100% - 24px); }
+.edge-arrow-right  { right: 8px;  top: calc(var(--fan-offset, 0.5) * 100% - 24px); }
+
+/* When scrollbar is visible, left-side arrows shift right to clear the track. */
+body.view-slide:has(.slide-container.selected.has-scroll) .edge-arrow-left {
+  left: 18px;
+}
+
+.edge-arrow svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.edge-arrow-left svg   { transform: rotate(180deg); }
+.edge-arrow-top svg    { transform: rotate(-90deg); }
+.edge-arrow-bottom svg { transform: rotate(90deg); }
+
+/* Arrow-fan opacity pulse, fired by canvas.js's pulseDisambiguationGlow()
+ * on every arrow on the pressed side when an arrow key resolves to two
+ * or more candidate targets. Same 250 ms keyframe shape as the glow it
+ * accompanies — arrows ramp from their rest 0.15 opacity to full and
+ * back, drawing the eye to the disambiguation candidates synchronously
+ * with the green glow. The arrow's target-id label rides the same pulse
+ * (reusing scrolly-glow-pulse: 0 → 1 → 0) so the candidates are
+ * identified by name during the disambiguation, not just highlighted.
+ * After animationend the class is removed and the arrow + label snap
+ * back to their rule-based state (rest or hover). */
+.edge-arrow.arrow-fan-pulse {
+  animation: scrolly-arrow-pulse 250ms ease-out;
+}
+
+.edge-arrow.arrow-fan-pulse::after {
+  animation: scrolly-glow-pulse 250ms ease-out;
+}
+
+@keyframes scrolly-arrow-pulse {
+  0%   { opacity: 0.15; }
+  40%  { opacity: 1; }
+  100% { opacity: 0.15; }
+}
+
+/* Hover-revealed target-title label. Rendered as a `::after` pseudo-element
+ * whose text comes from the arrow's data-title attribute (set by canvas.js
+ * from the target slide's chunk metadata, so titles can carry punctuation
+ * and casing the slide-id handle can't). Sits on the inside face of the
+ * arrow (toward the viewport centre) so it never extends off-viewport.
+ * Hidden at rest; opacity 1 on `:hover` or `:focus-visible`. The
+ * accessible name is already on the parent button via aria-label, so
+ * the pseudo-element is purely visual. */
+.edge-arrow::after {
+  content: attr(data-title);
+  position: absolute;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.edge-arrow:hover::after,
+.edge-arrow:focus-visible::after {
+  opacity: 1;
+}
+
+/* Side-conditional placement of the label, on the inside face of each
+ * arrow, so the label grows toward the viewport centre. */
+.edge-arrow-top::after {
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.edge-arrow-bottom::after {
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.edge-arrow-left::after {
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.edge-arrow-right::after {
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ---- Zoom-out control -------------------------------------------------- */
+
+.zoom-out-control {
+  top: 8px;
+  left: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  z-index: 11;
+}
+
+/* When scrollbar is visible, zoom control shifts right to clear the track. */
+body.view-slide:has(.slide-container.selected.has-scroll) .zoom-out-control {
+  left: 18px;
+}
+
+.zoom-out-control svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* ---- Snap-position control --------------------------------------------- */
+
+/* Vertical pill at bottom-left with three zones: prev chevron, toggle,
+ * next chevron. Same visual family as zoom-out control and edge arrows.
+ * Hidden by default; canvas.js shows it when the current slide has snap
+ * positions, in slide view only. */
+
+.snap-control {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  z-index: 11;
+  opacity: 0.15;
+  pointer-events: auto;
+  border-radius: 20px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 1);
+  /* ON animation (removing .snap-off): container slides up immediately,
+   * then chevrons extend after 200ms. */
+  transition: bottom 200ms ease-out, opacity 200ms ease-out;
+}
+
+.snap-control:hover {
+  opacity: 1;
+}
+
+/* When scrollbar is visible, snap control shifts right to clear the track. */
+body.view-slide:has(.slide-container.selected.has-scroll) .snap-control {
+  left: 18px;
+}
+
+.snap-control-prev,
+.snap-control-toggle,
+.snap-control-next {
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.snap-control-prev,
+.snap-control-next {
+  overflow: hidden;
+  transition: height 200ms ease-out, opacity 200ms ease-out;
+}
+
+.snap-control-prev {
+  height: 28px;
+  border-radius: 20px 20px 0 0;
+}
+
+.snap-control-toggle {
+  height: 22px;
+  border-radius: 0;
+}
+
+.snap-control-next {
+  height: 28px;
+  border-radius: 0 0 20px 20px;
+}
+
+.snap-control-prev svg,
+.snap-control-next svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.snap-control-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.snap-control-prev:disabled,
+.snap-control-next:disabled {
+  cursor: default;
+}
+
+/* ---- Snap OFF state ---------------------------------------------------- */
+
+/* OFF animation: chevrons collapse to zero height (200ms), container
+ * border-radius softens to match toggle-only shape, opacity rises to
+ * 0.3 for discoverability. ON animation (removing .snap-off):
+ * chevrons re-expand, border-radius returns to pill. */
+
+.snap-control.snap-off {
+  border-radius: 6px;
+  transition: opacity 200ms ease-out, border-radius 200ms ease-out;
+}
+
+.snap-control.snap-off .snap-control-prev,
+.snap-control.snap-off .snap-control-next {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: height 200ms ease-out, opacity 200ms ease-out;
+}
+
+.snap-control.snap-off .snap-control-toggle {
+  border-radius: 6px;
+  transition: border-radius 200ms ease-out;
+}
+
+/* Snap dots hidden when snap is disabled. */
+.slide-container.snap-disabled .slide-scrollbar-snap {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.slide-scrollbar-snap {
+  transition: opacity 200ms ease-out;
+}
+
+/* ---- View-state rules (driven by body class from canvas.js) ----------- */
+
+/*
+ * Authoritative view state lives on <body>:
+ *   body.view-slide          — slide view at rest (zoom_level = 1)
+ *   body.view-deck           — deck view at rest (zoom_level = 0)
+ *   body.view-transitioning  — in-flight between rest states
+ * Every visibility rule that depends on the current view keys off one of
+ * these three classes. Nothing else should depend on view state.
+ *
+ * The zoom-out control is intentionally NOT hidden in any state — it acts
+ * as a view-toggle and is always visible and clickable.
+ */
+
+/* In deck view, slides are click-targets for navigation. Gaps between
+ * slides are handled by the --gap-x / --gap-y custom properties set by
+ * JS on each slide container — no per-slide transform needed. */
+body.view-deck .slide-container {
+  cursor: pointer;
+}
+
+/* Edge arrows and snap control are slide-view-only: hidden in deck view
+ * and during in-flight view-parameter transitions. */
+body.view-deck .edge-arrow,
+body.view-transitioning .edge-arrow,
+body.view-deck .snap-control,
+body.view-transitioning .snap-control {
+  display: none;
+}
+
+/* Subtle edge + shadow to separate each slide from the canvas background
+ * in deck view. */
+body.view-deck .slide-container .subcanvas {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 2px;
+}
+
+/* Three-tier visual hierarchy on the deck-view subcanvas:
+ *   resting   — subtle 1 px border, soft shadow
+ *   selected  — thick 3 px dark border, assertive shadow (the "picked" state)
+ *   hover     — neutral grey border + even bigger shadow (click affordance)
+ *
+ * Hover is split into two rules so hovering the selected slide keeps its
+ * thick 3 px border (the generic hover rule would lighten it). Combined
+ * state (hover + selected) gets the largest shadow of the lot.
+ */
+
+body.view-deck .slide-container.selected .subcanvas {
+  border: 3px solid rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+body.view-deck .slide-container:not(.selected):hover .subcanvas {
+  border-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.3);
+}
+
+body.view-deck .slide-container.selected:hover .subcanvas {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- Slide groups ------------------------------------------------------- */
+
+/* Group background rectangles. Positioned by canvas.js (positionGroupRects)
+ * because the deck-view gap shift is per-cell, so a multi-cell rectangle
+ * can't use a single CSS transform. Visible only in deck view. */
+.slide-group {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  opacity: calc(1 - var(--view-zoom, 1));
+  transition: opacity 0.3s ease;
+}
+
+.slide-group-bg {
+  fill: rgba(0, 0, 0, 0.07);
+  stroke: none;
+}
+
+.slide-group-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: rgba(0, 0, 0, 0.35);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 5dvmax;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: calc(1 - var(--view-zoom, 1));
+  transition: opacity 0.3s ease;
+}
+
+/* ---- Edge bezier overlay --------------------------------------------- */
+
+/* Always rendered, but opacity rides --view-zoom so connectors fade
+ * symmetrically across the full 0→1 zoom range: fully visible in deck
+ * view (zoom = 0), invisible in slide view (zoom = 1), linearly
+ * interpolating during transitions. */
+.canvas-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  display: block;
+  z-index: 5;
+  opacity: calc(1 - var(--view-zoom, 1));
+  --connector-color: #4a4a4a;
+}
+
+/* ---- Slide-to-slide pan scale dip ------------------------------------- */
+
+/*
+ * When selected_slide changes while zoom_level stays at 1, canvas.js adds
+ * body.pan-transitioning for the duration of the animation. The keyframes
+ * overlay a brief 1 → 0.95 → 1 scale pulse on top of the translate
+ * transition, giving the pan a subtle "motion through space" feel. Zoom
+ * toggles do not dip — the zoom itself is the motion.
+ */
+
+@keyframes slide-pan-dip {
+  0%   { --view-scale: 1; }
+  50%  { --view-scale: 0.95; }
+  100% { --view-scale: 1; }
+}
+
+body.pan-transitioning .canvas {
+  animation: slide-pan-dip 300ms ease;
+}
+
+.canvas-edge {
+  fill: none;
+  stroke: var(--connector-color);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}

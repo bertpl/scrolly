@@ -1,0 +1,51 @@
+{
+  title: "Storyboard Demo",
+  scene_distance: 300,
+  hold: 40,
+
+  background: [
+    {
+      html: "<div style='width:100%;height:100%;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'></div>",
+      position: [0, 0],
+      size: [100, 100],
+    },
+  ],
+
+  scenes: [
+    {
+      elements: [
+        {
+          markdown: "## Scene One\n\nThe storyboard type cross-fades\nbetween discrete scenes as you scroll.",
+          color: "#e0e0e0",
+          position: [15, 25],
+          size: [70, "auto"],
+        },
+      ],
+    },
+    {
+      elements: [
+        {
+          markdown: "## Scene Two\n\nEach scene can contain multiple elements —\ntext, images, or raw HTML.",
+          color: "#e0e0e0",
+          position: [15, 25],
+          size: [70, "auto"],
+        },
+        {
+          html: "<div style='width:100%;height:100%;border:2px solid rgba(255,255,255,0.3);border-radius:8px;box-sizing:border-box'></div>",
+          position: [10, 60],
+          size: [80, 25],
+        },
+      ],
+    },
+    {
+      elements: [
+        {
+          markdown: "## Scene Three\n\nSnap positions settle the view\nonto each scene after scrolling stops.",
+          color: "#e0e0e0",
+          position: [15, 25],
+          size: [70, "auto"],
+        },
+      ],
+    },
+  ],
+}

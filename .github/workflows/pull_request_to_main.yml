@@ -1,0 +1,52 @@
+name: Pull Request to Main
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  validate-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! "$BRANCH" =~ ^(feat|fix|chore|docs|refactor|test)/[a-z0-9-]+$ ]]; then
+            echo "::error::Branch name '$BRANCH' does not match pattern ^(feat|fix|chore|docs|refactor|test)/[a-z0-9-]+\$"
+            exit 1
+          fi
+
+  require-changelog:
+    needs: [validate-branch-name]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check changelog updated for feat/ and fix/ branches
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! "$BRANCH" =~ ^(feat|fix)/ ]]; then
+            echo "Branch '$BRANCH' is not feat/ or fix/; changelog entry not required."
+            exit 0
+          fi
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" | grep -q '^CHANGELOG\.md$'; then
+            echo "CHANGELOG.md was modified — OK."
+            exit 0
+          fi
+          echo "::error::feat/ and fix/ PRs must update CHANGELOG.md (add a bullet under '## Unreleased')."
+          exit 1
+
+  lint:
+    needs: [validate-branch-name]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --group dev
+      - run: uv run ruff check scrolly tests/python scripts
+
+  test:
+    needs: [validate-branch-name]
+    uses: ./.github/workflows/_unit_tests.yml

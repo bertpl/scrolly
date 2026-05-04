@@ -1,0 +1,22 @@
+name: Unit tests (full matrix)
+
+on:
+  workflow_call:
+
+jobs:
+  core:
+    name: py${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+        os: [ubuntu-latest]
+        include:
+          - python: "3.14"
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/unit_test
+        with:
+          python-version: ${{ matrix.python }}

@@ -1,0 +1,9 @@
+{
+  slides: [
+    { id: "a", position: [0, 0], source: "slides/a.static.md" },
+    { id: "b", position: [1, 1], source: "slides/b.static.md" },
+  ],
+  edges: [
+    ["a", "b"],
+  ],
+}

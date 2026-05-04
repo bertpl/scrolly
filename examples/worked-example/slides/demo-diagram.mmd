@@ -1,0 +1,16 @@
+graph TB
+  subgraph Deck
+    D[deck.json]
+    S1[slide 1]
+    S2[slide 2]
+    S3[slide 3]
+  end
+  subgraph Pipeline
+    P[Parser]
+    V[Validator]
+    R[Renderer]
+    A[Assembler]
+  end
+  D --> P --> V --> R --> A
+  D --> S1 & S2 & S3
+  S1 & S2 & S3 --> R

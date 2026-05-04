@@ -1,0 +1,304 @@
+import json
+from pathlib import Path
+
+import pytest
+
+from scrolly.deck.model import Deck, Edge, Endpoint, Position, Side, Slide
+from scrolly.render.assembler import assemble
+from scrolly.slide.html import SlideHTML
+
+
+@pytest.fixture(params=[True, False], ids=["inline", "no-inline"])
+def inline(request):
+    return request.param
+
+
+def _single(id_: str, html: str) -> tuple[Deck, dict[str, SlideHTML]]:
+    slide = Slide(id=id_, position=Position(0, 0), source=Path(f"/{id_}.static.md"))
+    deck = Deck(title="test", slides=(slide,), edges=())
+    chunks = {id_: SlideHTML(title=id_.title(), html=html)}
+    return deck, chunks
+
+
+def _l_shape() -> tuple[Deck, dict[str, SlideHTML]]:
+    intro = Slide(id="intro", position=Position(0, 0), source=Path("/intro.static.md"))
+    details = Slide(id="details", position=Position(1, 0), source=Path("/details.static.md"))
+    appendix = Slide(id="appendix", position=Position(1, 1), source=Path("/appendix.static.md"))
+    deck = Deck(
+        title="L",
+        slides=(intro, details, appendix),
+        edges=(
+            Edge(Endpoint("intro", Side.RIGHT), Endpoint("details", Side.LEFT)),
+            Edge(Endpoint("details", Side.BOTTOM), Endpoint("appendix", Side.TOP)),
+        ),
+    )
+    chunks = {
+        "intro": SlideHTML(title="Intro", html="<h1>Intro</h1>"),
+        "details": SlideHTML(title="Details", html="<h1>Details</h1>"),
+        "appendix": SlideHTML(title="Appendix", html="<h1>Appendix</h1>"),
+    }
+    return deck, chunks
+
+
+def test_assembler_produces_html5_doctype(inline):
+    deck, chunks = _single("x", "<h1>X</h1>")
+    html = assemble(deck, chunks, inline=inline)
+    assert html.lstrip().startswith("<!DOCTYPE html>")
+
+
+def test_assembler_includes_deck_title(inline):
+    deck, chunks = _single("x", "")
+    assert "<title>test</title>" in assemble(deck, chunks, inline=inline)
+
+
+def test_assembler_uses_fallback_title_when_none(inline):
+    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.static.md"))
+    deck = Deck(title=None, slides=(slide,), edges=())
+    chunks = {"x": SlideHTML(title="X", html="")}
+    assert "<title>scrolly</title>" in assemble(deck, chunks, inline=inline)
+
+
+def test_assembler_inlines_css_and_js_by_default():
+    deck, chunks = _single("x", "")
+    html = assemble(deck, chunks)
+    assert "<style>" in html
+    assert ".canvas {" in html
+    assert "<script>" in html
+    assert 'href="canvas.css"' not in html
+    assert 'src="canvas.js"' not in html
+
+
+def test_assembler_links_canvas_assets_when_not_inline():
+    deck, chunks = _single("x", "")
+    html = assemble(deck, chunks, inline=False)
+    assert 'href="canvas.css"' in html
+    assert 'src="canvas.js"' in html
+
+
+def test_assembler_renders_every_slide_as_container(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    for slide_id in ("intro", "details", "appendix"):
+        assert f'data-id="{slide_id}"' in html
+
+
+def test_assembler_sets_per_slide_position_vars(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    assert "--cell-x: 1; --cell-y: 1" in html
+
+
+def test_assembler_injects_each_slide_html(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    assert "<h1>Intro</h1>" in html
+    assert "<h1>Details</h1>" in html
+    assert "<h1>Appendix</h1>" in html
+
+
+def test_assembler_embeds_nav_data_json(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    start = html.index('<script type="application/json" id="scrolly-deck">')
+    end = html.index("</script>", start)
+    blob = html[start:end].split(">", 1)[1]
+    data = json.loads(blob)
+    assert data["initial_slide"] == "intro"
+    assert set(data["slides"]) == {"intro", "details", "appendix"}
+    assert data["slides"]["intro"]["edges"] == {
+        "right": [{"target": "details", "fan_index": 0, "fan_size": 1}],
+    }
+
+
+def test_slide_container_carries_scrollbar_element(inline):
+    # Each slide-container ships with a scrollbar element + thumb in the DOM;
+    # CSS hides them unless the slide is selected, in slide view, and has
+    # live scroll range > 0 (canvas.js sets the .has-scroll class).
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    # One scrollbar-track + thumb per slide-container.
+    n = len(deck.slides)
+    assert html.count('class="slide-scrollbar"') == n
+    assert html.count('class="slide-scrollbar-thumb"') == n
+
+
+def test_nav_data_carries_per_slide_titles(inline):
+    # Layer A surfaces titles in the navigation UI; the assembler propagates
+    # each chunk's title into the embedded JSON blob.
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    start = html.index('<script type="application/json" id="scrolly-deck">')
+    end = html.index("</script>", start)
+    blob = html[start:end].split(">", 1)[1]
+    data = json.loads(blob)
+    assert data["slides"]["intro"]["title"] == "Intro"
+    assert data["slides"]["details"]["title"] == "Details"
+    assert data["slides"]["appendix"]["title"] == "Appendix"
+
+
+def test_assembler_handles_empty_deck(inline):
+    deck = Deck(title=None, slides=(), edges=())
+    html = assemble(deck, {}, inline=inline)
+    assert html.lstrip().startswith("<!DOCTYPE html>")
+
+
+def _head_of(html: str) -> str:
+    head_start = html.index("<head>")
+    head_end = html.index("</head>", head_start)
+    return html[head_start:head_end]
+
+
+def test_scoped_css_emitted_in_head_when_chunk_carries_it(inline):
+    # When a chunk's scoped_css is non-empty, the assembler emits a
+    # <style> block in <head>. Per-slide-type CSS cascades from <head>
+    # alongside canvas.css.
+    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.static.md"))
+    deck = Deck(title="t", slides=(slide,), edges=())
+    chunks = {"x": SlideHTML(title="X", html="<p>x</p>", scoped_css=".x { color: red }")}
+    html = assemble(deck, chunks, inline=inline)
+    assert "<style>.x { color: red }</style>" in _head_of(html)
+
+
+def test_scoped_css_dedup_across_chunks(inline):
+    # Identical scoped_css across multiple chunks (e.g. all static
+    # slides sharing one block) emits exactly once.
+    a = Slide(id="a", position=Position(0, 0), source=Path("/a.static.md"))
+    b = Slide(id="b", position=Position(1, 0), source=Path("/b.static.md"))
+    deck = Deck(title="t", slides=(a, b), edges=())
+    same_css = ".same { color: red }"
+    chunks = {
+        "a": SlideHTML(title="A", html="", scoped_css=same_css),
+        "b": SlideHTML(title="B", html="", scoped_css=same_css),
+    }
+    html = assemble(deck, chunks, inline=inline)
+    assert html.count(f"<style>{same_css}</style>") == 1
+
+
+def test_scoped_css_ordering_is_first_occurrence_in_slide_order(inline):
+    # Multiple unique scoped_css blocks emit in the order their
+    # first-carrying chunk appears in deck.slides — stable across builds.
+    a = Slide(id="a", position=Position(0, 0), source=Path("/a.static.md"))
+    b = Slide(id="b", position=Position(1, 0), source=Path("/b.static.md"))
+    deck = Deck(title="t", slides=(a, b), edges=())
+    chunks = {
+        "a": SlideHTML(title="A", html="", scoped_css=".A {}"),
+        "b": SlideHTML(title="B", html="", scoped_css=".B {}"),
+    }
+    html = assemble(deck, chunks, inline=inline)
+    a_pos = html.index("<style>.A {}</style>")
+    b_pos = html.index("<style>.B {}</style>")
+    assert a_pos < b_pos
+
+
+def test_no_scoped_style_block_when_all_scoped_css_empty():
+    deck, chunks = _l_shape()  # default SlideHTMLs have empty scoped_css
+    html = assemble(deck, chunks, inline=False)
+    assert "<style>" not in _head_of(html)
+
+
+def test_navigation_layer_rendered_once(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    # The body-level navigation container hosts all nav chrome and is
+    # a single instance regardless of slide count.
+    assert html.count('class="navigation"') == 1
+
+
+def test_zoom_out_control_rendered_once_in_navigation_layer(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    # One zoom-out control for the whole page (was: one per slide in v0.0.1).
+    assert html.count('class="zoom-out-control"') == 1
+
+
+def test_edge_arrows_not_in_static_html():
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=False)
+    assert "edge-arrow edge-arrow-" not in html
+
+
+def test_nav_data_still_carries_edges_for_js_to_consume():
+    # The data contract for edge rendering lives in the embedded JSON blob.
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks)
+    start = html.index('<script type="application/json" id="scrolly-deck">')
+    end = html.index("</script>", start)
+    blob = html[start:end].split(">", 1)[1]
+    data = json.loads(blob)
+    assert data["slides"]["intro"]["edges"] == {
+        "right": [{"target": "details", "fan_index": 0, "fan_size": 1}],
+    }
+    assert data["slides"]["details"]["edges"] == {
+        "left": [{"target": "intro", "fan_index": 0, "fan_size": 1}],
+        "bottom": [{"target": "appendix", "fan_index": 0, "fan_size": 1}],
+    }
+
+
+def test_canvas_edges_svg_always_present(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    assert 'class="canvas-edges"' in html
+
+
+def test_canvas_edges_svg_present_even_without_edges(inline):
+    deck, chunks = _single("solo", "")
+    html = assemble(deck, chunks, inline=inline)
+    assert 'class="canvas-edges"' in html
+
+
+def test_canvas_edges_svg_has_no_build_time_paths(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    assert 'class="canvas-edge"' not in html
+
+
+def test_slide_container_omits_font_scale_for_default_chunk():
+    # When chunk.font_scale == 1.0 (the default), no inline --font-scale
+    # is emitted on .slide-container — the CSS fallback `var(--font-scale, 1)`
+    # in `.chunk { font-size: ... }` handles it. Avoids HTML noise on the
+    # common case.
+    deck, chunks = _single("x", "")
+    html = assemble(deck, chunks, inline=False)
+    assert "--font-scale" not in html
+
+
+def test_slide_container_emits_font_scale_when_non_default():
+    # When chunk.font_scale differs from 1.0, the assembler appends
+    # --font-scale: <N>; to the slide-container's inline style. The CSS
+    # rule `.chunk { font-size: calc(1rem * var(--font-scale, 1)) }`
+    # consumes it.
+    slide = Slide(id="big", position=Position(0, 0), source=Path("/big.static.md"))
+    deck = Deck(title="t", slides=(slide,), edges=())
+    chunks = {"big": SlideHTML(title="Big", html="<p>x</p>", font_scale=1.4)}
+    html = assemble(deck, chunks)
+    assert "--font-scale: 1.4" in html
+
+
+def test_slide_container_font_scale_isolated_per_slide():
+    # A per-slide font_scale must not leak to other slides — each
+    # slide-container gets its own inline-style decision based on its own
+    # chunk's font_scale.
+    intro = Slide(id="intro", position=Position(0, 0), source=Path("/intro.static.md"))
+    big = Slide(id="big", position=Position(1, 0), source=Path("/big.static.md"))
+    deck = Deck(title="t", slides=(intro, big), edges=())
+    chunks = {
+        "intro": SlideHTML(title="Intro", html=""),
+        "big": SlideHTML(title="Big", html="", font_scale=2.0),
+    }
+    html = assemble(deck, chunks, inline=False)
+    assert html.count("--font-scale") == 1
+    assert "--font-scale: 2.0" in html
+
+
+def test_canvas_edges_defs_emit_endpoint_dot_marker(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    assert '<marker id="edge-dot"' in html
+    assert 'stroke-linecap="round"' in html
+    assert 'vector-effect="non-scaling-stroke"' in html
+
+
+def test_no_group_divs_in_template():
+    deck, chunks = _single("x", "")
+    html = assemble(deck, chunks, inline=False)
+    assert "slide-group" not in html

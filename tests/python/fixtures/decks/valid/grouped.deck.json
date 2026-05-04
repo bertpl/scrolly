@@ -1,0 +1,19 @@
+{
+  title: "Grouped",
+  slides: [
+    { id: "intro", position: [0, 0], source: "slides/only.static.md" },
+    {
+      group: "Architecture",
+      slides: [
+        { id: "arch-1", position: [1, 0], source: "slides/only.static.md" },
+        { id: "arch-2", position: [2, 0], source: "slides/only.static.md" },
+      ],
+    },
+    { id: "outro", position: [0, 1], source: "slides/only.static.md" },
+  ],
+  edges: [
+    ["intro|right", "arch-1|left"],
+    ["arch-1|right", "arch-2|left"],
+    ["intro|bottom", "outro|top"],
+  ],
+}
