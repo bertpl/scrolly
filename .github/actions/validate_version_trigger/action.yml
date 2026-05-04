@@ -1,0 +1,18 @@
+name: Validate version trigger
+description: |
+  Verify that the git tag triggering this workflow (e.g. v0.1.0) matches
+  the version in pyproject.toml. Fails the workflow if they diverge.
+
+runs:
+  using: composite
+  steps:
+    - name: Compare tag to pyproject.toml version
+      shell: bash
+      run: |
+        TAG="${GITHUB_REF#refs/tags/}"
+        EXPECTED="v$(python3 -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+        if [ "$TAG" != "$EXPECTED" ]; then
+          echo "::error::Tag $TAG does not match pyproject.toml version $EXPECTED"
+          exit 1
+        fi
+        echo "Tag $TAG matches pyproject.toml version."

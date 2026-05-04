@@ -18,3 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## 0.1.0 (2026-05-04)
+
+### Added
+
+- Initial open-source release of scrolly (previously named slider).
+- CLI with `build`, `validate`, `schema`, and `init` commands.
+- Three slide types: static (Markdown), scrollimation (JSON), storyboard (JSON).
+- Storyboard-to-scrollimation compiler.
+- 2D-canvas HTML output with keyboard/scroll navigation, bezier transitions,
+  slide groups with tab-shaped backgrounds, and fan layout for edge arrows.
+- Worked example deck under `examples/worked-example/`.
+- CI via GitHub Actions (Python 3.11–3.14, ubuntu + macOS).
+- PyPI publishing via trusted publishing (OIDC).
