@@ -22,7 +22,7 @@ MINIMAL = """\
   title: "T",
   scroll_range: 1000,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """
@@ -55,9 +55,9 @@ class TestParsing:
   title: "Multi",
   scroll_range: 500,
   elements: [
-    { element: { id: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
-    { element: { id: "sep", html: "<div></div>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "txt", markdown: "# Hi", position: [10, 40], size: [80, "auto"] } },
+    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    { element: { name: "sep", html: "<div></div>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "txt", markdown: "# Hi", position: [10, 40], size: [80, "auto"] } },
   ],
 }
 """,
@@ -77,7 +77,7 @@ class TestParsing:
   elements: [
     {
       element: {
-        id: "L",
+        name: "L",
         html: "<p>hi</p>",
         position: [0, 0],
         size: [100, 100],
@@ -108,7 +108,7 @@ class TestParsing:
   elements: [
     {
       element: {
-        id: "L",
+        name: "L",
         html: "<p>hi</p>",
         position: [0, 0],
         size: [100, 100],  // trailing comma
@@ -129,7 +129,7 @@ class TestParsing:
   title: "Static composition",
   scroll_range: 0,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -146,7 +146,7 @@ class TestParsing:
   scroll_range: 100,
   elements: [
     {
-      element: { id: "L", html: "<p>static</p>", position: [0, 0], size: [100, 100] },
+      element: { name: "L", html: "<p>static</p>", position: [0, 0], size: [100, 100] },
       keyframes: [],
     },
   ],
@@ -171,7 +171,7 @@ class TestParsing:
   scroll_range: 1000,
   scroll_speed: 0.5,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -187,7 +187,7 @@ class TestParsing:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", image: "img.png", position: [0, 0], size: [100, "auto"] } },
+    { element: { name: "L", image: "img.png", position: [0, 0], size: [100, "auto"] } },
   ],
 }
 """,
@@ -222,7 +222,7 @@ class TestParseErrors:
 {
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -248,7 +248,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: ["auto", "auto"] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: ["auto", "auto"] } },
   ],
 }
 """,
@@ -264,7 +264,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", image: "img.jpg", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", image: "img.jpg", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -280,7 +280,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", image: "img.jpg", position: [0, 0], size: [100, "auto"], object_fit: "cover" } },
+    { element: { name: "L", image: "img.jpg", position: [0, 0], size: [100, "auto"], object_fit: "cover" } },
   ],
 }
 """,
@@ -288,7 +288,7 @@ class TestValidationViaJson5:
         with pytest.raises(SlideSourceError, match="validation failed"):
             parse_json5_ir(src, ScrollimationIR, "scrollimation")
 
-    def test_duplicate_element_ids(self, tmp_path: Path) -> None:
+    def test_duplicate_element_names(self, tmp_path: Path) -> None:
         src = _write(
             tmp_path / "s.scrollimation.json",
             """\
@@ -296,8 +296,8 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dup", html: "<p>a</p>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "dup", html: "<p>b</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "dup", html: "<p>a</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "dup", html: "<p>b</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -315,7 +315,7 @@ class TestValidationViaJson5:
   elements: [
     {
       element: {
-        id: "L",
+        name: "L",
         html: "<p>hi</p>",
         position: [0, 0],
         size: [100, 100],
@@ -339,7 +339,7 @@ class TestValidationViaJson5:
   elements: [
     {
       element: {
-        id: "L",
+        name: "L",
         html: "<p>hi</p>",
         position: [0, 0],
         size: [100, 100],
@@ -364,7 +364,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: -5,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -380,7 +380,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", image: "img.jpg", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", image: "img.jpg", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,

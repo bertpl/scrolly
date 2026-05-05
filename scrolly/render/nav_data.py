@@ -90,9 +90,7 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
 
     edges_data = _build_edges(deck, fan)
 
-    groups_data = [
-        {"label": g.label, "slide_ids": list(g.slide_ids)} for g in deck.groups
-    ]
+    groups_data = [{"label": g.label, "slide_ids": list(g.slide_ids)} for g in deck.groups]
 
     return {
         "initial_slide": deck.slides[0].id if deck.slides else None,
@@ -103,9 +101,7 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
     }
 
 
-def _build_edges(
-    deck: Deck, fan: dict[tuple[str, "Side"], tuple["FanEntry", ...]]
-) -> list[dict[str, Any]]:
+def _build_edges(deck: Deck, fan: dict[tuple[str, "Side"], tuple["FanEntry", ...]]) -> list[dict[str, Any]]:
     """Build a flat edge list with fan composition per endpoint."""
     fan_lookup: dict[tuple[str, str, str], tuple[int, int]] = {}
     for (slide_id, side), entries in fan.items():
@@ -117,12 +113,8 @@ def _build_edges(
 
     edges: list[dict[str, Any]] = []
     for edge in deck.edges:
-        a_fan = fan_lookup.get(
-            (edge.a.slide_id, edge.a.side.value, edge.b.slide_id), (0, 1)
-        )
-        b_fan = fan_lookup.get(
-            (edge.b.slide_id, edge.b.side.value, edge.a.slide_id), (0, 1)
-        )
+        a_fan = fan_lookup.get((edge.a.slide_id, edge.a.side.value, edge.b.slide_id), (0, 1))
+        b_fan = fan_lookup.get((edge.b.slide_id, edge.b.side.value, edge.a.slide_id), (0, 1))
         edges.append(
             {
                 "a_slide": edge.a.slide_id,

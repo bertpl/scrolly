@@ -25,7 +25,7 @@ class Renderer(IRProcessor, abc.ABC):
     """Converts an IR into a SlideHTML."""
 
     @abc.abstractmethod
-    def render(self, ir: SlideIR) -> SlideHTML: ...
+    def render(self, ir: SlideIR, css_namespace: str = "") -> SlideHTML: ...
 
 
 class Compiler(IRProcessor, abc.ABC):

@@ -35,9 +35,6 @@ class StoryboardScene(BaseModel, frozen=True):
     def _validate(self) -> StoryboardScene:
         if not self.elements:
             raise ValueError("a scene must have at least one element")
-        for el in self.elements:
-            if el.id is not None:
-                raise ValueError("storyboard elements must not set 'id' — the compiler generates IDs")
         return self
 
 
@@ -63,9 +60,6 @@ class StoryboardIR(SlideIR, frozen=True):
             raise ValueError(f"2 * hold ({2 * self.hold}) must be < scene_distance ({self.scene_distance})")
         if not self.scenes:
             raise ValueError("at least one scene is required")
-        for el in self.background:
-            if el.id is not None:
-                raise ValueError("storyboard background elements must not set 'id' — the compiler generates IDs")
         return self
 
     @classmethod

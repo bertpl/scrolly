@@ -71,7 +71,7 @@ def _render_slides(slides: tuple[Slide, ...]) -> dict[str, SlideHTML]:
         while True:
             renderer = find_renderer(ir)
             if renderer is not None:
-                chunks[slide.id] = renderer.render(ir)
+                chunks[slide.id] = renderer.render(ir, css_namespace=slide.id)
                 break
 
             compiler = find_compiler(ir)

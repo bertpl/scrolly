@@ -30,7 +30,7 @@ MINIMAL = """\
   title: "Test slide",
   scroll_range: 1000,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """
@@ -44,7 +44,7 @@ class TestRegistration:
         ir = ScrollimationIR(
             title="T",
             scroll_range=100,
-            elements=[{"element": {"id": "L", "html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
+            elements=[{"element": {"html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
         )
         assert ir.slide_type == "scrollimation-json"
 
@@ -63,7 +63,7 @@ class TestHtmlEmission:
     def test_layer_div_with_data_id(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
         chunk = _build(src)
-        assert '<div class="scrollimation-element" data-element-id="L">' in chunk.html
+        assert '<div class="scrollimation-element" data-element-id="0">' in chunk.html
 
     def test_html_layer_content_passthrough(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
@@ -78,7 +78,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", markdown: "# Hello\\n\\nWorld", position: [0, 0], size: [80, "auto"] } },
+    { element: { name: "L", markdown: "# Hello\\n\\nWorld", position: [0, 0], size: [80, "auto"] } },
   ],
 }
 """,
@@ -96,7 +96,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
   ],
 }
 """,
@@ -113,17 +113,17 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "img.svg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
-    { element: { id: "sep", html: "<div>box</div>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "txt", markdown: "# Cap", position: [10, 40], size: [80, "auto"] } },
+    { element: { name: "bg", image: "img.svg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
+    { element: { name: "sep", html: "<div>box</div>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "txt", markdown: "# Cap", position: [10, 40], size: [80, "auto"] } },
   ],
 }
 """,
         )
         chunk = _build(src)
-        assert 'data-element-id="bg"' in chunk.html
-        assert 'data-element-id="sep"' in chunk.html
-        assert 'data-element-id="txt"' in chunk.html
+        assert 'data-element-id="0"' in chunk.html
+        assert 'data-element-id="1"' in chunk.html
+        assert 'data-element-id="2"' in chunk.html
 
     def test_mermaid_layer_emits_pre_tag(self, tmp_path: Path) -> None:
         src = _write(
@@ -133,7 +133,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -150,7 +150,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dia", mermaid: "graph LR\\n  A -->|<yes>| B", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "dia", mermaid: "graph LR\\n  A -->|<yes>| B", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -166,7 +166,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -187,7 +187,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -203,15 +203,15 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "first", html: "<p>1</p>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "second", html: "<p>2</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "first", html: "<p>1</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "second", html: "<p>2</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
         )
         chunk = _build(src)
-        pos_first = chunk.html.index('data-element-id="first"')
-        pos_second = chunk.html.index('data-element-id="second"')
+        pos_first = chunk.html.index('data-element-id="0"')
+        pos_second = chunk.html.index('data-element-id="1"')
         assert pos_first < pos_second
 
 
@@ -225,7 +225,7 @@ class TestAssets:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
   ],
 }
 """,
@@ -250,9 +250,9 @@ class TestAssets:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "a.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
-    { element: { id: "mid", html: "<div></div>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "fg", image: "b.svg", position: [0, 0], size: [100, 100], object_fit: "contain" } },
+    { element: { name: "bg", image: "a.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
+    { element: { name: "mid", html: "<div></div>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "fg", image: "b.svg", position: [0, 0], size: [100, 100], object_fit: "contain" } },
   ],
 }
 """,
@@ -282,7 +282,7 @@ class TestMetadata:
   title: "T",
   scroll_range: 0,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -299,7 +299,7 @@ class TestMetadata:
   scroll_range: 1000,
   initial_scroll_position: 200,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -316,7 +316,7 @@ class TestMetadata:
   scroll_range: 1000,
   scroll_speed: 0.5,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -338,7 +338,7 @@ class TestMetadata:
   scroll_range: 1000,
   snap_positions: [0, 500, 1000],
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -378,7 +378,7 @@ class TestScopedCssPosition:
   scroll_range: 100,
   elements: [
     {
-      element: { id: "L", html: "<p>hi</p>", position: [10, 20], size: [80, 60] },
+      element: { name: "L", html: "<p>hi</p>", position: [10, 20], size: [80, 60] },
       initial: { translate: [5, -10] },
     },
   ],
@@ -397,7 +397,7 @@ class TestScopedCssPosition:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [25, 50], size: [50, 50] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [25, 50], size: [50, 50] } },
   ],
 }
 """,
@@ -416,7 +416,7 @@ class TestScopedCssSize:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [80, 60] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [80, 60] } },
   ],
 }
 """,
@@ -433,7 +433,7 @@ class TestScopedCssSize:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [80, "auto"] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [80, "auto"] } },
   ],
 }
 """,
@@ -450,7 +450,7 @@ class TestScopedCssSize:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: ["auto", 50] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: ["auto", 50] } },
   ],
 }
 """,
@@ -469,7 +469,7 @@ class TestScopedCssTransform:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100], transform_origin: [25, 75] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100], transform_origin: [25, 75] } },
   ],
 }
 """,
@@ -491,7 +491,7 @@ class TestScopedCssTransform:
   scroll_range: 100,
   elements: [
     {
-      element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] },
+      element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] },
       initial: { scale: 2, rotate: 45 },
     },
   ],
@@ -511,7 +511,7 @@ class TestScopedCssTransform:
   scroll_range: 100,
   elements: [
     {
-      element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] },
+      element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] },
       initial: { opacity: 0.5 },
     },
   ],
@@ -532,7 +532,7 @@ class TestScopedCssAssetLayer:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "img.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    { element: { name: "bg", image: "img.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
   ],
 }
 """,
@@ -549,7 +549,7 @@ class TestScopedCssAssetLayer:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "img.jpg", position: [0, 0], size: [100, 120], object_fit: "contain" } },
+    { element: { name: "bg", image: "img.jpg", position: [0, 0], size: [100, 120], object_fit: "contain" } },
   ],
 }
 """,
@@ -566,7 +566,7 @@ class TestScopedCssAssetLayer:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "img.jpg", position: [0, 0], size: [100, "auto"] } },
+    { element: { name: "bg", image: "img.jpg", position: [0, 0], size: [100, "auto"] } },
   ],
 }
 """,
@@ -584,18 +584,18 @@ class TestScopedCssStacking:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bottom", html: "<p>1</p>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "middle", html: "<p>2</p>", position: [0, 0], size: [100, 100] } },
-    { element: { id: "top", html: "<p>3</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "bottom", html: "<p>1</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "middle", html: "<p>2</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "top", html: "<p>3</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
         )
         chunk = _build(src)
         css = chunk.scoped_css
-        bottom_section = css[css.index('data-element-id="bottom"') :]
-        middle_section = css[css.index('data-element-id="middle"') :]
-        top_section = css[css.index('data-element-id="top"') :]
+        bottom_section = css[css.index('data-element-id="0"') :]
+        middle_section = css[css.index('data-element-id="1"') :]
+        top_section = css[css.index('data-element-id="2"') :]
         assert "z-index: 0" in bottom_section.split("}")[0]
         assert "z-index: 1" in middle_section.split("}")[0]
         assert "z-index: 2" in top_section.split("}")[0]

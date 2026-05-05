@@ -23,7 +23,7 @@ def _anim(
 ) -> ElementAnimation:
     return ElementAnimation(
         element=HtmlElement(
-            id="L",
+            name="L",
             html="<p>hi</p>",
             position=(0, 0),
             size=(100, 100),

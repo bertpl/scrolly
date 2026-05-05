@@ -147,13 +147,9 @@ class TestStoryboardScene:
         assert isinstance(scene.elements[1], MarkdownElement)
         assert isinstance(scene.elements[2], ImageElement)
 
-    def test_element_with_id_rejected(self):
-        with pytest.raises(ValidationError, match="must not set 'id'"):
-            StoryboardScene(elements=[_html_element(id="sneaky")])
-
-    def test_element_with_explicit_none_id_accepted(self):
-        scene = StoryboardScene(elements=[_html_element(id=None)])
-        assert scene.elements[0].id is None
+    def test_element_with_name_accepted(self):
+        scene = StoryboardScene(elements=[_html_element(name="my-label")])
+        assert scene.elements[0].name == "my-label"
 
 
 # ── StoryboardIR ─────────────────────────────────────────────────
@@ -188,9 +184,9 @@ class TestStoryboardIR:
         assert len(ir.background) == 1
         assert isinstance(ir.background[0], ImageElement)
 
-    def test_background_element_with_id_rejected(self):
-        with pytest.raises(ValidationError, match="must not set 'id'"):
-            StoryboardIR(**_storyboard(background=[_image_element(id="bad")]))
+    def test_background_element_with_name_accepted(self):
+        ir = StoryboardIR(**_storyboard(background=[_image_element(name="bg-label")]))
+        assert ir.background[0].name == "bg-label"
 
     def test_scene_distance_zero_rejected(self):
         with pytest.raises(ValidationError, match="scene_distance must be > 0"):

@@ -134,16 +134,19 @@ class ScrollimationRenderer(Renderer):
     def can_process(cls, ir: SlideIR) -> bool:
         return isinstance(ir, ScrollimationIR)
 
-    def render(self, ir: SlideIR) -> SlideHTML:
+    def render(self, ir: SlideIR, css_namespace: str = "") -> SlideHTML:
         assert isinstance(ir, ScrollimationIR)
         element_htmls = []
         asset_paths: list[Path] = []
+        prefix = f"{css_namespace}-" if css_namespace else ""
 
         has_mermaid = False
-        for anim in ir.elements:
+        for i, anim in enumerate(ir.elements):
             el = anim.element
             content_html = _render_element_content(el)
-            element_htmls.append(f'<div class="scrollimation-element" data-element-id="{el.id}">{content_html}</div>')
+            element_htmls.append(
+                f'<div class="scrollimation-element" data-element-id="{prefix}{i}">{content_html}</div>'
+            )
             if isinstance(el, ImageElement):
                 asset_paths.append(el.image)
             if isinstance(el, MermaidElement):
@@ -153,7 +156,7 @@ class ScrollimationRenderer(Renderer):
         slide_type = ir.slide_type
         html = f'<div class="slide-type-{slide_type}">\n{inner}\n</div>'
 
-        scoped_css = _build_scoped_css(ir, slide_type)
+        scoped_css = _build_scoped_css(ir, slide_type, prefix)
 
         return SlideHTML(
             title=ir.title,
@@ -180,7 +183,7 @@ def _render_element_content(
     return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS))
 
 
-def _build_scoped_css(slide: ScrollimationIR, slide_type: str) -> str:
+def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> str:
     ns = f".slide-type-{slide_type}"
     rules: list[str] = []
 
@@ -200,10 +203,11 @@ def _build_scoped_css(slide: ScrollimationIR, slide_type: str) -> str:
     has_mermaid = False
     for i, anim in enumerate(slide.elements):
         el = anim.element
-        rules.append(_element_css(ns, anim, i, slide.scroll_range))
+        eid = f"{prefix}{i}"
+        rules.append(_element_css(ns, anim, eid, i, slide.scroll_range))
         if isinstance(el, ImageElement) and el.object_fit:
             rules.append(
-                f'{ns} [data-element-id="{el.id}"] img {{\n'
+                f'{ns} [data-element-id="{eid}"] img {{\n'
                 f"  width: 100%;\n"
                 f"  height: 100%;\n"
                 f"  object-fit: {el.object_fit};\n"
@@ -222,11 +226,12 @@ def _build_scoped_css(slide: ScrollimationIR, slide_type: str) -> str:
 def _element_css(
     ns: str,
     anim: ElementAnimation,
+    eid: str,
     index: int,
     scroll_range: float,
 ) -> str:
     el = anim.element
-    sel = f'{ns} [data-element-id="{el.id}"]'
+    sel = f'{ns} [data-element-id="{eid}"]'
     px, py = el.position
 
     left_val = _position_expr(px, 0, anim, scroll_range)

@@ -56,21 +56,20 @@ class ScrollimationIR(SlideIR, frozen=True):
         if not self.elements:
             raise ValueError("at least one element is required")
 
-        ids = [anim.element.id for anim in self.elements]
-        seen: set[str | None] = set()
-        for lid in ids:
-            if lid is not None and lid in seen:
-                raise ValueError(f"duplicate element id: {lid!r}")
-            if lid is not None:
-                seen.add(lid)
-
+        seen_names: set[str] = set()
         for anim in self.elements:
+            name = anim.element.name
+            if name is not None:
+                if name in seen_names:
+                    raise ValueError(f"duplicate element name: {name!r}")
+                seen_names.add(name)
+
+        for i, anim in enumerate(self.elements):
+            label = f"'{anim.element.name}'" if anim.element.name else f"[{i}]"
             for kf in anim.keyframes:
                 if kf.at < 0 or kf.at > self.scroll_range:
-                    raise ValueError(
-                        f"element {anim.element.id!r}: keyframe at={kf.at} is outside [0, {self.scroll_range}]"
-                    )
-            self._check_duplicate_keyframes(anim)
+                    raise ValueError(f"element {label}: keyframe at={kf.at} is outside [0, {self.scroll_range}]")
+            self._check_duplicate_keyframes(anim, label)
 
         for pos in self.snap_positions:
             if pos < 0 or pos > self.scroll_range:
@@ -79,7 +78,7 @@ class ScrollimationIR(SlideIR, frozen=True):
         return self
 
     @staticmethod
-    def _check_duplicate_keyframes(anim: ElementAnimation) -> None:
+    def _check_duplicate_keyframes(anim: ElementAnimation, label: str) -> None:
         props = ("opacity", "translate", "scale", "rotate")
         for prop in props:
             ats: list[float] = []
@@ -89,5 +88,5 @@ class ScrollimationIR(SlideIR, frozen=True):
             seen: set[float] = set()
             for at in ats:
                 if at in seen:
-                    raise ValueError(f"element {anim.element.id!r}: duplicate keyframe at={at} for property {prop!r}")
+                    raise ValueError(f"element {label}: duplicate keyframe at={at} for property {prop!r}")
                 seen.add(at)
