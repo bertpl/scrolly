@@ -23,7 +23,7 @@ class SlideElement(BaseModel, frozen=True):
     name: str | None = None
     position: tuple[float, float]
     size: tuple[SizeDim, SizeDim]
-    transform_origin: tuple[float, float] = (50.0, 50.0)
+    anchor: tuple[float, float] = (0.0, 0.0)
 
     @model_validator(mode="after")
     def _validate_size(self) -> SlideElement:

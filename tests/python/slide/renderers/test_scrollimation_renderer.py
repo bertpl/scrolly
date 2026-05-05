@@ -461,7 +461,7 @@ class TestScopedCssSize:
 
 
 class TestScopedCssTransform:
-    def test_transform_origin(self, tmp_path: Path) -> None:
+    def test_anchor_sets_transform_origin_and_translate(self, tmp_path: Path) -> None:
         src = _write(
             tmp_path / "s.scrollimation.json",
             """\
@@ -469,18 +469,20 @@ class TestScopedCssTransform:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100], transform_origin: [25, 75] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100], anchor: [50, 50] } },
   ],
 }
 """,
         )
         chunk = _build(src)
-        assert "transform-origin: 25% 75%" in chunk.scoped_css
+        assert "transform-origin: 50% 50%" in chunk.scoped_css
+        assert "translate(-50%, -50%)" in chunk.scoped_css
 
-    def test_default_transform_origin_center(self, tmp_path: Path) -> None:
+    def test_default_anchor_no_translate(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
         chunk = _build(src)
-        assert "transform-origin: 50% 50%" in chunk.scoped_css
+        assert "transform-origin: 0% 0%" in chunk.scoped_css
+        assert "translate(" not in chunk.scoped_css
 
     def test_initial_scale_and_rotate(self, tmp_path: Path) -> None:
         src = _write(

@@ -61,13 +61,13 @@ class TestSlideElement:
         el = HtmlElement(**_html(name="myname"))
         assert el.name == "myname"
 
-    def test_default_transform_origin(self):
+    def test_default_anchor(self):
         el = HtmlElement(**_html())
-        assert el.transform_origin == (50.0, 50.0)
+        assert el.anchor == (0.0, 0.0)
 
-    def test_custom_transform_origin(self):
-        el = HtmlElement(**_html(transform_origin=[0, 100]))
-        assert el.transform_origin == (0, 100)
+    def test_custom_anchor(self):
+        el = HtmlElement(**_html(anchor=[50, 50]))
+        assert el.anchor == (50, 50)
 
     def test_extra_field_rejected(self):
         with pytest.raises(ValidationError, match="Extra inputs"):

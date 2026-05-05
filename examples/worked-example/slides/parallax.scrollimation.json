@@ -90,13 +90,15 @@
     },
 
     // Tall badge — demonstrates auto-height image sizing (width 20%, aspect ratio
-    // 10:1 gives height 200% — top and bottom extend well outside the slide)
+    // 10:1 gives height 200% — top and bottom extend well outside the slide).
+    // anchor: [50, 50] centers the badge at position [50, 50] (slide center).
     {
       element: {
         name: "badge",
         image: "tall-badge.svg",
-        position: [40, -50],
+        position: [50, 50],
         size: [20, "auto"],
+        anchor: [50, 50],
       },
       initial: { opacity: 0 },
       keyframes: [
@@ -105,14 +107,16 @@
       ],
     },
 
-    // Markdown element — appears at the end over the gradient background
+    // Markdown element — appears at the end over the gradient background.
+    // anchor: [50, 0] centers horizontally at position x=50 (middle of slide).
     {
       element: {
         name: "attribution",
         markdown: "*Scroll-driven animation — v0.0.16*",
         color: "rgba(255,255,255,0.8)",
-        position: [25, 80],
+        position: [50, 80],
         size: [50, "auto"],
+        anchor: [50, 0],
       },
       initial: { opacity: 0 },
       keyframes: [

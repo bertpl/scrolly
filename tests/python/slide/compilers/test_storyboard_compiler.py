@@ -191,15 +191,15 @@ class TestElementTypes:
         assert result.elements[0].element.position == (25, 50)
         assert result.elements[0].element.size == (60, 40)
 
-    def test_transform_origin_preserved(self):
+    def test_anchor_preserved(self):
         ir = _storyboard(
             scenes=[
-                StoryboardScene(elements=[_html_element(transform_origin=(0, 0))]),
+                StoryboardScene(elements=[_html_element(anchor=(50, 50))]),
                 StoryboardScene(elements=[_html_element()]),
             ]
         )
         result = compile_storyboard(ir)
-        assert result.elements[0].element.transform_origin == (0, 0)
+        assert result.elements[0].element.anchor == (50, 50)
 
 
 # ── Opacity keyframes — no hold ──────────────────────────────────

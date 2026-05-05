@@ -53,7 +53,7 @@ def _html_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default HtmlElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"name", "html", "position", "size", "transform_origin"}
+    element_fields = {"name", "html", "position", "size", "anchor"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -66,7 +66,7 @@ def _image_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default ImageElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"name", "image", "position", "size", "object_fit", "transform_origin"}
+    element_fields = {"name", "image", "position", "size", "object_fit", "anchor"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -79,7 +79,7 @@ def _md_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default MarkdownElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"name", "markdown", "position", "size", "transform_origin", "color"}
+    element_fields = {"name", "markdown", "position", "size", "anchor", "color"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -97,7 +97,7 @@ def _mermaid_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default MermaidElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"name", "mermaid", "position", "size", "transform_origin"}
+    element_fields = {"name", "mermaid", "position", "size", "anchor"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -164,7 +164,7 @@ class TestHtmlElement:
 
     def test_defaults(self) -> None:
         element = HtmlElement(**_html_element())
-        assert element.transform_origin == (50.0, 50.0)
+        assert element.anchor == (0.0, 0.0)
 
     def test_missing_html_rejected(self) -> None:
         data = _html_element()

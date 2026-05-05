@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `anchor` field on `SlideElement` (replaces `transform_origin`). Controls both the
+  position reference point and the rotation/scale pivot. Default `[0, 0]` (top-left)
+  preserves current positioning behavior.
+
 ### Changed
 
 ### Deprecated
