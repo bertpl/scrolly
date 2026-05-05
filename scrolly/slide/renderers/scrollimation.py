@@ -247,11 +247,17 @@ def _element_css(
     width = "auto" if w == "auto" else f"{_num(w)}%"
     height = "auto" if h == "auto" else f"{_num(h)}%"
 
-    ox, oy = el.transform_origin
+    ax, ay = el.anchor
 
     opacity_val = _scalar_expr("opacity", anim, scroll_range)
     scale_val = _scalar_expr("scale", anim, scroll_range)
     rotate_val = _scalar_expr("rotate", anim, scroll_range)
+
+    anchor_translate = ""
+    if ax != 0 or ay != 0:
+        tx = f"-{_num(ax)}%" if ax != 0 else "0%"
+        ty = f"-{_num(ay)}%" if ay != 0 else "0%"
+        anchor_translate = f"translate({tx}, {ty}) "
 
     color_line = ""
     if isinstance(el, MarkdownElement):
@@ -263,8 +269,8 @@ def _element_css(
         f"  top: {top_val};\n"
         f"  width: {width};\n"
         f"  height: {height};\n"
-        f"  transform-origin: {_num(ox)}% {_num(oy)}%;\n"
-        f"  transform: scale({scale_val}) rotate({rotate_val});\n"
+        f"  transform-origin: {_num(ax)}% {_num(ay)}%;\n"
+        f"  transform: {anchor_translate}scale({scale_val}) rotate({rotate_val});\n"
         f"  opacity: {opacity_val};\n"
         f"  z-index: {index};\n"
         f"{color_line}"
