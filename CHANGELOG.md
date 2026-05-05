@@ -5,24 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.2 (2026-05-05)
 
 ### Added
 
 - Animatable `anchor` via keyframes. Enables viewport-independent panning over
   oversized elements (e.g. scrolling through a tall image). Mutually exclusive
   with the element-level `anchor` field — set in one place only.
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.1.1 (2026-05-05)
 
 ### Added
