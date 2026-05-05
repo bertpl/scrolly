@@ -518,6 +518,28 @@ class TestScopedCssTransform:
         assert "transform-origin: 0% 0%" in chunk.scoped_css
         assert "translate(" not in chunk.scoped_css
 
+    def test_animated_anchor_generates_calc_expressions(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 1000,
+  elements: [
+    {
+      element: { name: "L", html: "<p>hi</p>", position: [50, 50], size: [100, 100] },
+      initial: { anchor: [50, 0] },
+      keyframes: [{ at: 1000, anchor: [50, 100] }],
+    },
+  ],
+}
+""",
+        )
+        chunk = _build(src)
+        assert "calc(" in chunk.scoped_css
+        assert "transform-origin:" in chunk.scoped_css
+        assert "-1 *" in chunk.scoped_css
+
     def test_initial_scale_and_rotate(self, tmp_path: Path) -> None:
         src = _write(
             tmp_path / "s.scrollimation.json",
