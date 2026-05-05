@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Scroll thumb sizing: increased default to 60px, capped at 2/3 of average snap spacing
+  when many snap positions exist, with a 10px floor.
 - Image elements with one `"auto"` size dimension now render correctly. The `img` CSS
   rule is always emitted (`width: 100%; height: 100%; display: block`), with `object-fit`
   included only when set.

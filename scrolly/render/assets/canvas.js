@@ -224,7 +224,18 @@
   // ---- ScrollManager --------------------------------------------------------
 
   class ScrollManager {
-    static MIN_THUMB_HEIGHT = 40;
+    static DEFAULT_THUMB_HEIGHT = 60;
+    static MIN_THUMB_HEIGHT = 10;
+
+    static computeThumbHeight(baseHeight, trackHeight, numSnaps) {
+      let h = baseHeight;
+      if (numSnaps > 1) {
+        h = Math.min(h, (2 / 3) * (trackHeight / numSnaps));
+      }
+      h = Math.max(h, ScrollManager.MIN_THUMB_HEIGHT);
+      h = Math.min(h, trackHeight);
+      return h;
+    }
 
     constructor(scrollConfig, containerFn) {
       this._config = scrollConfig;
@@ -282,11 +293,12 @@
         const chunk = container.querySelector(".chunk");
         if (!subcanvas || !chunk) return null;
         const ratio = subcanvas.clientHeight / chunk.scrollHeight;
-        thumbHeight = Math.max(ScrollManager.MIN_THUMB_HEIGHT, trackHeight * ratio);
+        thumbHeight = Math.max(ScrollManager.DEFAULT_THUMB_HEIGHT, trackHeight * ratio);
       } else {
-        thumbHeight = ScrollManager.MIN_THUMB_HEIGHT;
+        thumbHeight = ScrollManager.DEFAULT_THUMB_HEIGHT;
       }
-      thumbHeight = Math.min(thumbHeight, trackHeight);
+      const numSnaps = (cfg && cfg.snapPositions) ? cfg.snapPositions.length : 0;
+      thumbHeight = ScrollManager.computeThumbHeight(thumbHeight, trackHeight, numSnaps);
       const maxOffset = trackHeight - thumbHeight;
       return { trackEl, trackHeight, thumbHeight, maxOffset };
     }
@@ -1080,6 +1092,7 @@
 
   if (typeof exports !== "undefined") {
     exports.CanvasGeometry = CanvasGeometry;
+    exports.ScrollManager = ScrollManager;
     exports.SnapManager = SnapManager;
     exports.EdgeArrows = EdgeArrows;
     exports.BezierOverlay = BezierOverlay;
