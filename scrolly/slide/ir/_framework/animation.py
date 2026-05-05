@@ -19,23 +19,22 @@ class InitialState(BaseModel, frozen=True):
     Seeds the per-property timeline when no keyframe exists at ``at: 0``.
     """
 
-    opacity: float = Field(default=1.0, description="Initial opacity. 0.0 = invisible, 1.0 = fully visible.")
+    opacity: float = Field(default=1.0, description="Opacity at scroll position 0. 0.0 = invisible, 1.0 = fully visible.")
     translate: tuple[float, float] = Field(
         default=(0.0, 0.0),
         description=(
-            "Initial translation offset as [dx%, dy%] of the slide viewport. "
+            "Translation offset at scroll position 0 as [dx%, dy%] of the slide viewport. "
             "Added to position. Positive x = rightward, positive y = downward."
         ),
     )
-    scale: float = Field(default=1.0, description="Initial scale factor. 1.0 = original size.")
-    rotate: float = Field(default=0.0, description="Initial rotation in degrees. Positive = clockwise.")
+    scale: float = Field(default=1.0, description="Scale factor at scroll position 0. 1.0 = original size.")
+    rotate: float = Field(default=0.0, description="Rotation in degrees at scroll position 0. Positive = clockwise.")
     anchor: tuple[float, float] | None = Field(
         default=None,
         description=(
             "Anchor point at scroll position 0 as [x%, y%] of the element box. "
             "[0, 0] = top-left, [50, 50] = center, [100, 100] = bottom-right. "
-            "Mutually exclusive with the element-level anchor field. "
-            "Note: value is at scroll position 0, not at initial_scroll_position."
+            "Mutually exclusive with the element-level anchor field."
         ),
     )
 
