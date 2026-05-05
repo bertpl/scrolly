@@ -92,6 +92,7 @@ class ScrollimationIR(SlideIR, frozen=True):
                 if kf.at < 0 or kf.at > self.scroll_range:
                     raise ValueError(f"element {label}: keyframe at={kf.at} is outside [0, {self.scroll_range}]")
             self._check_duplicate_keyframes(anim, label)
+            self._check_anchor_exclusivity(anim, label)
 
         for pos in self.snap_positions:
             if pos < 0 or pos > self.scroll_range:
@@ -100,8 +101,15 @@ class ScrollimationIR(SlideIR, frozen=True):
         return self
 
     @staticmethod
+    def _check_anchor_exclusivity(anim: ElementAnimation, label: str) -> None:
+        has_animated = anim.initial.anchor is not None or any(kf.anchor is not None for kf in anim.keyframes)
+        has_element_level = anim.element.anchor != (0.0, 0.0)
+        if has_animated and has_element_level:
+            raise ValueError(f"element {label}: anchor must be set on the element OR in initial/keyframes, not both")
+
+    @staticmethod
     def _check_duplicate_keyframes(anim: ElementAnimation, label: str) -> None:
-        props = ("opacity", "translate", "scale", "rotate")
+        props = ("opacity", "translate", "scale", "rotate", "anchor")
         for prop in props:
             ats: list[float] = []
             for kf in anim.keyframes:

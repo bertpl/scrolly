@@ -346,6 +346,40 @@ class TestScrollimationIR:
         with pytest.raises(ValidationError, match="duplicate keyframe"):
             ScrollimationIR(**_slide(elements=[anim]))
 
+    def test_anchor_exclusivity_rejects_both(self) -> None:
+        anim = _anim(
+            _html_element(anchor=[50, 50]),
+            initial={"anchor": [50, 0]},
+        )
+        with pytest.raises(ValidationError, match="anchor must be set on the element OR"):
+            ScrollimationIR(**_slide(elements=[anim]))
+
+    def test_anchor_exclusivity_element_only_accepted(self) -> None:
+        anim = _anim(_html_element(anchor=[50, 50]))
+        slide = ScrollimationIR(**_slide(elements=[anim]))
+        assert slide.elements[0].element.anchor == (50, 50)
+
+    def test_anchor_exclusivity_animated_only_accepted(self) -> None:
+        anim = _anim(
+            _html_element(),
+            initial={"anchor": [50, 0]},
+            keyframes=[{"at": 500, "anchor": [50, 100]}],
+        )
+        slide = ScrollimationIR(**_slide(elements=[anim]))
+        assert slide.elements[0].initial.anchor == (50, 0)
+
+    def test_duplicate_anchor_keyframes_rejected(self) -> None:
+        anim = _anim(
+            _html_element(),
+            initial={"anchor": [50, 0]},
+            keyframes=[
+                {"at": 100, "anchor": [50, 30]},
+                {"at": 100, "anchor": [50, 60]},
+            ],
+        )
+        with pytest.raises(ValidationError, match="duplicate keyframe"):
+            ScrollimationIR(**_slide(elements=[anim]))
+
     def test_same_at_different_properties_allowed(self) -> None:
         anim = _html_anim(
             keyframes=[

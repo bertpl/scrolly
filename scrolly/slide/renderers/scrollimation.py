@@ -80,6 +80,40 @@ def expand_translate_timelines(
     return kfs_x, kfs_y
 
 
+def expand_anchor_timelines(
+    anim: ElementAnimation,
+    scroll_range: float,
+    element_anchor: tuple[float, float],
+) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
+    """Expand anchor into separate x and y timelines, seeded from element or initial."""
+    kfs_x: list[tuple[float, float]] = []
+    kfs_y: list[tuple[float, float]] = []
+    for kf in anim.keyframes:
+        if kf.anchor is not None:
+            kfs_x.append((kf.at, kf.anchor[0]))
+            kfs_y.append((kf.at, kf.anchor[1]))
+    kfs_x.sort(key=lambda x: x[0])
+    kfs_y.sort(key=lambda x: x[0])
+
+    if anim.initial.anchor is not None:
+        ix, iy = anim.initial.anchor
+    else:
+        ix, iy = element_anchor
+
+    if not kfs_x or kfs_x[0][0] > 0:
+        kfs_x.insert(0, (0.0, ix))
+    if not kfs_y or kfs_y[0][0] > 0:
+        kfs_y.insert(0, (0.0, iy))
+
+    if scroll_range > 0:
+        if kfs_x[-1][0] < scroll_range:
+            kfs_x.append((scroll_range, kfs_x[-1][1]))
+        if kfs_y[-1][0] < scroll_range:
+            kfs_y.append((scroll_range, kfs_y[-1][1]))
+
+    return kfs_x, kfs_y
+
+
 def ramp_expr(kfs: list[tuple[float, float]]) -> str | None:
     """Generate a CSS calc()-compatible sum-of-ramps expression.
 
@@ -247,17 +281,23 @@ def _element_css(
     width = "auto" if w == "auto" else f"{_num(w)}%"
     height = "auto" if h == "auto" else f"{_num(h)}%"
 
-    ax, ay = el.anchor
-
     opacity_val = _scalar_expr("opacity", anim, scroll_range)
     scale_val = _scalar_expr("scale", anim, scroll_range)
     rotate_val = _scalar_expr("rotate", anim, scroll_range)
 
-    anchor_translate = ""
-    if ax != 0 or ay != 0:
-        tx = f"-{_num(ax)}%" if ax != 0 else "0%"
-        ty = f"-{_num(ay)}%" if ay != 0 else "0%"
-        anchor_translate = f"translate({tx}, {ty}) "
+    anchor_animated = anim.initial.anchor is not None or any(kf.anchor is not None for kf in anim.keyframes)
+    if anchor_animated:
+        origin_x, origin_y, anchor_translate = _animated_anchor_exprs(anim, scroll_range, el.anchor)
+    else:
+        ax, ay = el.anchor
+        origin_x = f"{_num(ax)}%"
+        origin_y = f"{_num(ay)}%"
+        if ax != 0 or ay != 0:
+            tx = f"-{_num(ax)}%" if ax != 0 else "0%"
+            ty = f"-{_num(ay)}%" if ay != 0 else "0%"
+            anchor_translate = f"translate({tx}, {ty}) "
+        else:
+            anchor_translate = ""
 
     markdown_lines = ""
     if isinstance(el, MarkdownElement):
@@ -271,13 +311,41 @@ def _element_css(
         f"  top: {top_val};\n"
         f"  width: {width};\n"
         f"  height: {height};\n"
-        f"  transform-origin: {_num(ax)}% {_num(ay)}%;\n"
+        f"  transform-origin: {origin_x} {origin_y};\n"
         f"  transform: {anchor_translate}scale({scale_val}) rotate({rotate_val});\n"
         f"  opacity: {opacity_val};\n"
         f"  z-index: {index};\n"
         f"{markdown_lines}"
         f"}}"
     )
+
+
+def _animated_anchor_exprs(
+    anim: ElementAnimation,
+    scroll_range: float,
+    element_anchor: tuple[float, float],
+) -> tuple[str, str, str]:
+    """Generate CSS expressions for an animated anchor (transform-origin + translate)."""
+    ax_kfs, ay_kfs = expand_anchor_timelines(anim, scroll_range, element_anchor)
+    ax_expr = ramp_expr(ax_kfs)
+    ay_expr = ramp_expr(ay_kfs)
+
+    if ax_expr is None:
+        origin_x = f"{_num(ax_kfs[0][1])}%"
+        tx = f"-{_num(ax_kfs[0][1])}%" if ax_kfs[0][1] != 0 else "0%"
+    else:
+        origin_x = f"calc({ax_expr} * 1%)"
+        tx = f"calc(-1 * ({ax_expr}) * 1%)"
+
+    if ay_expr is None:
+        origin_y = f"{_num(ay_kfs[0][1])}%"
+        ty = f"-{_num(ay_kfs[0][1])}%" if ay_kfs[0][1] != 0 else "0%"
+    else:
+        origin_y = f"calc({ay_expr} * 1%)"
+        ty = f"calc(-1 * ({ay_expr}) * 1%)"
+
+    anchor_translate = f"translate({tx}, {ty}) "
+    return origin_x, origin_y, anchor_translate
 
 
 def _scalar_expr(

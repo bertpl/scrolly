@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Animatable `anchor` via keyframes. Enables viewport-independent panning over
+  oversized elements (e.g. scrolling through a tall image). Mutually exclusive
+  with the element-level `anchor` field — set in one place only.
+
 ### Changed
 
 ### Deprecated
