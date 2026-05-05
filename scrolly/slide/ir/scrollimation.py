@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar, Literal, Self
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from scrolly.slide.ir import (
     ElementAnimation,
@@ -26,13 +26,35 @@ class ScrollimationIR(SlideIR, frozen=True):
     SUFFIX: ClassVar[str] = ".scrollimation.json"
     DESCRIPTION: ClassVar[str] = "Scroll-driven animation"
 
-    title: str
-    scroll_range: float
-    initial_scroll_position: float = 0
-    scroll_speed: float = 1.0
-    easing: Literal["linear"] = "linear"
-    snap_positions: tuple[int, ...] = ()
-    elements: list[ElementAnimation]
+    title: str = Field(description="Human-readable slide title, shown in navigation UI.")
+    scroll_range: float = Field(
+        description=(
+            "Total scrollable distance in abstract scroll units. "
+            "Keyframe 'at' values and snap positions reference this range. "
+            "A slide with scroll_range=0 has no scroll behavior."
+        ),
+    )
+    initial_scroll_position: float = Field(
+        default=0,
+        description="Scroll position the slide starts at on first visit. Must be within [0, scroll_range].",
+    )
+    scroll_speed: float = Field(
+        default=1.0,
+        description="Scroll speed multiplier. Values > 1 scroll faster, < 1 scroll slower.",
+    )
+    easing: Literal["linear"] = Field(
+        default="linear",
+        description="Easing function for scroll-driven animation. Currently only 'linear' is supported.",
+    )
+    snap_positions: tuple[int, ...] = Field(
+        default=(),
+        description=(
+            "Scroll positions where the view settles after scrolling stops. Values must be within [0, scroll_range]."
+        ),
+    )
+    elements: list[ElementAnimation] = Field(
+        description="The animated elements in this slide, rendered in array order (first = bottom, last = top).",
+    )
 
     @classmethod
     def from_file(cls, source_path: Path) -> Self:

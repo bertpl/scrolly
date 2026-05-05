@@ -29,7 +29,9 @@ class StoryboardScene(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    elements: list[ImageElement | HtmlElement | MarkdownElement | MermaidElement]
+    elements: list[ImageElement | HtmlElement | MarkdownElement | MermaidElement] = Field(
+        description="Elements visible during this scene. Cross-faded as a group.",
+    )
 
     @model_validator(mode="after")
     def _validate(self) -> StoryboardScene:
@@ -44,11 +46,25 @@ class StoryboardIR(SlideIR, frozen=True):
     SUFFIX: ClassVar[str] = ".storyboard.json"
     DESCRIPTION: ClassVar[str] = "Scene-based cross-fade"
 
-    title: str
-    scene_distance: int
-    hold: int = 0
-    background: list[ImageElement | HtmlElement | MarkdownElement | MermaidElement] = Field(default_factory=list)
-    scenes: list[StoryboardScene]
+    title: str = Field(description="Human-readable slide title, shown in navigation UI.")
+    scene_distance: int = Field(
+        description="Scroll distance (in abstract units) between consecutive scene positions.",
+    )
+    hold: int = Field(
+        default=0,
+        description=(
+            "Dead zone in scroll units on each side of a scene position. "
+            "During hold, the scene is fully visible (opacity 1). "
+            "Must satisfy: 2 * hold < scene_distance."
+        ),
+    )
+    background: list[ImageElement | HtmlElement | MarkdownElement | MermaidElement] = Field(
+        default_factory=list,
+        description="Elements always visible at full opacity behind all scenes.",
+    )
+    scenes: list[StoryboardScene] = Field(
+        description="Ordered list of scenes. Each scene cross-fades to the next as the user scrolls.",
+    )
 
     @model_validator(mode="after")
     def _validate(self) -> StoryboardIR:

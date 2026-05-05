@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 SizeDim = float | Literal["auto"]
 
@@ -20,10 +20,33 @@ class SlideElement(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str | None = None
-    position: tuple[float, float]
-    size: tuple[SizeDim, SizeDim]
-    anchor: tuple[float, float] = (0.0, 0.0)
+    name: str | None = Field(
+        default=None,
+        description="Optional human-readable label. Used in error messages only, not for rendering.",
+    )
+    position: tuple[float, float] = Field(
+        description=(
+            "Element position as [x%, y%] of the slide viewport. "
+            "[0, 0] = top-left corner, [100, 100] = bottom-right corner. "
+            "The anchor point of the element is placed at this position."
+        ),
+    )
+    size: tuple[SizeDim, SizeDim] = Field(
+        description=(
+            "Element dimensions as [width%, height%] of the slide viewport. "
+            'Use "auto" for one dimension to preserve aspect ratio (images) or '
+            "size to content (text). At least one dimension must be numeric."
+        ),
+    )
+    anchor: tuple[float, float] = Field(
+        default=(0.0, 0.0),
+        description=(
+            "Reference point within the element as [x%, y%] of the element's own box. "
+            "[0, 0] = top-left corner placed at position (default), "
+            "[50, 50] = center placed at position. "
+            "Also serves as the pivot for scale and rotate transforms."
+        ),
+    )
 
     @model_validator(mode="after")
     def _validate_size(self) -> SlideElement:
@@ -42,8 +65,18 @@ class SlideElement(BaseModel, frozen=True):
 class ImageElement(SlideElement, frozen=True):
     """An element backed by an external image file (PNG, JPEG, SVG, etc.)."""
 
-    image: Path
-    object_fit: Literal["cover", "contain", "fill"] | None = None
+    image: Path = Field(
+        description="Path to the image file, relative to the slide source file.",
+    )
+    object_fit: Literal["cover", "contain", "fill"] | None = Field(
+        default=None,
+        description=(
+            "How the image fills its box. Required when both size dimensions are numeric, "
+            'forbidden when one is "auto". '
+            '"cover" fills the box (may crop), "contain" fits inside (may letterbox), '
+            '"fill" stretches to fill exactly.'
+        ),
+    )
 
     @model_validator(mode="after")
     def _validate_object_fit(self) -> ImageElement:
@@ -64,17 +97,20 @@ class ImageElement(SlideElement, frozen=True):
 class HtmlElement(SlideElement, frozen=True):
     """An element with inline HTML content."""
 
-    html: str
+    html: str = Field(description="Raw HTML content, inserted verbatim into the slide.")
 
 
 class MarkdownElement(SlideElement, frozen=True):
     """An element with markdown content, rendered to HTML at build time."""
 
-    markdown: str
-    color: str = "#808080"
+    markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
+    color: str = Field(
+        default="#808080",
+        description="CSS color value for the rendered text.",
+    )
 
 
 class MermaidElement(SlideElement, frozen=True):
     """An element with mermaid diagram source, rendered client-side."""
 
-    mermaid: str
+    mermaid: str = Field(description="Mermaid diagram source code, rendered client-side by mermaid.js.")
