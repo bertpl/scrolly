@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 800">
+  <rect width="80" height="800" rx="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <text x="40" y="30" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.7)">invisible</text>
+  <text x="40" y="380" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.7)">auto</text>
+  <text x="40" y="400" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.7)">height</text>
+  <text x="40" y="420" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.7)">demo</text>
+  <line x1="20" y1="450" x2="60" y2="450" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  <text x="40" y="475" text-anchor="middle" font-family="system-ui" font-size="8" fill="rgba(255,255,255,0.5)">10:1</text>
+  <text x="40" y="780" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.7)">invisible</text>
+</svg>
