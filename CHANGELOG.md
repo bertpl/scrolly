@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.1 (2026-05-05)
 
 ### Added
 
@@ -17,12 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `text_align` field on `MarkdownElement` (`"left"` | `"center"` | `"right"`,
   default `"left"`). Enables horizontal text alignment within the element box.
 
-### Changed
-
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Scroll thumb sizing: increased default to 60px, capped at 2/3 of average snap spacing
@@ -33,9 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Element `id` field renamed to `name` (optional, for error messages only). CSS targeting
   now uses deterministic index-based identifiers, fixing a bug where multiple elements
   without an `id` all received `data-element-id="None"` causing CSS rules to collide.
-
-### Security
-
 ## 0.1.0 (2026-05-04)
 
 ### Added
