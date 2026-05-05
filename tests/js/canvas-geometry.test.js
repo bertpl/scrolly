@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { CanvasGeometry, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, resolveTarget } = require("../../scrolly/render/assets/canvas.js");
+const { CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, resolveTarget } = require("../../scrolly/render/assets/canvas.js");
 
 function _geo(slides, fanSpacingFactor) {
   return new CanvasGeometry({
@@ -852,5 +852,32 @@ describe("SnapManager.easeOutQuad", () => {
 
   it("returns 0.75 at t=0.5", () => {
     expect(SnapManager.easeOutQuad(0.5)).toBeCloseTo(0.75);
+  });
+});
+
+describe("ScrollManager.computeThumbHeight", () => {
+  it("returns base height when no snaps", () => {
+    expect(ScrollManager.computeThumbHeight(60, 400, 0)).toBe(60);
+  });
+
+  it("returns base height with 1 snap (no cap applies)", () => {
+    expect(ScrollManager.computeThumbHeight(60, 400, 1)).toBe(60);
+  });
+
+  it("caps at 2/3 * trackHeight/numSnaps for many snaps", () => {
+    // 20 snaps, track 400px → cap = (2/3) * (400/20) = 13.33
+    const result = ScrollManager.computeThumbHeight(60, 400, 20);
+    expect(result).toBeCloseTo((2 / 3) * (400 / 20));
+  });
+
+  it("floors at MIN_THUMB_HEIGHT", () => {
+    // 100 snaps, track 400px → cap = (2/3) * (400/100) = 2.67 → clamped to 10
+    const result = ScrollManager.computeThumbHeight(60, 400, 100);
+    expect(result).toBe(ScrollManager.MIN_THUMB_HEIGHT);
+  });
+
+  it("clamps to trackHeight when track is very short", () => {
+    const result = ScrollManager.computeThumbHeight(60, 30, 0);
+    expect(result).toBe(30);
   });
 });
