@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `anchor` field on `SlideElement` (replaces `transform_origin`). Controls both the
   position reference point and the rotation/scale pivot. Default `[0, 0]` (top-left)
   preserves current positioning behavior.
+- Field descriptions on all IR model fields. `scrolly schema <type>` now includes
+  semantic information (units, coordinate system, validation rules) for every field.
 
 ### Changed
 

@@ -19,25 +19,46 @@ class InitialState(BaseModel, frozen=True):
     Seeds the per-property timeline when no keyframe exists at ``at: 0``.
     """
 
-    opacity: float = 1.0
-    translate: tuple[float, float] = (0.0, 0.0)
-    scale: float = 1.0
-    rotate: float = 0.0
+    opacity: float = Field(default=1.0, description="Initial opacity. 0.0 = invisible, 1.0 = fully visible.")
+    translate: tuple[float, float] = Field(
+        default=(0.0, 0.0),
+        description=(
+            "Initial translation offset as [dx%, dy%] of the slide viewport. "
+            "Added to position. Positive x = rightward, positive y = downward."
+        ),
+    )
+    scale: float = Field(default=1.0, description="Initial scale factor. 1.0 = original size.")
+    rotate: float = Field(default=0.0, description="Initial rotation in degrees. Positive = clockwise.")
 
 
 class Keyframe(BaseModel, frozen=True):
     """A sparse keyframe — only the properties present have a value at this point."""
 
-    at: float
-    opacity: float | None = None
-    translate: tuple[float, float] | None = None
-    scale: float | None = None
-    rotate: float | None = None
+    at: float = Field(description="Scroll position (in scroll-range units) where this keyframe takes effect.")
+    opacity: float | None = Field(default=None, description="Opacity at this scroll position (0.0 to 1.0).")
+    translate: tuple[float, float] | None = Field(
+        default=None,
+        description="Translation offset as [dx%, dy%] of the slide viewport at this scroll position.",
+    )
+    scale: float | None = Field(default=None, description="Scale factor at this scroll position.")
+    rotate: float | None = Field(default=None, description="Rotation in degrees at this scroll position.")
 
 
 class ElementAnimation(BaseModel, frozen=True):
     """A slide element wrapped with scroll-driven animation."""
 
-    element: ImageElement | HtmlElement | MarkdownElement | MermaidElement
-    initial: InitialState = Field(default_factory=InitialState)
-    keyframes: list[Keyframe] = Field(default_factory=list)
+    element: ImageElement | HtmlElement | MarkdownElement | MermaidElement = Field(
+        description="The visual element to animate.",
+    )
+    initial: InitialState = Field(
+        default_factory=InitialState,
+        description="Property values at scroll position 0, before any keyframes take effect.",
+    )
+    keyframes: list[Keyframe] = Field(
+        default_factory=list,
+        description=(
+            "Sparse keyframes defining property values at specific scroll positions. "
+            "Properties not present in a keyframe are unaffected at that point. "
+            "The renderer interpolates linearly between keyframes."
+        ),
+    )
