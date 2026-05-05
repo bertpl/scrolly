@@ -90,13 +90,15 @@
     },
 
     // Tall badge — demonstrates auto-height image sizing (width 20%, aspect ratio
-    // 10:1 gives height 200% — top and bottom extend well outside the slide)
+    // 10:1 gives height 200% — top and bottom extend well outside the slide).
+    // anchor: [50, 50] centers the badge at position [50, 50] (slide center).
     {
       element: {
         name: "badge",
         image: "tall-badge.svg",
-        position: [40, -50],
+        position: [50, 50],
         size: [20, "auto"],
+        anchor: [50, 50],
       },
       initial: { opacity: 0 },
       keyframes: [
