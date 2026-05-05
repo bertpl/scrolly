@@ -205,12 +205,18 @@ def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> s
         el = anim.element
         eid = f"{prefix}{i}"
         rules.append(_element_css(ns, anim, eid, i, slide.scroll_range))
-        if isinstance(el, ImageElement) and el.object_fit:
+        if isinstance(el, ImageElement):
+            # width/height 100% works for all three valid size combinations:
+            #  - both numeric + object_fit: img fills container, object-fit handles aspect ratio
+            #  - width numeric + height "auto": container height is auto, so img height 100%
+            #    resolves to auto (CSS circular dependency rule) — fills width, aspect ratio
+            #  - width "auto" + height numeric: symmetric — img width resolves to auto
+            obj_fit_line = f"  object-fit: {el.object_fit};\n" if el.object_fit else ""
             rules.append(
                 f'{ns} [data-element-id="{eid}"] img {{\n'
                 f"  width: 100%;\n"
                 f"  height: 100%;\n"
-                f"  object-fit: {el.object_fit};\n"
+                f"{obj_fit_line}"
                 f"  display: block;\n"
                 f"}}"
             )

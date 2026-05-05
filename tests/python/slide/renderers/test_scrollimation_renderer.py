@@ -557,7 +557,7 @@ class TestScopedCssAssetLayer:
         chunk = _build(src)
         assert "object-fit: contain" in chunk.scoped_css
 
-    def test_no_object_fit_rule_for_auto_size(self, tmp_path: Path) -> None:
+    def test_auto_size_emits_img_rule_without_object_fit(self, tmp_path: Path) -> None:
         _write(tmp_path / "img.jpg", "fake")
         src = _write(
             tmp_path / "s.scrollimation.json",
@@ -573,6 +573,9 @@ class TestScopedCssAssetLayer:
         )
         chunk = _build(src)
         assert "object-fit" not in chunk.scoped_css
+        assert "] img {" in chunk.scoped_css
+        assert "width: 100%" in chunk.scoped_css
+        assert "height: 100%" in chunk.scoped_css
 
 
 class TestScopedCssStacking:
