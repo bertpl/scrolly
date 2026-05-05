@@ -89,6 +89,22 @@
       ],
     },
 
+    // Tall badge — demonstrates auto-height image sizing (width 20%, aspect ratio
+    // 10:1 gives height 200% — top and bottom extend well outside the slide)
+    {
+      element: {
+        name: "badge",
+        image: "tall-badge.svg",
+        position: [40, -50],
+        size: [20, "auto"],
+      },
+      initial: { opacity: 0 },
+      keyframes: [
+        { at: 1350, opacity: 0 },
+        { at: 1450, opacity: 0.3 },
+      ],
+    },
+
     // Markdown element — appears at the end over the gradient background
     {
       element: {
