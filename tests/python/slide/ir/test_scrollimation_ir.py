@@ -23,13 +23,13 @@ from scrolly.slide.ir.scrollimation import ScrollimationIR
 
 
 def _html_element(**overrides) -> dict:
-    base = {"id": "L", "html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}
+    base = {"name": "L", "html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}
     return {**base, **overrides}
 
 
 def _image_element(**overrides) -> dict:
     base = {
-        "id": "L",
+        "name": "L",
         "image": "img.jpg",
         "position": [0, 0],
         "size": [100, 100],
@@ -39,7 +39,7 @@ def _image_element(**overrides) -> dict:
 
 
 def _md_element(**overrides) -> dict:
-    base = {"id": "L", "markdown": "# Hi", "position": [0, 0], "size": [80, "auto"]}
+    base = {"name": "L", "markdown": "# Hi", "position": [0, 0], "size": [80, "auto"]}
     return {**base, **overrides}
 
 
@@ -53,7 +53,7 @@ def _html_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default HtmlElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"id", "html", "position", "size", "transform_origin"}
+    element_fields = {"name", "html", "position", "size", "transform_origin"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -66,7 +66,7 @@ def _image_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default ImageElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"id", "image", "position", "size", "object_fit", "transform_origin"}
+    element_fields = {"name", "image", "position", "size", "object_fit", "transform_origin"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -79,7 +79,7 @@ def _md_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default MarkdownElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"id", "markdown", "position", "size", "transform_origin", "color"}
+    element_fields = {"name", "markdown", "position", "size", "transform_origin", "color"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -89,7 +89,7 @@ def _md_anim(**overrides) -> dict:
 
 
 def _mermaid_element(**overrides) -> dict:
-    base = {"id": "L", "mermaid": "graph LR\n  A --> B", "position": [10, 10], "size": [80, "auto"]}
+    base = {"name": "L", "mermaid": "graph LR\n  A --> B", "position": [10, 10], "size": [80, "auto"]}
     return {**base, **overrides}
 
 
@@ -97,7 +97,7 @@ def _mermaid_anim(**overrides) -> dict:
     """Shortcut: ElementAnimation wrapping a default MermaidElement."""
     el_overrides = {}
     anim_overrides = {}
-    element_fields = {"id", "mermaid", "position", "size", "transform_origin"}
+    element_fields = {"name", "mermaid", "position", "size", "transform_origin"}
     for k, v in overrides.items():
         if k in element_fields:
             el_overrides[k] = v
@@ -157,7 +157,7 @@ class TestKeyframe:
 class TestHtmlElement:
     def test_valid_construction(self) -> None:
         element = HtmlElement(**_html_element())
-        assert element.id == "L"
+        assert element.name == "L"
         assert element.html == "<p>hi</p>"
         assert element.position == (0, 0)
         assert element.size == (100, 100)
@@ -239,7 +239,7 @@ class TestMermaidElement:
         assert isinstance(slide.elements[0].element, MermaidElement)
 
     def test_mixed_element_types(self) -> None:
-        slide = ScrollimationIR(**_slide(elements=[_html_anim(id="a"), _mermaid_anim(id="b")]))
+        slide = ScrollimationIR(**_slide(elements=[_html_anim(name="a"), _mermaid_anim(name="b")]))
         assert isinstance(slide.elements[0].element, HtmlElement)
         assert isinstance(slide.elements[1].element, MermaidElement)
 
@@ -315,13 +315,13 @@ class TestScrollimationIR:
         with pytest.raises(ValidationError, match="at least one element"):
             ScrollimationIR(**_slide(elements=[]))
 
-    def test_duplicate_element_ids_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="duplicate element id"):
+    def test_duplicate_element_names_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="duplicate element name"):
             ScrollimationIR(
                 **_slide(
                     elements=[
-                        _html_anim(id="dup"),
-                        _html_anim(id="dup", html="<p>other</p>"),
+                        _html_anim(name="dup"),
+                        _html_anim(name="dup", html="<p>other</p>"),
                     ]
                 )
             )
@@ -369,9 +369,9 @@ class TestScrollimationIR:
         slide = ScrollimationIR(
             **_slide(
                 elements=[
-                    _image_anim(id="bg"),
-                    _html_anim(id="sep"),
-                    _md_anim(id="caption"),
+                    _image_anim(name="bg"),
+                    _html_anim(name="sep"),
+                    _md_anim(name="caption"),
                 ]
             )
         )
@@ -425,7 +425,7 @@ MINIMAL_JSON5 = """\
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """
@@ -449,7 +449,7 @@ class TestFromFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "bg", image: "hero.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
+    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
   ],
 }
 """,

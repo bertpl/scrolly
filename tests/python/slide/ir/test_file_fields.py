@@ -31,7 +31,7 @@ class TestMarkdownFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "txt", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "txt", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -68,7 +68,7 @@ class TestHtmlFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "h", html_file: "box.html", position: [0, 0], size: [100, 100] } },
+    { element: { name: "h", html_file: "box.html", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -90,7 +90,7 @@ class TestMermaidFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dia", mermaid_file: "diagram.mmd", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "dia", mermaid_file: "diagram.mmd", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -129,7 +129,7 @@ class TestPathResolution:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "txt", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "txt", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -146,7 +146,7 @@ class TestPathResolution:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "dia", mermaid_file: "diagrams/arch.mmd", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "dia", mermaid_file: "diagrams/arch.mmd", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -168,7 +168,7 @@ class TestErrors:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "txt", markdown: "inline", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "txt", markdown: "inline", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -184,7 +184,7 @@ class TestErrors:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "txt", markdown_file: "nonexistent.md", position: [10, 10], size: [80, "auto"] } },
+    { element: { name: "txt", markdown_file: "nonexistent.md", position: [10, 10], size: [80, "auto"] } },
   ],
 }
 """,
@@ -201,7 +201,7 @@ class TestErrors:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "h", html: "<p>inline</p>", html_file: "box.html", position: [0, 0], size: [100, 100] } },
+    { element: { name: "h", html: "<p>inline</p>", html_file: "box.html", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,
@@ -223,7 +223,7 @@ class TestNonElementDicts:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { id: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
   ],
 }
 """,

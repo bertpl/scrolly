@@ -20,7 +20,7 @@ class SlideElement(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str | None = None
+    name: str | None = None
     position: tuple[float, float]
     size: tuple[SizeDim, SizeDim]
     transform_origin: tuple[float, float] = (50.0, 50.0)

@@ -53,13 +53,13 @@ class TestSlideElement:
         with pytest.raises(ValidationError):
             el.html = "changed"
 
-    def test_id_defaults_to_none(self):
+    def test_name_defaults_to_none(self):
         el = HtmlElement(**_html())
-        assert el.id is None
+        assert el.name is None
 
-    def test_id_can_be_set(self):
-        el = HtmlElement(**_html(id="myid"))
-        assert el.id == "myid"
+    def test_name_can_be_set(self):
+        el = HtmlElement(**_html(name="myname"))
+        assert el.name == "myname"
 
     def test_default_transform_origin(self):
         el = HtmlElement(**_html())
@@ -242,14 +242,14 @@ class TestKeyframe:
 
 class TestElementAnimation:
     def test_wraps_element(self):
-        el = HtmlElement(**_html(id="L"))
+        el = HtmlElement(**_html(name="L"))
         anim = ElementAnimation(element=el)
         assert anim.element is el
         assert anim.initial == InitialState()
         assert anim.keyframes == []
 
     def test_with_animation(self):
-        el = ImageElement(**_asset(id="bg"))
+        el = ImageElement(**_asset(name="bg"))
         anim = ElementAnimation(
             element=el,
             initial=InitialState(opacity=0),

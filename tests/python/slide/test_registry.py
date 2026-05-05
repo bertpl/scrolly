@@ -225,7 +225,7 @@ def test_scrollimation_ir_finds_renderer():
     ir = ScrollimationIR(
         title="T",
         scroll_range=100,
-        elements=[{"element": {"id": "L", "html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
+        elements=[{"element": {"html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
     )
     assert find_renderer(ir) is not None
 

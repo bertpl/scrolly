@@ -44,15 +44,15 @@ def compile_storyboard(ir: StoryboardIR) -> ScrollimationIR:
 
     anims: list[ElementAnimation] = []
 
-    for j, el in enumerate(ir.background):
-        anims.append(_wrap_element(el, f"bg-{j}", initial_opacity=1.0, keyframes=[]))
+    for el in ir.background:
+        anims.append(_wrap_element(el, initial_opacity=1.0, keyframes=[]))
 
     for i, scene in enumerate(ir.scenes):
         kfs = _scene_keyframes(i, n, D, H)
         init_opacity = 1.0 if i == 0 else 0.0
 
-        for j, el in enumerate(scene.elements):
-            anims.append(_wrap_element(el, f"s{i}-{j}", initial_opacity=init_opacity, keyframes=kfs))
+        for el in scene.elements:
+            anims.append(_wrap_element(el, initial_opacity=init_opacity, keyframes=kfs))
 
     return ScrollimationIR(
         title=ir.title,
@@ -88,13 +88,11 @@ def _scene_keyframes(scene_idx: int, num_scenes: int, D: int, H: int) -> list[Ke
 
 def _wrap_element(
     el: ImageElement | HtmlElement | MarkdownElement,
-    element_id: str,
     *,
     initial_opacity: float,
     keyframes: list[Keyframe],
 ) -> ElementAnimation:
     """Wrap a slide element with animation state for the scrollimation IR."""
-    el = el.model_copy(update={"id": element_id})
     return ElementAnimation(
         element=el,
         initial=InitialState(opacity=initial_opacity),

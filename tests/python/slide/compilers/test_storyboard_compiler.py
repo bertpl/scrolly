@@ -110,15 +110,15 @@ class TestSnapPositions:
 class TestElementOrdering:
     def test_scene_elements_ordered_by_scene_index(self):
         result = compile_storyboard(_storyboard())
-        ids = [a.element.id for a in result.elements]
-        assert ids == ["s0-0", "s1-0"]
+        assert len(result.elements) == 2
+        assert isinstance(result.elements[0].element, HtmlElement)
+        assert isinstance(result.elements[1].element, MarkdownElement)
 
     def test_background_elements_first(self):
         ir = _storyboard(background=[_image_element()])
         result = compile_storyboard(ir)
-        ids = [a.element.id for a in result.elements]
-        assert ids[0] == "bg-0"
-        assert ids[1] == "s0-0"
+        assert isinstance(result.elements[0].element, ImageElement)
+        assert isinstance(result.elements[1].element, HtmlElement)
 
     def test_multiple_items_per_scene(self):
         ir = _storyboard(
@@ -128,15 +128,16 @@ class TestElementOrdering:
             ]
         )
         result = compile_storyboard(ir)
-        ids = [a.element.id for a in result.elements]
-        assert ids == ["s0-0", "s0-1", "s1-0"]
+        assert len(result.elements) == 3
+        assert isinstance(result.elements[0].element, HtmlElement)
+        assert isinstance(result.elements[1].element, MarkdownElement)
+        assert isinstance(result.elements[2].element, HtmlElement)
 
     def test_multiple_background_items(self):
         ir = _storyboard(background=[_image_element(), _html_element()])
         result = compile_storyboard(ir)
-        ids = [a.element.id for a in result.elements]
-        assert ids[0] == "bg-0"
-        assert ids[1] == "bg-1"
+        assert isinstance(result.elements[0].element, ImageElement)
+        assert isinstance(result.elements[1].element, HtmlElement)
 
 
 # ── Element types ────────────────────────────────────────────────
@@ -303,15 +304,15 @@ class TestBackgroundElements:
         ir = _storyboard(background=[_image_element()])
         result = compile_storyboard(ir)
         bg = result.elements[0]
-        assert bg.element.id == "bg-0"
+        assert isinstance(bg.element, ImageElement)
         assert bg.initial.opacity == 1.0
         assert bg.keyframes == []
 
     def test_multiple_background_items(self):
         ir = _storyboard(background=[_image_element(), _html_element()])
         result = compile_storyboard(ir)
-        assert result.elements[0].element.id == "bg-0"
-        assert result.elements[1].element.id == "bg-1"
+        assert isinstance(result.elements[0].element, ImageElement)
+        assert isinstance(result.elements[1].element, HtmlElement)
         assert all(a.initial.opacity == 1.0 for a in result.elements[:2])
         assert all(a.keyframes == [] for a in result.elements[:2])
 
@@ -353,7 +354,7 @@ class TestStoryboardCompiler:
         other = ScrollimationIR(
             title="T",
             scroll_range=100,
-            elements=[{"element": {"id": "L", "html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
+            elements=[{"element": {"html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
         )
         assert StoryboardCompiler.can_process(other) is False
 
