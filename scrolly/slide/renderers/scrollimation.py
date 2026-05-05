@@ -259,9 +259,11 @@ def _element_css(
         ty = f"-{_num(ay)}%" if ay != 0 else "0%"
         anchor_translate = f"translate({tx}, {ty}) "
 
-    color_line = ""
+    markdown_lines = ""
     if isinstance(el, MarkdownElement):
-        color_line = f"  color: {el.color};\n"
+        markdown_lines = f"  color: {el.color};\n"
+        if el.text_align != "left":
+            markdown_lines += f"  text-align: {el.text_align};\n"
 
     return (
         f"{sel} {{\n"
@@ -273,7 +275,7 @@ def _element_css(
         f"  transform: {anchor_translate}scale({scale_val}) rotate({rotate_val});\n"
         f"  opacity: {opacity_val};\n"
         f"  z-index: {index};\n"
-        f"{color_line}"
+        f"{markdown_lines}"
         f"}}"
     )
 

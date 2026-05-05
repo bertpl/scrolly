@@ -108,6 +108,10 @@ class MarkdownElement(SlideElement, frozen=True):
         default="#808080",
         description="CSS color value for the rendered text.",
     )
+    text_align: Literal["left", "center", "right"] = Field(
+        default="left",
+        description="Horizontal text alignment within the element box.",
+    )
 
 
 class MermaidElement(SlideElement, frozen=True):

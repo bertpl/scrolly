@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   preserves current positioning behavior.
 - Field descriptions on all IR model fields. `scrolly schema <type>` now includes
   semantic information (units, coordinate system, validation rules) for every field.
+- `text_align` field on `MarkdownElement` (`"left"` | `"center"` | `"right"`,
+  default `"left"`). Enables horizontal text alignment within the element box.
 
 ### Changed
 
