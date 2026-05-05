@@ -460,6 +460,40 @@ class TestScopedCssSize:
         assert "height: 50%" in chunk.scoped_css
 
 
+class TestScopedCssMarkdown:
+    def test_text_align_center(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    { element: { name: "L", markdown: "# Hi", position: [0, 0], size: [80, "auto"], text_align: "center" } },
+  ],
+}
+""",
+        )
+        chunk = _build(src)
+        assert "text-align: center" in chunk.scoped_css
+
+    def test_text_align_default_not_emitted(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    { element: { name: "L", markdown: "# Hi", position: [0, 0], size: [80, "auto"] } },
+  ],
+}
+""",
+        )
+        chunk = _build(src)
+        assert "text-align" not in chunk.scoped_css
+
+
 class TestScopedCssTransform:
     def test_anchor_sets_transform_origin_and_translate(self, tmp_path: Path) -> None:
         src = _write(

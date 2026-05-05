@@ -117,6 +117,7 @@
         position: [50, 80],
         size: [50, "auto"],
         anchor: [50, 0],
+        text_align: "center",
       },
       initial: { opacity: 0 },
       keyframes: [
