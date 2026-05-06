@@ -651,8 +651,8 @@ describe("BezierOverlay.computePaths", () => {
     geo.refresh(1000, 1000);
     const overlay = new BezierOverlay(geo, null);
     const result = overlay.computePaths();
-    expect(result.viewBox).toBe("0 0 2 1");
-    expect(result.width).toBe("200dvw");
+    expect(result.viewBox).toBe("0 0 2.1 1");
+    expect(result.width).toBe("210dvw");
     expect(result.height).toBe("100dvh");
     expect(result.paths).toHaveLength(1);
     expect(result.paths[0]).toContain("M ");

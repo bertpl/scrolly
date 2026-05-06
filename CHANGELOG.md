@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Bezier edge curves in deck view were clipped for slides on the bottom row or far-right
+  column when group-label gaps pushed coordinates outside the SVG viewBox.
+
+### Security
+
+### Removed
+
+### Fixed
+
 ### Security
 
 ## 0.1.3 (2026-05-06)
