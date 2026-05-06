@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial open-source release.
+- Initial release.
 - CLI with `build`, `validate`, `schema`, and `init` commands.
 - Three slide types: static (Markdown), scrollimation (JSON), storyboard (JSON).
 - Storyboard-to-scrollimation compiler.
