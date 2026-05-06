@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Element properties (`position`, `anchor`, `opacity`, `scale`, `angle`, `width`, `height`)
   can now be either static values or keyframe animations directly on the element.
+- Keyframe positions beyond `[0, scroll_range]` are now allowed (useful for partial
+  transitions). Use `--strict` to warn on out-of-range values.
+- `--strict` flag on `build` and `validate` commands enables optional lint checks.
 
 ### Changed
 
