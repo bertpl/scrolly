@@ -8,14 +8,15 @@ import pytest
 from pydantic import ValidationError
 
 from scrolly.slide.ir import (
-    ElementAnimation,
+    AnimatedScalar,
+    AnimatedVec2,
     HtmlElement,
     ImageElement,
-    InitialState,
-    Keyframe,
     MarkdownElement,
     MermaidElement,
+    ScalarKeyframes,
     SlideIR,
+    Vec2Keyframes,
 )
 from scrolly.slide.ir.scrollimation import ScrollimationIR
 
@@ -23,7 +24,7 @@ from scrolly.slide.ir.scrollimation import ScrollimationIR
 
 
 def _html_element(**overrides) -> dict:
-    base = {"name": "L", "html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}
+    base = {"name": "L", "html": "<p>hi</p>", "position": [0, 0], "width": 100, "height": 100}
     return {**base, **overrides}
 
 
@@ -32,123 +33,30 @@ def _image_element(**overrides) -> dict:
         "name": "L",
         "image": "img.jpg",
         "position": [0, 0],
-        "size": [100, 100],
+        "width": 100,
+        "height": 100,
         "object_fit": "cover",
     }
     return {**base, **overrides}
 
 
 def _md_element(**overrides) -> dict:
-    base = {"name": "L", "markdown": "# Hi", "position": [0, 0], "size": [80, "auto"]}
+    base = {"name": "L", "markdown": "# Hi", "position": [0, 0], "width": 80, "height": "auto"}
     return {**base, **overrides}
-
-
-def _anim(element: dict, **overrides) -> dict:
-    """Build an ElementAnimation dict wrapping an element dict."""
-    base = {"element": element}
-    return {**base, **overrides}
-
-
-def _html_anim(**overrides) -> dict:
-    """Shortcut: ElementAnimation wrapping a default HtmlElement."""
-    el_overrides = {}
-    anim_overrides = {}
-    element_fields = {"name", "html", "position", "size", "anchor"}
-    for k, v in overrides.items():
-        if k in element_fields:
-            el_overrides[k] = v
-        else:
-            anim_overrides[k] = v
-    return _anim(_html_element(**el_overrides), **anim_overrides)
-
-
-def _image_anim(**overrides) -> dict:
-    """Shortcut: ElementAnimation wrapping a default ImageElement."""
-    el_overrides = {}
-    anim_overrides = {}
-    element_fields = {"name", "image", "position", "size", "object_fit", "anchor"}
-    for k, v in overrides.items():
-        if k in element_fields:
-            el_overrides[k] = v
-        else:
-            anim_overrides[k] = v
-    return _anim(_image_element(**el_overrides), **anim_overrides)
-
-
-def _md_anim(**overrides) -> dict:
-    """Shortcut: ElementAnimation wrapping a default MarkdownElement."""
-    el_overrides = {}
-    anim_overrides = {}
-    element_fields = {"name", "markdown", "position", "size", "anchor", "color"}
-    for k, v in overrides.items():
-        if k in element_fields:
-            el_overrides[k] = v
-        else:
-            anim_overrides[k] = v
-    return _anim(_md_element(**el_overrides), **anim_overrides)
 
 
 def _mermaid_element(**overrides) -> dict:
-    base = {"name": "L", "mermaid": "graph LR\n  A --> B", "position": [10, 10], "size": [80, "auto"]}
+    base = {"name": "L", "mermaid": "graph LR\n  A --> B", "position": [10, 10], "width": 80, "height": "auto"}
     return {**base, **overrides}
-
-
-def _mermaid_anim(**overrides) -> dict:
-    """Shortcut: ElementAnimation wrapping a default MermaidElement."""
-    el_overrides = {}
-    anim_overrides = {}
-    element_fields = {"name", "mermaid", "position", "size", "anchor"}
-    for k, v in overrides.items():
-        if k in element_fields:
-            el_overrides[k] = v
-        else:
-            anim_overrides[k] = v
-    return _anim(_mermaid_element(**el_overrides), **anim_overrides)
 
 
 def _slide(**overrides) -> dict:
     base = {
         "title": "T",
         "scroll_range": 1000,
-        "elements": [_html_anim()],
+        "elements": [_html_element()],
     }
     return {**base, **overrides}
-
-
-# ── InitialState ──────────────────────────────────────────────────
-
-
-class TestInitialState:
-    def test_defaults(self) -> None:
-        s = InitialState()
-        assert s.opacity == 1.0
-        assert s.translate == (0.0, 0.0)
-        assert s.scale == 1.0
-        assert s.rotate == 0.0
-
-    def test_custom_values(self) -> None:
-        s = InitialState(opacity=0.5, translate=(10, -20), scale=2.0, rotate=45)
-        assert s.opacity == 0.5
-        assert s.translate == (10, -20)
-        assert s.scale == 2.0
-        assert s.rotate == 45
-
-
-# ── Keyframe ──────────────────────────────────────────────────────
-
-
-class TestKeyframe:
-    def test_sparse_keyframe(self) -> None:
-        kf = Keyframe(at=100, opacity=0.5)
-        assert kf.at == 100
-        assert kf.opacity == 0.5
-        assert kf.translate is None
-        assert kf.scale is None
-        assert kf.rotate is None
-
-    def test_all_properties(self) -> None:
-        kf = Keyframe(at=0, opacity=1, translate=(50, 50), scale=2, rotate=90)
-        assert kf.translate == (50, 50)
 
 
 # ── Element types ────────────────────────────────────────────────
@@ -159,12 +67,16 @@ class TestHtmlElement:
         element = HtmlElement(**_html_element())
         assert element.name == "L"
         assert element.html == "<p>hi</p>"
-        assert element.position == (0, 0)
-        assert element.size == (100, 100)
+        assert element.position.static_value == (0, 0)
+        assert element.width.static_value == 100
+        assert element.height.static_value == 100
 
     def test_defaults(self) -> None:
         element = HtmlElement(**_html_element())
-        assert element.anchor == (0.0, 0.0)
+        assert element.anchor.static_value == (0.0, 0.0)
+        assert element.opacity.static_value == 1.0
+        assert element.scale.static_value == 1.0
+        assert element.angle.static_value == 0.0
 
     def test_missing_html_rejected(self) -> None:
         data = _html_element()
@@ -192,8 +104,8 @@ class TestImageElement:
         assert element.object_fit == "fill"
 
     def test_auto_size_without_object_fit(self) -> None:
-        element = ImageElement(**_image_element(size=[100, "auto"], object_fit=None))
-        assert element.size == (100, "auto")
+        element = ImageElement(**_image_element(width=100, height="auto", object_fit=None))
+        assert element.height.is_auto
         assert element.object_fit is None
 
     def test_object_fit_required_when_both_numeric(self) -> None:
@@ -202,7 +114,7 @@ class TestImageElement:
 
     def test_object_fit_forbidden_with_auto_dim(self) -> None:
         with pytest.raises(ValidationError, match="object_fit is forbidden"):
-            ImageElement(**_image_element(size=[100, "auto"], object_fit="cover"))
+            ImageElement(**_image_element(width=100, height="auto", object_fit="cover"))
 
     def test_extra_field_rejected(self) -> None:
         with pytest.raises(ValidationError, match="Extra inputs"):
@@ -213,7 +125,8 @@ class TestMarkdownElement:
     def test_valid_construction(self) -> None:
         element = MarkdownElement(**_md_element())
         assert element.markdown == "# Hi"
-        assert element.size == (80, "auto")
+        assert element.width.static_value == 80
+        assert element.height.is_auto
 
     def test_missing_markdown_rejected(self) -> None:
         data = _md_element()
@@ -226,7 +139,8 @@ class TestMermaidElement:
     def test_valid_construction(self) -> None:
         element = MermaidElement(**_mermaid_element())
         assert element.mermaid == "graph LR\n  A --> B"
-        assert element.size == (80, "auto")
+        assert element.width.static_value == 80
+        assert element.height.is_auto
 
     def test_missing_mermaid_rejected(self) -> None:
         data = _mermaid_element()
@@ -235,13 +149,13 @@ class TestMermaidElement:
             MermaidElement(**data)
 
     def test_in_slide(self) -> None:
-        slide = ScrollimationIR(**_slide(elements=[_mermaid_anim()]))
-        assert isinstance(slide.elements[0].element, MermaidElement)
+        slide = ScrollimationIR(**_slide(elements=[_mermaid_element()]))
+        assert isinstance(slide.elements[0], MermaidElement)
 
     def test_mixed_element_types(self) -> None:
-        slide = ScrollimationIR(**_slide(elements=[_html_anim(name="a"), _mermaid_anim(name="b")]))
-        assert isinstance(slide.elements[0].element, HtmlElement)
-        assert isinstance(slide.elements[1].element, MermaidElement)
+        slide = ScrollimationIR(**_slide(elements=[_html_element(name="a"), _mermaid_element(name="b")]))
+        assert isinstance(slide.elements[0], HtmlElement)
+        assert isinstance(slide.elements[1], MermaidElement)
 
 
 # ── Size validation ───────────────────────────────────────────────
@@ -249,36 +163,39 @@ class TestMermaidElement:
 
 class TestSizeValidation:
     def test_auto_auto_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="at least one size dimension must be numeric"):
-            HtmlElement(**_html_element(size=["auto", "auto"]))
+        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+            HtmlElement(**_html_element(width="auto", height="auto"))
 
     def test_zero_width_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="width must be > 0"):
-            HtmlElement(**_html_element(size=[0, 100]))
+        with pytest.raises(ValidationError, match="numeric width must be > 0"):
+            HtmlElement(**_html_element(width=0, height=100))
 
     def test_negative_height_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="height must be > 0"):
-            HtmlElement(**_html_element(size=[100, -5]))
+        with pytest.raises(ValidationError, match="numeric height must be > 0"):
+            HtmlElement(**_html_element(width=100, height=-5))
 
     def test_auto_width_numeric_height(self) -> None:
-        element = HtmlElement(**_html_element(size=["auto", 50]))
-        assert element.size == ("auto", 50)
+        element = HtmlElement(**_html_element(width="auto", height=50))
+        assert element.width.is_auto
+        assert element.height.static_value == 50
 
     def test_numeric_width_auto_height(self) -> None:
-        element = HtmlElement(**_html_element(size=[80, "auto"]))
-        assert element.size == (80, "auto")
+        element = HtmlElement(**_html_element(width=80, height="auto"))
+        assert element.width.static_value == 80
+        assert element.height.is_auto
 
     def test_oversized_values_allowed(self) -> None:
-        element = HtmlElement(**_html_element(size=[200, 300]))
-        assert element.size == (200, 300)
+        element = HtmlElement(**_html_element(width=200, height=300))
+        assert element.width.static_value == 200
+        assert element.height.static_value == 300
 
     def test_negative_position_allowed(self) -> None:
         element = HtmlElement(**_html_element(position=[-50, -100]))
-        assert element.position == (-50, -100)
+        assert element.position.static_value == (-50, -100)
 
     def test_position_beyond_100_allowed(self) -> None:
         element = HtmlElement(**_html_element(position=[150, 200]))
-        assert element.position == (150, 200)
+        assert element.position.static_value == (150, 200)
 
 
 # ── ScrollimationIR ────────────────────────────────────────────
@@ -320,80 +237,11 @@ class TestScrollimationIR:
             ScrollimationIR(
                 **_slide(
                     elements=[
-                        _html_anim(name="dup"),
-                        _html_anim(name="dup", html="<p>other</p>"),
+                        _html_element(name="dup"),
+                        _html_element(name="dup", html="<p>other</p>"),
                     ]
                 )
             )
-
-    def test_keyframe_outside_scroll_range_rejected(self) -> None:
-        anim = _html_anim(keyframes=[{"at": 1500, "opacity": 1}])
-        with pytest.raises(ValidationError, match="outside"):
-            ScrollimationIR(**_slide(scroll_range=1000, elements=[anim]))
-
-    def test_negative_keyframe_rejected(self) -> None:
-        anim = _html_anim(keyframes=[{"at": -1, "opacity": 1}])
-        with pytest.raises(ValidationError, match="outside"):
-            ScrollimationIR(**_slide(elements=[anim]))
-
-    def test_duplicate_keyframe_at_for_same_property_rejected(self) -> None:
-        anim = _html_anim(
-            keyframes=[
-                {"at": 100, "opacity": 0},
-                {"at": 100, "opacity": 1},
-            ]
-        )
-        with pytest.raises(ValidationError, match="duplicate keyframe"):
-            ScrollimationIR(**_slide(elements=[anim]))
-
-    def test_anchor_exclusivity_rejects_both(self) -> None:
-        anim = _anim(
-            _html_element(anchor=[50, 50]),
-            initial={"anchor": [50, 0]},
-        )
-        with pytest.raises(ValidationError, match="anchor must be set on the element OR"):
-            ScrollimationIR(**_slide(elements=[anim]))
-
-    def test_anchor_exclusivity_element_only_accepted(self) -> None:
-        anim = _anim(_html_element(anchor=[50, 50]))
-        slide = ScrollimationIR(**_slide(elements=[anim]))
-        assert slide.elements[0].element.anchor == (50, 50)
-
-    def test_anchor_exclusivity_animated_only_accepted(self) -> None:
-        anim = _anim(
-            _html_element(),
-            initial={"anchor": [50, 0]},
-            keyframes=[{"at": 500, "anchor": [50, 100]}],
-        )
-        slide = ScrollimationIR(**_slide(elements=[anim]))
-        assert slide.elements[0].initial.anchor == (50, 0)
-
-    def test_duplicate_anchor_keyframes_rejected(self) -> None:
-        anim = _anim(
-            _html_element(),
-            initial={"anchor": [50, 0]},
-            keyframes=[
-                {"at": 100, "anchor": [50, 30]},
-                {"at": 100, "anchor": [50, 60]},
-            ],
-        )
-        with pytest.raises(ValidationError, match="duplicate keyframe"):
-            ScrollimationIR(**_slide(elements=[anim]))
-
-    def test_same_at_different_properties_allowed(self) -> None:
-        anim = _html_anim(
-            keyframes=[
-                {"at": 100, "opacity": 0},
-                {"at": 100, "scale": 2},
-            ]
-        )
-        slide = ScrollimationIR(**_slide(elements=[anim]))
-        assert len(slide.elements[0].keyframes) == 2
-
-    def test_empty_keyframes_valid(self) -> None:
-        anim = _html_anim(keyframes=[])
-        slide = ScrollimationIR(**_slide(elements=[anim]))
-        assert slide.elements[0].keyframes == []
 
     def test_initial_scroll_position_beyond_range_rejected(self) -> None:
         with pytest.raises(ValidationError, match="initial_scroll_position"):
@@ -403,30 +251,32 @@ class TestScrollimationIR:
         slide = ScrollimationIR(
             **_slide(
                 elements=[
-                    _image_anim(name="bg"),
-                    _html_anim(name="sep"),
-                    _md_anim(name="caption"),
+                    _image_element(name="bg"),
+                    _html_element(name="sep"),
+                    _md_element(name="caption"),
                 ]
             )
         )
-        assert isinstance(slide.elements[0].element, ImageElement)
-        assert isinstance(slide.elements[1].element, HtmlElement)
-        assert isinstance(slide.elements[2].element, MarkdownElement)
+        assert isinstance(slide.elements[0], ImageElement)
+        assert isinstance(slide.elements[1], HtmlElement)
+        assert isinstance(slide.elements[2], MarkdownElement)
 
-    def test_initial_omitted_uses_defaults(self) -> None:
-        anim = _html_anim()
-        slide = ScrollimationIR(**_slide(elements=[anim]))
-        assert slide.elements[0].initial.opacity == 1.0
-        assert slide.elements[0].initial.translate == (0.0, 0.0)
+    def test_element_with_animated_opacity(self) -> None:
+        el = _html_element(opacity={"keyframes": [(0, 0.0), (1000, 1.0)]})
+        slide = ScrollimationIR(**_slide(elements=[el]))
+        assert slide.elements[0].opacity.is_animated
+        assert slide.elements[0].opacity.keyframes == [(0, 0.0), (1000, 1.0)]
 
-    def test_keyframe_at_zero_present_alongside_initial(self) -> None:
-        anim = _html_anim(
-            initial={"opacity": 0.5},
-            keyframes=[{"at": 0, "opacity": 1.0}],
-        )
-        slide = ScrollimationIR(**_slide(elements=[anim]))
-        assert slide.elements[0].initial.opacity == 0.5
-        assert slide.elements[0].keyframes[0].opacity == 1.0
+    def test_element_with_animated_position(self) -> None:
+        el = _html_element(position={"keyframes": [(0, (0, 0)), (1000, (50, 50))]})
+        slide = ScrollimationIR(**_slide(elements=[el]))
+        assert slide.elements[0].position.is_animated
+
+    def test_element_with_static_opacity(self) -> None:
+        el = _html_element(opacity=0.5)
+        slide = ScrollimationIR(**_slide(elements=[el]))
+        assert not slide.elements[0].opacity.is_animated
+        assert slide.elements[0].opacity.static_value == 0.5
 
     def test_snap_positions_default_empty(self) -> None:
         slide = ScrollimationIR(**_slide())
@@ -459,7 +309,7 @@ MINIMAL_JSON5 = """\
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """
@@ -483,13 +333,13 @@ class TestFromFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
+    { name: "bg", image: "hero.jpg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert ir.elements[0].element.image.is_absolute()
+        assert ir.elements[0].image.is_absolute()
 
     def test_slide_type_property(self, tmp_path: Path) -> None:
         src = _write(tmp_path, "s.scrollimation.json", MINIMAL_JSON5)

@@ -30,7 +30,7 @@ MINIMAL = """\
   title: "Test slide",
   scroll_range: 1000,
   elements: [
-    { element: { html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """
@@ -44,7 +44,7 @@ class TestRegistration:
         ir = ScrollimationIR(
             title="T",
             scroll_range=100,
-            elements=[{"element": {"html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
+            elements=[{"html": "<p>hi</p>", "position": [0, 0], "width": 100, "height": 100}],
         )
         assert ir.slide_type == "scrollimation-json"
 
@@ -78,7 +78,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", markdown: "# Hello\\n\\nWorld", position: [0, 0], size: [80, "auto"] } },
+    { name: "L", markdown: "# Hello\\n\\nWorld", position: [0, 0], width: 80, height: "auto" },
   ],
 }
 """,
@@ -96,7 +96,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    { name: "bg", image: "hero.jpg", position: [0, 0], width: 100, height: 120, object_fit: "cover" },
   ],
 }
 """,
@@ -113,9 +113,9 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "img.svg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
-    { element: { name: "sep", html: "<div>box</div>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "txt", markdown: "# Cap", position: [10, 40], size: [80, "auto"] } },
+    { name: "bg", image: "img.svg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
+    { name: "sep", html: "<div>box</div>", position: [0, 0], width: 100, height: 100 },
+    { name: "txt", markdown: "# Cap", position: [10, 40], width: 80, height: "auto" },
   ],
 }
 """,
@@ -133,7 +133,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
+    {name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
@@ -150,7 +150,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dia", mermaid: "graph LR\\n  A -->|<yes>| B", position: [10, 10], size: [80, "auto"] } },
+    {name: "dia", mermaid: "graph LR\\n  A -->|<yes>| B", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
@@ -166,7 +166,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
+    {name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
@@ -187,7 +187,7 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], size: [80, "auto"] } },
+    {name: "dia", mermaid: "graph LR\\n  A --> B", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
@@ -203,8 +203,8 @@ class TestHtmlEmission:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "first", html: "<p>1</p>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "second", html: "<p>2</p>", position: [0, 0], size: [100, 100] } },
+    {name: "first", html: "<p>1</p>", position: [0, 0], width: 100, height: 100 },
+    {name: "second", html: "<p>2</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -225,7 +225,7 @@ class TestAssets:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    { name: "bg", image: "hero.jpg", position: [0, 0], width: 100, height: 120, object_fit: "cover" },
   ],
 }
 """,
@@ -250,9 +250,9 @@ class TestAssets:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "a.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" } },
-    { element: { name: "mid", html: "<div></div>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "fg", image: "b.svg", position: [0, 0], size: [100, 100], object_fit: "contain" } },
+    {name: "bg", image: "a.jpg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
+    {name: "mid", html: "<div></div>", position: [0, 0], width: 100, height: 100 },
+    {name: "fg", image: "b.svg", position: [0, 0], width: 100, height: 100, object_fit: "contain" },
   ],
 }
 """,
@@ -282,7 +282,7 @@ class TestMetadata:
   title: "T",
   scroll_range: 0,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -299,7 +299,7 @@ class TestMetadata:
   scroll_range: 1000,
   initial_scroll_position: 200,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -316,7 +316,7 @@ class TestMetadata:
   scroll_range: 1000,
   scroll_speed: 0.5,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -338,7 +338,7 @@ class TestMetadata:
   scroll_range: 1000,
   snap_positions: [0, 500, 1000],
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -369,7 +369,7 @@ class TestScopedCssBase:
 
 
 class TestScopedCssPosition:
-    def test_left_top_from_position_plus_initial_translate(self, tmp_path: Path) -> None:
+    def test_left_top_from_static_position(self, tmp_path: Path) -> None:
         src = _write(
             tmp_path / "s.scrollimation.json",
             """\
@@ -377,10 +377,7 @@ class TestScopedCssPosition:
   title: "T",
   scroll_range: 100,
   elements: [
-    {
-      element: { name: "L", html: "<p>hi</p>", position: [10, 20], size: [80, 60] },
-      initial: { translate: [5, -10] },
-    },
+    { name: "L", html: "<p>hi</p>", position: [15, 10], width: 80, height: 60 },
   ],
 }
 """,
@@ -397,7 +394,7 @@ class TestScopedCssPosition:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [25, 50], size: [50, 50] } },
+    {name: "L", html: "<p>hi</p>", position: [25, 50], width: 50, height: 50 },
   ],
 }
 """,
@@ -416,7 +413,7 @@ class TestScopedCssSize:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [80, 60] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 80, height: 60 },
   ],
 }
 """,
@@ -433,7 +430,7 @@ class TestScopedCssSize:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [80, "auto"] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 80, height: "auto" },
   ],
 }
 """,
@@ -450,7 +447,7 @@ class TestScopedCssSize:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: ["auto", 50] } },
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: "auto", height: 50 },
   ],
 }
 """,
@@ -469,7 +466,7 @@ class TestScopedCssMarkdown:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", markdown: "# Hi", position: [0, 0], size: [80, "auto"], text_align: "center" } },
+    { name: "L", markdown: "# Hi", position: [0, 0], width: 80, height: "auto", text_align: "center" },
   ],
 }
 """,
@@ -485,7 +482,7 @@ class TestScopedCssMarkdown:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", markdown: "# Hi", position: [0, 0], size: [80, "auto"] } },
+    {name: "L", markdown: "# Hi", position: [0, 0], width: 80, height: "auto" },
   ],
 }
 """,
@@ -503,7 +500,7 @@ class TestScopedCssTransform:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100], anchor: [50, 50] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100, anchor: [50, 50] },
   ],
 }
 """,
@@ -526,11 +523,7 @@ class TestScopedCssTransform:
   title: "T",
   scroll_range: 1000,
   elements: [
-    {
-      element: { name: "L", html: "<p>hi</p>", position: [50, 50], size: [100, 100] },
-      initial: { anchor: [50, 0] },
-      keyframes: [{ at: 1000, anchor: [50, 100] }],
-    },
+    { name: "L", html: "<p>hi</p>", position: [50, 50], width: 100, height: 100, anchor: { keyframes: [[0, [50, 0]], [1000, [50, 100]]] } },
   ],
 }
 """,
@@ -548,10 +541,7 @@ class TestScopedCssTransform:
   title: "T",
   scroll_range: 100,
   elements: [
-    {
-      element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] },
-      initial: { scale: 2, rotate: 45 },
-    },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100, scale: 2, angle: 45 },
   ],
 }
 """,
@@ -568,10 +558,7 @@ class TestScopedCssTransform:
   title: "T",
   scroll_range: 100,
   elements: [
-    {
-      element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] },
-      initial: { opacity: 0.5 },
-    },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100, opacity: 0.5 },
   ],
 }
 """,
@@ -590,7 +577,7 @@ class TestScopedCssAssetLayer:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "img.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
+    {name: "bg", image: "img.jpg", position: [0, 0], width: 100, height: 120, object_fit: "cover" },
   ],
 }
 """,
@@ -607,7 +594,7 @@ class TestScopedCssAssetLayer:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "img.jpg", position: [0, 0], size: [100, 120], object_fit: "contain" } },
+    {name: "bg", image: "img.jpg", position: [0, 0], width: 100, height: 120, object_fit: "contain" },
   ],
 }
 """,
@@ -624,7 +611,7 @@ class TestScopedCssAssetLayer:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bg", image: "img.jpg", position: [0, 0], size: [100, "auto"] } },
+    {name: "bg", image: "img.jpg", position: [0, 0], width: 100, height: "auto" },
   ],
 }
 """,
@@ -645,9 +632,9 @@ class TestScopedCssStacking:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "bottom", html: "<p>1</p>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "middle", html: "<p>2</p>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "top", html: "<p>3</p>", position: [0, 0], size: [100, 100] } },
+    {name: "bottom", html: "<p>1</p>", position: [0, 0], width: 100, height: 100 },
+    {name: "middle", html: "<p>2</p>", position: [0, 0], width: 100, height: 100 },
+    {name: "top", html: "<p>3</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,

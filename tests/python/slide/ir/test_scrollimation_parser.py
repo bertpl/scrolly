@@ -1,4 +1,4 @@
-"""Tests for scrollimation JSON5 parsing — file → pydantic IR."""
+"""Tests for scrollimation JSON5 parsing — file -> pydantic IR."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import SlideSourceError
-from scrolly.slide.ir import ElementAnimation, HtmlElement, ImageElement, MarkdownElement, parse_json5_ir
+from scrolly.slide.ir import HtmlElement, ImageElement, MarkdownElement, parse_json5_ir
 from scrolly.slide.ir.scrollimation import ScrollimationIR
 
 
@@ -22,7 +22,7 @@ MINIMAL = """\
   title: "T",
   scroll_range: 1000,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """
@@ -38,7 +38,7 @@ class TestParsing:
         assert slide.title == "T"
         assert slide.scroll_range == 1000
         assert len(slide.elements) == 1
-        assert isinstance(slide.elements[0].element, HtmlElement)
+        assert isinstance(slide.elements[0], HtmlElement)
 
     def test_defaults_applied(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
@@ -55,19 +55,19 @@ class TestParsing:
   title: "Multi",
   scroll_range: 500,
   elements: [
-    { element: { name: "bg", image: "hero.jpg", position: [0, 0], size: [100, 120], object_fit: "cover" } },
-    { element: { name: "sep", html: "<div></div>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "txt", markdown: "# Hi", position: [10, 40], size: [80, "auto"] } },
+    { name: "bg", image: "hero.jpg", position: [0, 0], width: 100, height: 120, object_fit: "cover" },
+    { name: "sep", html: "<div></div>", position: [0, 0], width: 100, height: 100 },
+    { name: "txt", markdown: "# Hi", position: [10, 40], width: 80, height: "auto" },
   ],
 }
 """,
         )
         slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
-        assert isinstance(slide.elements[0].element, ImageElement)
-        assert isinstance(slide.elements[1].element, HtmlElement)
-        assert isinstance(slide.elements[2].element, MarkdownElement)
+        assert isinstance(slide.elements[0], ImageElement)
+        assert isinstance(slide.elements[1], HtmlElement)
+        assert isinstance(slide.elements[2], MarkdownElement)
 
-    def test_keyframes_parsed(self, tmp_path: Path) -> None:
+    def test_animated_opacity_parsed(self, tmp_path: Path) -> None:
         src = _write(
             tmp_path / "s.scrollimation.json",
             """\
@@ -76,26 +76,45 @@ class TestParsing:
   scroll_range: 1000,
   elements: [
     {
-      element: {
-        name: "L",
-        html: "<p>hi</p>",
-        position: [0, 0],
-        size: [100, 100],
-      },
-      initial: { opacity: 0 },
-      keyframes: [
-        { at: 0, opacity: 0 },
-        { at: 500, opacity: 1, translate: [50, 0] },
-        { at: 1000, opacity: 0 },
-      ],
+      name: "L",
+      html: "<p>hi</p>",
+      position: [0, 0],
+      width: 100,
+      height: 100,
+      opacity: { keyframes: [[0, 0], [500, 1], [1000, 0]] },
     },
   ],
 }
 """,
         )
         slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
-        assert len(slide.elements[0].keyframes) == 3
-        assert slide.elements[0].keyframes[1].translate == (50, 0)
+        el = slide.elements[0]
+        assert el.opacity.is_animated
+        assert el.opacity.keyframes == [(0, 0), (500, 1), (1000, 0)]
+
+    def test_animated_position_parsed(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 1000,
+  elements: [
+    {
+      name: "L",
+      html: "<p>hi</p>",
+      position: { keyframes: [[0, [0, 0]], [1000, [50, 50]]] },
+      width: 100,
+      height: 100,
+    },
+  ],
+}
+""",
+        )
+        slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
+        el = slide.elements[0]
+        assert el.position.is_animated
+        assert el.position.keyframes == [(0, (0, 0)), (1000, (50, 50))]
 
     def test_json5_features_work(self, tmp_path: Path) -> None:
         src = _write(
@@ -107,12 +126,11 @@ class TestParsing:
   scroll_range: 1000,
   elements: [
     {
-      element: {
-        name: "L",
-        html: "<p>hi</p>",
-        position: [0, 0],
-        size: [100, 100],  // trailing comma
-      },
+      name: "L",
+      html: "<p>hi</p>",
+      position: [0, 0],
+      width: 100,
+      height: 100,  // trailing comma
     },
   ],  // trailing comma
 }
@@ -129,38 +147,13 @@ class TestParsing:
   title: "Static composition",
   scroll_range: 0,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
         )
         slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
         assert slide.scroll_range == 0
-
-    def test_empty_keyframes(self, tmp_path: Path) -> None:
-        src = _write(
-            tmp_path / "s.scrollimation.json",
-            """\
-{
-  title: "T",
-  scroll_range: 100,
-  elements: [
-    {
-      element: { name: "L", html: "<p>static</p>", position: [0, 0], size: [100, 100] },
-      keyframes: [],
-    },
-  ],
-}
-""",
-        )
-        slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
-        assert slide.elements[0].keyframes == []
-
-    def test_initial_omitted(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
-        slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
-        assert slide.elements[0].initial.opacity == 1.0
-        assert slide.elements[0].initial.translate == (0.0, 0.0)
 
     def test_scroll_speed_custom(self, tmp_path: Path) -> None:
         src = _write(
@@ -171,7 +164,7 @@ class TestParsing:
   scroll_range: 1000,
   scroll_speed: 0.5,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -187,14 +180,14 @@ class TestParsing:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", image: "img.png", position: [0, 0], size: [100, "auto"] } },
+    { name: "L", image: "img.png", position: [0, 0], width: 100, height: "auto" },
   ],
 }
 """,
         )
         slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
-        assert isinstance(slide.elements[0].element, ImageElement)
-        assert slide.elements[0].element.object_fit is None
+        assert isinstance(slide.elements[0], ImageElement)
+        assert slide.elements[0].object_fit is None
 
 
 # ── Error handling ────────────────────────────────────────────────
@@ -222,7 +215,7 @@ class TestParseErrors:
 {
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -248,7 +241,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: ["auto", "auto"] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: "auto", height: "auto" },
   ],
 }
 """,
@@ -264,7 +257,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", image: "img.jpg", position: [0, 0], size: [100, 100] } },
+    { name: "L", image: "img.jpg", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -280,7 +273,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", image: "img.jpg", position: [0, 0], size: [100, "auto"], object_fit: "cover" } },
+    { name: "L", image: "img.jpg", position: [0, 0], width: 100, height: "auto", object_fit: "cover" },
   ],
 }
 """,
@@ -296,59 +289,8 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dup", html: "<p>a</p>", position: [0, 0], size: [100, 100] } },
-    { element: { name: "dup", html: "<p>b</p>", position: [0, 0], size: [100, 100] } },
-  ],
-}
-""",
-        )
-        with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, ScrollimationIR, "scrollimation")
-
-    def test_keyframe_outside_range(self, tmp_path: Path) -> None:
-        src = _write(
-            tmp_path / "s.scrollimation.json",
-            """\
-{
-  title: "T",
-  scroll_range: 100,
-  elements: [
-    {
-      element: {
-        name: "L",
-        html: "<p>hi</p>",
-        position: [0, 0],
-        size: [100, 100],
-      },
-      keyframes: [ { at: 200, opacity: 1 } ],
-    },
-  ],
-}
-""",
-        )
-        with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, ScrollimationIR, "scrollimation")
-
-    def test_duplicate_keyframe_at_same_property(self, tmp_path: Path) -> None:
-        src = _write(
-            tmp_path / "s.scrollimation.json",
-            """\
-{
-  title: "T",
-  scroll_range: 100,
-  elements: [
-    {
-      element: {
-        name: "L",
-        html: "<p>hi</p>",
-        position: [0, 0],
-        size: [100, 100],
-      },
-      keyframes: [
-        { at: 50, opacity: 0 },
-        { at: 50, opacity: 1 },
-      ],
-    },
+    { name: "dup", html: "<p>a</p>", position: [0, 0], width: 100, height: 100 },
+    { name: "dup", html: "<p>b</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -364,23 +306,7 @@ class TestValidationViaJson5:
   title: "T",
   scroll_range: -5,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
-  ],
-}
-""",
-        )
-        with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, ScrollimationIR, "scrollimation")
-
-    def test_element_with_both_html_and_asset_rejected(self, tmp_path: Path) -> None:
-        src = _write(
-            tmp_path / "s.scrollimation.json",
-            """\
-{
-  title: "T",
-  scroll_range: 100,
-  elements: [
-    { element: { name: "L", html: "<p>hi</p>", image: "img.jpg", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,

@@ -77,21 +77,13 @@ def resolve_asset_paths(
 ) -> list:
     """Resolve relative image paths to absolute for any ``ImageElement`` instances.
 
-    Works with both bare elements and ``ElementAnimation`` wrappers.
     Returns a new list (frozen models require copies).
     """
-    from scrolly.slide.ir._framework.animation import ElementAnimation
     from scrolly.slide.ir._framework.element import ImageElement
 
     resolved = []
     for item in elements:
-        if isinstance(item, ElementAnimation):
-            el = item.element
-            if isinstance(el, ImageElement):
-                abs_path = (source_dir / el.image).resolve()
-                el = el.model_copy(update={"image": abs_path})
-                item = item.model_copy(update={"element": el})
-        elif isinstance(item, ImageElement):
+        if isinstance(item, ImageElement):
             abs_path = (source_dir / item.image).resolve()
             item = item.model_copy(update={"image": abs_path})
         resolved.append(item)

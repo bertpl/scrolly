@@ -1,4 +1,4 @@
-"""Tests for SlideElement, element types, ElementAnimation, and shared validation."""
+"""Tests for SlideElement, element types, and shared validation."""
 
 from __future__ import annotations
 
@@ -8,36 +8,37 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from scrolly.slide.ir import (
-    ElementAnimation,
+    AnimatedScalar,
+    AnimatedVec2,
     HtmlElement,
     ImageElement,
-    InitialState,
-    Keyframe,
     MarkdownElement,
     MermaidElement,
+    ScalarKeyframes,
     SlideElement,
+    Vec2Keyframes,
 )
 
 # ── helpers ───────────────────────────────────────────────────────
 
 
 def _html(**overrides) -> dict:
-    base = {"html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}
+    base = {"html": "<p>hi</p>", "position": [0, 0], "width": 100, "height": 100}
     return {**base, **overrides}
 
 
 def _asset(**overrides) -> dict:
-    base = {"image": "img.jpg", "position": [0, 0], "size": [100, 100], "object_fit": "cover"}
+    base = {"image": "img.jpg", "position": [0, 0], "width": 100, "height": 100, "object_fit": "cover"}
     return {**base, **overrides}
 
 
 def _md(**overrides) -> dict:
-    base = {"markdown": "# Hi", "position": [10, 30], "size": [80, "auto"]}
+    base = {"markdown": "# Hi", "position": [10, 30], "width": 80, "height": "auto"}
     return {**base, **overrides}
 
 
 def _mermaid(**overrides) -> dict:
-    base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "size": [80, "auto"]}
+    base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "width": 80, "height": "auto"}
     return {**base, **overrides}
 
 
@@ -63,15 +64,39 @@ class TestSlideElement:
 
     def test_default_anchor(self):
         el = HtmlElement(**_html())
-        assert el.anchor == (0.0, 0.0)
+        assert el.anchor.static_value == (0.0, 0.0)
 
     def test_custom_anchor(self):
         el = HtmlElement(**_html(anchor=[50, 50]))
-        assert el.anchor == (50, 50)
+        assert el.anchor.static_value == (50, 50)
 
     def test_extra_field_rejected(self):
         with pytest.raises(ValidationError, match="Extra inputs"):
             HtmlElement(**_html(bogus="x"))
+
+    def test_default_opacity(self):
+        el = HtmlElement(**_html())
+        assert el.opacity.static_value == 1.0
+
+    def test_default_scale(self):
+        el = HtmlElement(**_html())
+        assert el.scale.static_value == 1.0
+
+    def test_default_angle(self):
+        el = HtmlElement(**_html())
+        assert el.angle.static_value == 0.0
+
+    def test_animated_opacity(self):
+        kfs = {"keyframes": [(0, 0.0), (1000, 1.0)]}
+        el = HtmlElement(**_html(opacity=kfs))
+        assert el.opacity.is_animated
+        assert el.opacity.keyframes == [(0, 0.0), (1000, 1.0)]
+
+    def test_animated_position(self):
+        kfs = {"keyframes": [(0, (0, 0)), (1000, (50, 50))]}
+        el = HtmlElement(**_html(position=kfs))
+        assert el.position.is_animated
+        assert el.position.keyframes == [(0, (0, 0)), (1000, (50, 50))]
 
 
 # ── Size validation ───────────────────────────────────────────────
@@ -79,32 +104,35 @@ class TestSlideElement:
 
 class TestSizeValidation:
     def test_auto_auto_rejected(self):
-        with pytest.raises(ValidationError, match="at least one size dimension must be numeric"):
-            HtmlElement(**_html(size=["auto", "auto"]))
+        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+            HtmlElement(**_html(width="auto", height="auto"))
 
     def test_zero_width_rejected(self):
-        with pytest.raises(ValidationError, match="width must be > 0"):
-            HtmlElement(**_html(size=[0, 100]))
+        with pytest.raises(ValidationError, match="numeric width must be > 0"):
+            HtmlElement(**_html(width=0, height=100))
 
     def test_negative_height_rejected(self):
-        with pytest.raises(ValidationError, match="height must be > 0"):
-            HtmlElement(**_html(size=[100, -5]))
+        with pytest.raises(ValidationError, match="numeric height must be > 0"):
+            HtmlElement(**_html(width=100, height=-5))
 
     def test_auto_width_numeric_height(self):
-        el = HtmlElement(**_html(size=["auto", 50]))
-        assert el.size == ("auto", 50)
+        el = HtmlElement(**_html(width="auto", height=50))
+        assert el.width.is_auto
+        assert el.height.static_value == 50
 
     def test_numeric_width_auto_height(self):
-        el = HtmlElement(**_html(size=[80, "auto"]))
-        assert el.size == (80, "auto")
+        el = HtmlElement(**_html(width=80, height="auto"))
+        assert el.width.static_value == 80
+        assert el.height.is_auto
 
     def test_oversized_values_allowed(self):
-        el = HtmlElement(**_html(size=[200, 300]))
-        assert el.size == (200, 300)
+        el = HtmlElement(**_html(width=200, height=300))
+        assert el.width.static_value == 200
+        assert el.height.static_value == 300
 
     def test_negative_position_allowed(self):
         el = HtmlElement(**_html(position=[-50, -100]))
-        assert el.position == (-50, -100)
+        assert el.position.static_value == (-50, -100)
 
 
 # ── ImageElement ──────────────────────────────────────────────────
@@ -125,7 +153,7 @@ class TestImageElement:
         assert el.object_fit == "fill"
 
     def test_auto_size_without_object_fit(self):
-        el = ImageElement(**_asset(size=[100, "auto"], object_fit=None))
+        el = ImageElement(**_asset(width=100, height="auto", object_fit=None))
         assert el.object_fit is None
 
     def test_object_fit_required_when_both_numeric(self):
@@ -134,7 +162,7 @@ class TestImageElement:
 
     def test_object_fit_forbidden_with_auto(self):
         with pytest.raises(ValidationError, match="object_fit is forbidden"):
-            ImageElement(**_asset(size=[100, "auto"], object_fit="cover"))
+            ImageElement(**_asset(width=100, height="auto", object_fit="cover"))
 
     def test_extra_field_rejected(self):
         with pytest.raises(ValidationError, match="Extra inputs"):
@@ -191,85 +219,15 @@ class TestMermaidElement:
             MermaidElement(**_mermaid(html="sneaky"))
 
     def test_auto_height(self):
-        el = MermaidElement(**_mermaid(size=[80, "auto"]))
-        assert el.size == (80, "auto")
+        el = MermaidElement(**_mermaid(width=80, height="auto"))
+        assert el.width.static_value == 80
+        assert el.height.is_auto
 
     def test_both_numeric_size(self):
-        el = MermaidElement(**_mermaid(size=[40, 50]))
-        assert el.size == (40, 50)
+        el = MermaidElement(**_mermaid(width=40, height=50))
+        assert el.width.static_value == 40
+        assert el.height.static_value == 50
 
     def test_size_validation_applies(self):
-        with pytest.raises(ValidationError, match="at least one size dimension must be numeric"):
-            MermaidElement(**_mermaid(size=["auto", "auto"]))
-
-
-# ── InitialState ──────────────────────────────────────────────────
-
-
-class TestInitialState:
-    def test_defaults(self):
-        s = InitialState()
-        assert s.opacity == 1.0
-        assert s.translate == (0.0, 0.0)
-        assert s.scale == 1.0
-        assert s.rotate == 0.0
-
-    def test_custom_values(self):
-        s = InitialState(opacity=0.5, translate=(10, -20), scale=2.0, rotate=45)
-        assert s.opacity == 0.5
-        assert s.translate == (10, -20)
-
-
-# ── Keyframe ──────────────────────────────────────────────────────
-
-
-class TestKeyframe:
-    def test_sparse(self):
-        kf = Keyframe(at=100, opacity=0.5)
-        assert kf.at == 100
-        assert kf.opacity == 0.5
-        assert kf.translate is None
-        assert kf.scale is None
-        assert kf.rotate is None
-
-    def test_all_properties(self):
-        kf = Keyframe(at=0, opacity=1, translate=(50, 50), scale=2, rotate=90)
-        assert kf.translate == (50, 50)
-
-
-# ── ElementAnimation ─────────────────────────────────────────────
-
-
-class TestElementAnimation:
-    def test_wraps_element(self):
-        el = HtmlElement(**_html(name="L"))
-        anim = ElementAnimation(element=el)
-        assert anim.element is el
-        assert anim.initial == InitialState()
-        assert anim.keyframes == []
-
-    def test_with_animation(self):
-        el = ImageElement(**_asset(name="bg"))
-        anim = ElementAnimation(
-            element=el,
-            initial=InitialState(opacity=0),
-            keyframes=[Keyframe(at=0, opacity=0), Keyframe(at=500, opacity=1)],
-        )
-        assert anim.initial.opacity == 0
-        assert len(anim.keyframes) == 2
-
-    def test_frozen(self):
-        el = HtmlElement(**_html())
-        anim = ElementAnimation(element=el)
-        with pytest.raises(ValidationError):
-            anim.keyframes = []
-
-    def test_element_types_discriminated(self):
-        for el, cls in [
-            (HtmlElement(**_html()), HtmlElement),
-            (ImageElement(**_asset()), ImageElement),
-            (MarkdownElement(**_md()), MarkdownElement),
-            (MermaidElement(**_mermaid()), MermaidElement),
-        ]:
-            anim = ElementAnimation(element=el)
-            assert isinstance(anim.element, cls)
+        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+            MermaidElement(**_mermaid(width="auto", height="auto"))

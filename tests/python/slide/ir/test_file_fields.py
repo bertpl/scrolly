@@ -31,13 +31,13 @@ class TestMarkdownFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "txt", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
+    { name: "txt", markdown_file: "content.md", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert ir.elements[0].element.markdown == "# Hello from file"
+        assert ir.elements[0].markdown == "# Hello from file"
 
     def test_storyboard_markdown_file(self, tmp_path: Path) -> None:
         _write(tmp_path / "content.md", "# Scene text")
@@ -47,7 +47,7 @@ class TestMarkdownFile:
 {
   title: "T",
   scene_distance: 100,
-  scenes: [{ elements: [{ markdown_file: "content.md", position: [10, 10], size: [80, "auto"] }] }],
+  scenes: [{ elements: [{ markdown_file: "content.md", position: [10, 10], width: 80, height: "auto" }] }],
 }
 """,
         )
@@ -68,13 +68,13 @@ class TestHtmlFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "h", html_file: "box.html", position: [0, 0], size: [100, 100] } },
+    { name: "h", html_file: "box.html", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert ir.elements[0].element.html == "<div>hello</div>"
+        assert ir.elements[0].html == "<div>hello</div>"
 
 
 # ── mermaid_file ─────────────────────────────────────────────────
@@ -90,14 +90,14 @@ class TestMermaidFile:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dia", mermaid_file: "diagram.mmd", position: [10, 10], size: [80, "auto"] } },
+    { name: "dia", mermaid_file: "diagram.mmd", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert isinstance(ir.elements[0].element, MermaidElement)
-        assert ir.elements[0].element.mermaid == "graph LR\n  A --> B --> C"
+        assert isinstance(ir.elements[0], MermaidElement)
+        assert ir.elements[0].mermaid == "graph LR\n  A --> B --> C"
 
     def test_storyboard_mermaid_file(self, tmp_path: Path) -> None:
         _write(tmp_path / "diagram.mmd", "graph TD\n  X --> Y")
@@ -107,7 +107,7 @@ class TestMermaidFile:
 {
   title: "T",
   scene_distance: 100,
-  scenes: [{ elements: [{ mermaid_file: "diagram.mmd", position: [10, 10], size: [80, "auto"] }] }],
+  scenes: [{ elements: [{ mermaid_file: "diagram.mmd", position: [10, 10], width: 80, height: "auto" }] }],
 }
 """,
         )
@@ -129,13 +129,13 @@ class TestPathResolution:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "txt", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
+    { name: "txt", markdown_file: "content.md", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert ir.elements[0].element.markdown == "# Relative"
+        assert ir.elements[0].markdown == "# Relative"
 
     def test_subdirectory_path(self, tmp_path: Path) -> None:
         _write(tmp_path / "diagrams" / "arch.mmd", "graph LR\n  A --> B")
@@ -146,13 +146,13 @@ class TestPathResolution:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "dia", mermaid_file: "diagrams/arch.mmd", position: [10, 10], size: [80, "auto"] } },
+    { name: "dia", mermaid_file: "diagrams/arch.mmd", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert "A --> B" in ir.elements[0].element.mermaid
+        assert "A --> B" in ir.elements[0].mermaid
 
 
 # ── Error cases ──────────────────────────────────────────────────
@@ -168,7 +168,7 @@ class TestErrors:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "txt", markdown: "inline", markdown_file: "content.md", position: [10, 10], size: [80, "auto"] } },
+    { name: "txt", markdown: "inline", markdown_file: "content.md", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
@@ -184,7 +184,7 @@ class TestErrors:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "txt", markdown_file: "nonexistent.md", position: [10, 10], size: [80, "auto"] } },
+    { name: "txt", markdown_file: "nonexistent.md", position: [10, 10], width: 80, height: "auto" },
   ],
 }
 """,
@@ -201,7 +201,7 @@ class TestErrors:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "h", html: "<p>inline</p>", html_file: "box.html", position: [0, 0], size: [100, 100] } },
+    { name: "h", html: "<p>inline</p>", html_file: "box.html", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
@@ -223,10 +223,10 @@ class TestNonElementDicts:
   title: "T",
   scroll_range: 100,
   elements: [
-    { element: { name: "L", html: "<p>hi</p>", position: [0, 0], size: [100, 100] } },
+    { name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
   ],
 }
 """,
         )
         ir = ScrollimationIR.from_file(src)
-        assert ir.elements[0].element.html == "<p>hi</p>"
+        assert ir.elements[0].html == "<p>hi</p>"

@@ -22,8 +22,8 @@ MINIMAL = """\
   title: "Test",
   scene_distance: 100,
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [10, 30], size: [80, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [10, 30], size: [80, "auto"] }] },
+    { elements: [{ html: "<p>A</p>", position: [10, 30], width: 80, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [10, 30], width: 80, height: "auto" }] },
   ],
 }
 """
@@ -55,8 +55,8 @@ class TestParsing:
   scene_distance: 100,
   hold: 20,
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [0, 0], size: [100, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
@@ -72,11 +72,11 @@ class TestParsing:
   title: "T",
   scene_distance: 100,
   background: [
-    { image: "bg.svg", position: [0, 0], size: [100, 100], object_fit: "cover" },
+    { image: "bg.svg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
   ],
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [0, 0], size: [100, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
@@ -95,12 +95,12 @@ class TestParsing:
   scenes: [
     {
       elements: [
-        { image: "img.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" },
-        { html: "<p>hi</p>", position: [10, 10], size: [80, "auto"] },
-        { markdown: "# Hello", position: [10, 50], size: [80, "auto"] },
+        { image: "img.jpg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
+        { html: "<p>hi</p>", position: [10, 10], width: 80, height: "auto" },
+        { markdown: "# Hello", position: [10, 50], width: 80, height: "auto" },
       ],
     },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
@@ -119,8 +119,8 @@ class TestParsing:
   title: "T",
   scene_distance: 100,
   scenes: [
-    { elements: [{ markdown: "# Hi", color: "#fff", position: [0, 0], size: [80, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ markdown: "# Hi", color: "#fff", position: [0, 0], width: 80, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
@@ -137,8 +137,8 @@ class TestParsing:
   title: "T",
   scene_distance: 100,
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [10, 30], size: [80, "auto"], }] },
-    { elements: [{ html: "<p>B</p>", position: [10, 30], size: [80, "auto"], }] },
+    { elements: [{ html: "<p>A</p>", position: [10, 30], width: 80, height: "auto", }] },
+    { elements: [{ html: "<p>B</p>", position: [10, 30], width: 80, height: "auto", }] },
   ],  // trailing comma
 }
 """,
@@ -168,7 +168,7 @@ class TestParseErrors:
             """\
 {
   scene_distance: 100,
-  scenes: [{ elements: [{ html: "<p>A</p>", position: [0, 0], size: [100, "auto"] }] }],
+  scenes: [{ elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] }],
 }
 """,
         )
@@ -199,8 +199,8 @@ class TestParseErrors:
   scene_distance: 100,
   hold: 50,
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [0, 0], size: [100, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,

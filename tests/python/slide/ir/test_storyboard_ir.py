@@ -14,22 +14,22 @@ from scrolly.slide.ir.storyboard import StoryboardIR, StoryboardScene
 
 
 def _html_element(**overrides) -> dict:
-    base = {"html": "<p>hi</p>", "position": [10, 30], "size": [80, "auto"]}
+    base = {"html": "<p>hi</p>", "position": [10, 30], "width": 80, "height": "auto"}
     return {**base, **overrides}
 
 
 def _image_element(**overrides) -> dict:
-    base = {"image": "img.jpg", "position": [0, 0], "size": [100, 100], "object_fit": "cover"}
+    base = {"image": "img.jpg", "position": [0, 0], "width": 100, "height": 100, "object_fit": "cover"}
     return {**base, **overrides}
 
 
 def _md_element(**overrides) -> dict:
-    base = {"markdown": "# Hi", "position": [10, 30], "size": [80, "auto"]}
+    base = {"markdown": "# Hi", "position": [10, 30], "width": 80, "height": "auto"}
     return {**base, **overrides}
 
 
 def _mermaid_element(**overrides) -> dict:
-    base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "size": [80, "auto"]}
+    base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "width": 80, "height": "auto"}
     return {**base, **overrides}
 
 
@@ -71,10 +71,10 @@ class TestImageElement:
 
     def test_object_fit_forbidden_with_auto(self):
         with pytest.raises(ValidationError, match="object_fit is forbidden"):
-            ImageElement(**_image_element(size=[100, "auto"], object_fit="cover"))
+            ImageElement(**_image_element(width=100, height="auto", object_fit="cover"))
 
     def test_auto_size_without_object_fit(self):
-        item = ImageElement(**_image_element(size=[100, "auto"], object_fit=None))
+        item = ImageElement(**_image_element(width=100, height="auto", object_fit=None))
         assert item.object_fit is None
 
 
@@ -116,16 +116,16 @@ class TestMermaidElement:
 
 class TestElementSizeValidation:
     def test_auto_auto_rejected(self):
-        with pytest.raises(ValidationError, match="at least one size dimension"):
-            HtmlElement(**_html_element(size=["auto", "auto"]))
+        with pytest.raises(ValidationError, match="non-auto"):
+            HtmlElement(**_html_element(width="auto", height="auto"))
 
     def test_zero_width_rejected(self):
         with pytest.raises(ValidationError, match="width must be > 0"):
-            HtmlElement(**_html_element(size=[0, 100]))
+            HtmlElement(**_html_element(width=0, height=100))
 
     def test_negative_height_rejected(self):
         with pytest.raises(ValidationError, match="height must be > 0"):
-            HtmlElement(**_html_element(size=[100, -5]))
+            HtmlElement(**_html_element(width=100, height=-5))
 
 
 # ── StoryboardScene ──────────────────────────────────────────────
@@ -150,6 +150,18 @@ class TestStoryboardScene:
     def test_element_with_name_accepted(self):
         scene = StoryboardScene(elements=[_html_element(name="my-label")])
         assert scene.elements[0].name == "my-label"
+
+    def test_animated_opacity_rejected(self):
+        with pytest.raises(ValidationError, match="must be static"):
+            StoryboardScene(elements=[_html_element(opacity={"keyframes": [[0, 1], [500, 0]]})])
+
+    def test_animated_position_rejected(self):
+        with pytest.raises(ValidationError, match="must be static"):
+            StoryboardScene(elements=[_html_element(position={"keyframes": [[0, [0, 0]], [500, [50, 50]]]})])
+
+    def test_animated_width_rejected(self):
+        with pytest.raises(ValidationError, match="must be static"):
+            StoryboardScene(elements=[_html_element(width={"keyframes": [[0, 80], [500, 60]]})])
 
 
 # ── StoryboardIR ─────────────────────────────────────────────────
@@ -240,8 +252,8 @@ MINIMAL_STORYBOARD = """\
   title: "Test",
   scene_distance: 100,
   scenes: [
-    { elements: [{ html: "<p>Scene 1</p>", position: [10, 30], size: [80, "auto"] }] },
-    { elements: [{ html: "<p>Scene 2</p>", position: [10, 30], size: [80, "auto"] }] },
+    { elements: [{ html: "<p>Scene 1</p>", position: [10, 30], width: 80, height: "auto" }] },
+    { elements: [{ html: "<p>Scene 2</p>", position: [10, 30], width: 80, height: "auto" }] },
   ],
 }
 """
@@ -265,11 +277,11 @@ class TestFromFile:
   title: "T",
   scene_distance: 100,
   background: [
-    { image: "bg.svg", position: [0, 0], size: [100, 100], object_fit: "cover" },
+    { image: "bg.svg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
   ],
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [0, 0], size: [100, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
@@ -287,8 +299,8 @@ class TestFromFile:
   title: "T",
   scene_distance: 100,
   scenes: [
-    { elements: [{ image: "img.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ image: "img.jpg", position: [0, 0], width: 100, height: 100, object_fit: "cover" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,

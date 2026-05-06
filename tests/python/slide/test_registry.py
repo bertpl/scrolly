@@ -225,7 +225,7 @@ def test_scrollimation_ir_finds_renderer():
     ir = ScrollimationIR(
         title="T",
         scroll_range=100,
-        elements=[{"element": {"html": "<p>hi</p>", "position": [0, 0], "size": [100, 100]}}],
+        elements=[{"html": "<p>hi</p>", "position": [0, 0], "width": 100, "height": 100}],
     )
     assert find_renderer(ir) is not None
 
@@ -237,8 +237,8 @@ def test_storyboard_ir_finds_compiler():
         title="T",
         scene_distance=100,
         scenes=[
-            {"elements": [{"html": "<p>1</p>", "position": [0, 0], "size": [80, "auto"]}]},
-            {"elements": [{"html": "<p>2</p>", "position": [0, 0], "size": [80, "auto"]}]},
+            {"elements": [{"html": "<p>1</p>", "position": [0, 0], "width": 80, "height": "auto"}]},
+            {"elements": [{"html": "<p>2</p>", "position": [0, 0], "width": 80, "height": "auto"}]},
         ],
     )
     assert find_compiler(ir) is not None

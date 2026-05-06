@@ -24,8 +24,8 @@ MINIMAL_STORYBOARD = """\
   title: "Test Storyboard",
   scene_distance: 100,
   scenes: [
-    { elements: [{ html: "<p>Scene 1</p>", position: [10, 30], size: [80, "auto"] }] },
-    { elements: [{ html: "<p>Scene 2</p>", position: [10, 30], size: [80, "auto"] }] },
+    { elements: [{ html: "<p>Scene 1</p>", position: [10, 30], width: 80, height: "auto" }] },
+    { elements: [{ html: "<p>Scene 2</p>", position: [10, 30], width: 80, height: "auto" }] },
   ],
 }
 """
@@ -88,11 +88,11 @@ class TestDispatchChain:
   title: "T",
   scene_distance: 100,
   background: [
-    { image: "bg.svg", position: [0, 0], size: [100, 100], object_fit: "cover" },
+    { image: "bg.svg", position: [0, 0], width: 100, height: 100, object_fit: "cover" },
   ],
   scenes: [
-    { elements: [{ html: "<p>A</p>", position: [0, 0], size: [100, "auto"] }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
@@ -109,8 +109,8 @@ class TestDispatchChain:
   title: "T",
   scene_distance: 100,
   scenes: [
-    { elements: [{ image: "img.jpg", position: [0, 0], size: [100, 100], object_fit: "cover" }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], size: [100, "auto"] }] },
+    { elements: [{ image: "img.jpg", position: [0, 0], width: 100, height: 100, object_fit: "cover" }] },
+    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
   ],
 }
 """,
