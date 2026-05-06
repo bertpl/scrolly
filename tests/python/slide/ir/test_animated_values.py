@@ -13,10 +13,10 @@ from scrolly.slide.ir import (
     Vec2Keyframes,
 )
 
-
 # ==================================================================================================
 #  ScalarKeyframes
 # ==================================================================================================
+
 
 class TestScalarKeyframes:
     """Tests for ScalarKeyframes validation and construction."""
@@ -53,6 +53,7 @@ class TestScalarKeyframes:
 #  Vec2Keyframes
 # ==================================================================================================
 
+
 class TestVec2Keyframes:
     """Tests for Vec2Keyframes validation and construction."""
 
@@ -77,6 +78,7 @@ class TestVec2Keyframes:
 # ==================================================================================================
 #  AnimatedScalar
 # ==================================================================================================
+
 
 class TestAnimatedScalar:
     """Tests for AnimatedScalar parsing, properties, and serialization."""
@@ -123,6 +125,7 @@ class TestAnimatedScalar:
 
     def test_json_parse_static(self) -> None:
         """Pydantic parses a bare number as a static AnimatedScalar."""
+
         # --- arrange ----------------------
         class Model(BaseModel):
             opacity: AnimatedScalar = AnimatedScalar(1.0)
@@ -136,6 +139,7 @@ class TestAnimatedScalar:
 
     def test_json_parse_animated(self) -> None:
         """Pydantic parses a dict with keyframes as an animated AnimatedScalar."""
+
         # --- arrange ----------------------
         class Model(BaseModel):
             opacity: AnimatedScalar = AnimatedScalar(1.0)
@@ -149,6 +153,7 @@ class TestAnimatedScalar:
 
     def test_json_parse_default(self) -> None:
         """Omitted field uses the default static value."""
+
         # --- arrange ----------------------
         class Model(BaseModel):
             opacity: AnimatedScalar = AnimatedScalar(1.0)
@@ -183,6 +188,7 @@ class TestAnimatedScalar:
 # ==================================================================================================
 #  AnimatedVec2
 # ==================================================================================================
+
 
 class TestAnimatedVec2:
     """Tests for AnimatedVec2 parsing, properties, and serialization."""
@@ -221,6 +227,7 @@ class TestAnimatedVec2:
 
     def test_json_parse_static(self) -> None:
         """Pydantic parses a [x, y] list as a static AnimatedVec2."""
+
         # --- arrange ----------------------
         class Model(BaseModel):
             position: AnimatedVec2
@@ -234,6 +241,7 @@ class TestAnimatedVec2:
 
     def test_json_parse_animated(self) -> None:
         """Pydantic parses a dict with keyframes as an animated AnimatedVec2."""
+
         # --- arrange ----------------------
         class Model(BaseModel):
             position: AnimatedVec2
@@ -269,6 +277,7 @@ class TestAnimatedVec2:
 # ==================================================================================================
 #  AnimatedSizeDim
 # ==================================================================================================
+
 
 class TestAnimatedSizeDim:
     """Tests for AnimatedSizeDim parsing, properties, and serialization."""
@@ -397,6 +406,7 @@ class TestAnimatedSizeDim:
 # ==================================================================================================
 #  JSON schema output
 # ==================================================================================================
+
 
 class TestJsonSchema:
     """Verify JSON schema generation produces usable oneOf schemas."""
