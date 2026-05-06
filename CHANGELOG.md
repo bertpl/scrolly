@@ -9,10 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Animated value types (`AnimatedScalar`, `AnimatedVec2`, `AnimatedSizeDim`) for the
-  upcoming unified animation model.
+- Element properties (`position`, `anchor`, `opacity`, `scale`, `angle`, `width`, `height`)
+  can now be either static values or keyframe animations directly on the element.
 
 ### Changed
+
+- `size: [w, h]` replaced by separate `width` and `height` fields (independently animatable).
+- `rotate` renamed to `angle`.
+- `translate` removed — use animated `position` instead.
+- Scrollimation JSON format simplified: elements are flat objects, no `element`/`initial`/`keyframes` wrapper.
 
 ### Deprecated
 

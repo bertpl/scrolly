@@ -7,123 +7,79 @@
   elements: [
     // Background image — full-bleed with 20% vertical overshoot for parallax
     {
-      element: {
-        name: "bg",
-        image: "hero-bg.svg",
-        position: [0, 0],
-        size: [100, 120],
-        object_fit: "cover",
-      },
-      keyframes: [
-        { at: 0,    translate: [0, 0] },
-        { at: 1500, translate: [0, -20] },
-      ],
+      name: "bg",
+      image: "hero-bg.svg",
+      position: { keyframes: [[0, [0, 0]], [1500, [0, -20]]] },
+      width: 100,
+      height: 120,
+      object_fit: "cover",
     },
 
     // Dark separator plane — slides in, holds through caption + diagram, slides out
     {
-      element: {
-        name: "separator",
-        html: "<div style='width:100%;height:100%;background:#000'></div>",
-        position: [0, 0],
-        size: [100, 100],
-      },
-      initial: { translate: [0, 100] },
-      keyframes: [
-        { at: 200,  translate: [0, 100] },
-        { at: 400,  translate: [0, 0] },
-        { at: 1100, translate: [0, 0] },
-        { at: 1300, translate: [0, -100] },
-      ],
+      name: "separator",
+      html: "<div style='width:100%;height:100%;background:#000'></div>",
+      position: { keyframes: [[200, [0, 100]], [400, [0, 0]], [1100, [0, 0]], [1300, [0, -100]]] },
+      width: 100,
+      height: 100,
     },
 
     // Caption text — fades in over the separator
     {
-      element: {
-        name: "caption",
-        markdown: "## Scrollimation\n\nLayers animate as a function of scroll position.\n\nThis slide demonstrates all four element types:\nasset, html, markdown, and mermaid.",
-        color: "#ffffff",
-        position: [15, 30],
-        size: [70, "auto"],
-      },
-      initial: { opacity: 0 },
-      keyframes: [
-        { at: 350,  opacity: 0 },
-        { at: 450,  opacity: 1 },
-        { at: 600,  opacity: 1 },
-        { at: 700,  opacity: 0 },
-      ],
+      name: "caption",
+      markdown: "## Scrollimation\n\nLayers animate as a function of scroll position.\n\nThis slide demonstrates all four element types:\nasset, html, markdown, and mermaid.",
+      color: "#ffffff",
+      position: [15, 30],
+      width: 70,
+      height: "auto",
+      opacity: { keyframes: [[350, 0], [450, 1], [600, 1], [700, 0]] },
     },
 
     // White background for the mermaid diagram
     {
-      element: {
-        name: "diagram-bg",
-        html: "<div style='width:100%;height:100%;background:#fff;border-radius:8px'></div>",
-        position: [12, 12],
-        size: [76, 76],
-      },
-      initial: { opacity: 0 },
-      keyframes: [
-        { at: 850,  opacity: 0 },
-        { at: 950,  opacity: 1 },
-        { at: 1100, opacity: 1 },
-        { at: 1200, opacity: 0 },
-      ],
+      name: "diagram-bg",
+      html: "<div style='width:100%;height:100%;background:#fff;border-radius:8px'></div>",
+      position: [12, 12],
+      width: 76,
+      height: 76,
+      opacity: { keyframes: [[850, 0], [950, 1], [1100, 1], [1200, 0]] },
     },
 
     // Mermaid diagram — fades in after caption, over white background
     {
-      element: {
-        name: "diagram",
-        mermaid_file: "demo-diagram.mmd",
-        position: [15, 15],
-        size: [70, 70],
-      },
-      initial: { opacity: 0 },
-      keyframes: [
-        { at: 850,  opacity: 0 },
-        { at: 950,  opacity: 1 },
-        { at: 1100, opacity: 1 },
-        { at: 1200, opacity: 0 },
-      ],
+      name: "diagram",
+      mermaid_file: "demo-diagram.mmd",
+      position: [15, 15],
+      width: 70,
+      height: 70,
+      opacity: { keyframes: [[850, 0], [950, 1], [1100, 1], [1200, 0]] },
     },
 
     // Tall badge — demonstrates animated anchor panning over an oversized image.
     // Anchor animates from [50, 0] (top) to [50, 100] (bottom), panning the
     // visible portion without needing to know the viewport aspect ratio.
     {
-      element: {
-        name: "badge",
-        image: "tall-badge.svg",
-        position: [50, 50],
-        size: [20, "auto"],
-      },
-      initial: { opacity: 0, anchor: [50, 0] },
-      keyframes: [
-        { at: 1350, opacity: 0, anchor: [50, 0] },
-        { at: 1400, opacity: 0.3 },
-        { at: 1500, anchor: [50, 50] },
-      ],
+      name: "badge",
+      image: "tall-badge.svg",
+      position: [50, 50],
+      width: 20,
+      height: "auto",
+      opacity: { keyframes: [[1350, 0], [1500, 0.3]] },
+      anchor: { keyframes: [[1350, [50, 0]], [1500, [50, 50]]] },
     },
 
     // Markdown element — appears at the end over the gradient background.
     // anchor: [50, 0] centers horizontally at position x=50 (middle of slide).
     {
-      element: {
-        name: "attribution",
-        markdown: "*Scroll-driven animation — v0.0.16*",
-        color: "rgba(255,255,255,0.8)",
-        position: [50, 80],
-        size: [50, "auto"],
-        anchor: [50, 0],
-        text_align: "center",
-      },
-      initial: { opacity: 0 },
-      keyframes: [
-        { at: 1350, opacity: 0 },
-        { at: 1450, opacity: 1 },
-      ],
+      name: "attribution",
+      markdown: "*Scroll-driven animation — v0.1.3*",
+      color: "rgba(255,255,255,0.8)",
+      position: [50, 80],
+      width: 50,
+      height: "auto",
+      anchor: [50, 0],
+      text_align: "center",
+      opacity: { keyframes: [[1350, 0], [1450, 1]] },
     },
   ],
 }

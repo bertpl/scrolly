@@ -3,7 +3,8 @@
 A storyboard is a sequence of scenes cross-faded by scrolling.  The IR
 captures the authored structure; the compiler generates
 ``ScrollimationIR`` with the appropriate opacity keyframes.  Storyboard
-uses the shared ``SlideElement`` types directly (no animation wrapper).
+uses the shared ``SlideElement`` types directly — all animatable fields
+must be static (the compiler owns all animation).
 """
 
 from __future__ import annotations
@@ -22,6 +23,15 @@ from scrolly.slide.ir import (
     parse_json5_ir,
     resolve_asset_paths,
 )
+from scrolly.slide.ir.scrollimation import AnyElement
+
+
+def _validate_static_element(el: AnyElement, context: str) -> None:
+    """Raise ValueError if any animatable field is animated."""
+    for field_name in ("position", "anchor", "opacity", "scale", "angle", "width", "height"):
+        field_val = getattr(el, field_name)
+        if field_val.is_animated:
+            raise ValueError(f"{context}: field '{field_name}' must be static in storyboard elements")
 
 
 class StoryboardScene(BaseModel, frozen=True):
@@ -29,14 +39,18 @@ class StoryboardScene(BaseModel, frozen=True):
 
     model_config = ConfigDict(extra="forbid")
 
-    elements: list[ImageElement | HtmlElement | MarkdownElement | MermaidElement] = Field(
+    elements: list[AnyElement] = Field(
         description="Elements visible during this scene. Cross-faded as a group.",
     )
 
     @model_validator(mode="after")
     def _validate(self) -> StoryboardScene:
+        """Validate scene has elements and all are static."""
         if not self.elements:
             raise ValueError("a scene must have at least one element")
+        for i, el in enumerate(self.elements):
+            label = f"'{el.name}'" if el.name else f"element [{i}]"
+            _validate_static_element(el, label)
         return self
 
 
@@ -58,7 +72,7 @@ class StoryboardIR(SlideIR, frozen=True):
             "Must satisfy: 2 * hold < scene_distance."
         ),
     )
-    background: list[ImageElement | HtmlElement | MarkdownElement | MermaidElement] = Field(
+    background: list[AnyElement] = Field(
         default_factory=list,
         description="Elements always visible at full opacity behind all scenes.",
     )
@@ -68,6 +82,7 @@ class StoryboardIR(SlideIR, frozen=True):
 
     @model_validator(mode="after")
     def _validate(self) -> StoryboardIR:
+        """Validate storyboard-level constraints."""
         if self.scene_distance <= 0:
             raise ValueError(f"scene_distance must be > 0, got {self.scene_distance}")
         if self.hold < 0:
@@ -76,10 +91,14 @@ class StoryboardIR(SlideIR, frozen=True):
             raise ValueError(f"2 * hold ({2 * self.hold}) must be < scene_distance ({self.scene_distance})")
         if not self.scenes:
             raise ValueError("at least one scene is required")
+        for i, el in enumerate(self.background):
+            label = f"background '{el.name}'" if el.name else f"background [{i}]"
+            _validate_static_element(el, label)
         return self
 
     @classmethod
     def from_file(cls, source_path: Path) -> Self:
+        """Parse a .storyboard.json source file."""
         ir = parse_json5_ir(source_path, cls, "storyboard")
         source_dir = source_path.parent
 
