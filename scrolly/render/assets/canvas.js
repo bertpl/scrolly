@@ -244,8 +244,11 @@
       this._ranges = new Map();
       this._drag = null;
       this._observer = null;
+      this._snapManager = null;
       this.onPositionChange = null;
     }
+
+    setSnapManager(snapManager) { this._snapManager = snapManager; }
 
     position(slideId) { return this._positions.get(slideId) || 0; }
     range(slideId) { return this._ranges.get(slideId) || 0; }
@@ -297,7 +300,7 @@
       } else {
         thumbHeight = ScrollManager.DEFAULT_THUMB_HEIGHT;
       }
-      const numSnaps = (cfg && cfg.snapPositions) ? cfg.snapPositions.length : 0;
+      const numSnaps = this._snapManager ? this._snapManager.getNumSnaps(slideId) : 0;
       thumbHeight = ScrollManager.computeThumbHeight(thumbHeight, trackHeight, numSnaps);
       const maxOffset = trackHeight - thumbHeight;
       return { trackEl, trackHeight, thumbHeight, maxOffset };
@@ -448,6 +451,12 @@
           this._toggleBtn.blur();
         });
       }
+    }
+
+    getNumSnaps(slideId) {
+      const cfg = this._config[slideId];
+      if (!cfg || !cfg.snapPositions) return 0;
+      return cfg.snapPositions.length;
     }
 
     _snapsFor(slideId) {
@@ -1266,6 +1275,7 @@
     ),
     _container
   );
+  scrollManager.setSnapManager(snapManager);
   const viewState = new ViewState(
     geometry, edgeArrows, snapManager, scrollManager,
     deck.initial_slide, canvas, _container
