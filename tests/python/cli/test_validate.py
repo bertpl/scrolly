@@ -17,8 +17,8 @@ def test_validate_worked_example():
     result = runner.invoke(cli, ["validate", str(deck_file)])
     assert result.exit_code == 0
     assert "Valid" in result.output
-    assert "10 slides" in result.output
-    assert "13 edges" in result.output
+    assert "12 slides" in result.output
+    assert "15 edges" in result.output
 
 
 def test_validate_minimal_deck(tmp_path):
