@@ -81,3 +81,9 @@ The body (optional) explains *why*, not *what*. Wrap at ~72 characters.
 
 Add an entry under the appropriate category in the `## Unreleased` section
 of [`CHANGELOG.md`](CHANGELOG.md) as part of your PR.
+
+Changelog entries are **user-facing** — write them for someone deciding
+whether to upgrade, not for someone reviewing the implementation. Focus on
+what changed from the user's perspective and keep it to one or two concise
+lines. Omit internal details (class names, wiring, refactors that don't
+affect behavior).
