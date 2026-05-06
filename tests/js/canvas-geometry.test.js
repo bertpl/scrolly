@@ -881,3 +881,51 @@ describe("ScrollManager.computeThumbHeight", () => {
     expect(result).toBe(30);
   });
 });
+
+describe("SnapManager.getNumSnaps", () => {
+  it("returns 0 for unknown slideId", () => {
+    const snap = new SnapManager(null, {}, () => null);
+    expect(snap.getNumSnaps("unknown")).toBe(0);
+  });
+
+  it("returns 0 when snapPositions is empty", () => {
+    const snap = new SnapManager(null, { s1: { snapPositions: [] } }, () => null);
+    expect(snap.getNumSnaps("s1")).toBe(0);
+  });
+
+  it("returns count of snap positions", () => {
+    const snap = new SnapManager(null, { s1: { snapPositions: [0, 100, 200, 300] } }, () => null);
+    expect(snap.getNumSnaps("s1")).toBe(4);
+  });
+});
+
+describe("ScrollManager.trackGeometry snap-aware thumb", () => {
+  it("uses snapManager to determine numSnaps for thumb sizing", () => {
+    const scrollCfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0 } };
+    const snapCfg = { s1: { snapPositions: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] } };
+
+    const trackEl = { clientHeight: 300 };
+    const container = { querySelector: (sel) => sel === ".slide-scrollbar" ? trackEl : null };
+
+    const scrollMgr = new ScrollManager(scrollCfg, () => container);
+    const snapMgr = new SnapManager(scrollMgr, snapCfg, () => container);
+    scrollMgr.setSnapManager(snapMgr);
+
+    const geo = scrollMgr.trackGeometry(container, "s1");
+    // 11 snaps, track 300px → cap = (2/3) * (300/11) ≈ 18.18
+    const expected = (2 / 3) * (300 / 11);
+    expect(geo.thumbHeight).toBeCloseTo(expected);
+  });
+
+  it("uses default thumb height when no snapManager is set", () => {
+    const scrollCfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0 } };
+
+    const trackEl = { clientHeight: 300 };
+    const container = { querySelector: (sel) => sel === ".slide-scrollbar" ? trackEl : null };
+
+    const scrollMgr = new ScrollManager(scrollCfg, () => container);
+
+    const geo = scrollMgr.trackGeometry(container, "s1");
+    expect(geo.thumbHeight).toBe(ScrollManager.DEFAULT_THUMB_HEIGHT);
+  });
+});

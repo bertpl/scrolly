@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Scroll thumb snap-aware sizing now triggers correctly. Previously the snap count
+  was never passed to `ScrollManager`, leaving the thumb at its default size regardless
+  of how many snap positions existed.
+
 ### Security
 
 ## 0.1.2 (2026-05-05)

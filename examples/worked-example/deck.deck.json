@@ -18,8 +18,9 @@
         { id: "appendix", position: [1, 2], source: "slides/appendix.static.md" },
       ],
     },
-    { id: "parallax",  position: [0, 3], source: "slides/parallax.scrollimation.json" },
-    { id: "scenes",   position: [1, 3], source: "slides/scenes.storyboard.json" },
+    { id: "parallax",   position: [0, 3], source: "slides/parallax.scrollimation.json" },
+    { id: "scenes",    position: [1, 3], source: "slides/scenes.storyboard.json" },
+    { id: "many-snaps", position: [2, 3], source: "slides/many-snaps.scrollimation.json" },
   ],
   edges: [
     ["setup", "overview"],
@@ -33,6 +34,7 @@
     ["notes", "long-bg"],
     ["intro", "parallax"],
     ["parallax", "scenes"],
+    ["scenes", "many-snaps"],
     ["appendix", "scenes"],
   ],
 }
