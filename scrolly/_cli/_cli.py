@@ -8,6 +8,7 @@ from rich.console import Console
 from scrolly import __version__
 from scrolly.errors import ScrollyError
 from scrolly.pipeline import build_deck, validate_deck_sources
+from scrolly.pipeline.lint import lint_deck
 
 _err_console = Console(stderr=True, highlight=False)
 
@@ -29,13 +30,17 @@ def cli() -> None:
 )
 @click.option("--force", is_flag=True, help="Overwrite a non-empty output directory.")
 @click.option("--no-inline", is_flag=True, help="Write assets as separate files instead of inlining.")
-def build(deck_path: Path, out_dir: Path, force: bool, no_inline: bool) -> None:
+@click.option("--strict", is_flag=True, help="Enable additional lint checks (e.g. out-of-range keyframes).")
+def build(deck_path: Path, out_dir: Path, force: bool, no_inline: bool, strict: bool) -> None:
     """Build a deck into a self-contained HTML presentation."""
     try:
         deck = build_deck(deck_path, out_dir, force=force, inline=not no_inline)
     except ScrollyError as e:
         _err_console.print(f"[red]error:[/red] {e}")
         sys.exit(1)
+
+    if strict:
+        _report_diagnostics(deck)
 
     click.echo(f"Built '{deck.title or '(untitled)'}': {len(deck.slides)} slides, {len(deck.edges)} edges → {out_dir}")
 
@@ -71,7 +76,8 @@ def schema(type_name: str | None) -> None:
 
 @cli.command()
 @click.argument("deck_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-def validate(deck_path: Path) -> None:
+@click.option("--strict", is_flag=True, help="Enable additional lint checks (e.g. out-of-range keyframes).")
+def validate(deck_path: Path, strict: bool) -> None:
     """Validate a deck and all its slide sources without building."""
     try:
         deck = validate_deck_sources(deck_path)
@@ -79,7 +85,17 @@ def validate(deck_path: Path) -> None:
         _err_console.print(f"[red]error:[/red] {e}")
         sys.exit(1)
 
+    if strict:
+        _report_diagnostics(deck)
+
     click.echo(f"Valid: {len(deck.slides)} slides, {len(deck.edges)} edges")
+
+
+def _report_diagnostics(deck) -> None:
+    """Run lint checks and print any diagnostics to stderr."""
+    diagnostics = lint_deck(deck)
+    for d in diagnostics:
+        _err_console.print(f"[yellow]{d.level}:[/yellow] {d.location}: {d.message}")
 
 
 _INIT_DECK = """\

@@ -53,3 +53,39 @@ def test_validate_invalid_slide_content_exits_1(tmp_path):
     deck_file.write_text('{ slides: [{ id: "bad", position: [0, 0], source: "bad.static.md" }], edges: [] }')
     result = runner.invoke(cli, ["validate", str(deck_file)])
     assert result.exit_code == 1
+
+
+def test_validate_strict_reports_out_of_range_keyframes(tmp_path):
+    slide = tmp_path / "slides" / "s.scrollimation.json"
+    slide.parent.mkdir(parents=True)
+    slide.write_text("""{
+  title: "T",
+  scroll_range: 100,
+  elements: [{ html: "<p>hi</p>", position: [0, 0], width: 100, height: 100,
+    opacity: { keyframes: [[0, 1], [200, 0]] } }],
+}""")
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text(
+        '{ slides: [{ id: "s", position: [0, 0], source: "slides/s.scrollimation.json" }], edges: [] }'
+    )
+    result = runner.invoke(cli, ["validate", "--strict", str(deck_file)])
+    assert result.exit_code == 0
+    assert "warning" in result.output
+
+
+def test_validate_without_strict_no_warnings(tmp_path):
+    slide = tmp_path / "slides" / "s.scrollimation.json"
+    slide.parent.mkdir(parents=True)
+    slide.write_text("""{
+  title: "T",
+  scroll_range: 100,
+  elements: [{ html: "<p>hi</p>", position: [0, 0], width: 100, height: 100,
+    opacity: { keyframes: [[0, 1], [200, 0]] } }],
+}""")
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text(
+        '{ slides: [{ id: "s", position: [0, 0], source: "slides/s.scrollimation.json" }], edges: [] }'
+    )
+    result = runner.invoke(cli, ["validate", str(deck_file)])
+    assert result.exit_code == 0
+    assert "warning" not in result.output
