@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Animated value types (`AnimatedScalar`, `AnimatedVec2`, `AnimatedSizeDim`) for the
+  upcoming unified animation model.
+
 ### Changed
 
 ### Deprecated
