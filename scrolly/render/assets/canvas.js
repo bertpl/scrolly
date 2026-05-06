@@ -1023,10 +1023,11 @@
     computePaths() {
       const geo = this._geometry;
       if (geo.cols === 0 || geo.rows === 0) return null;
+      const { cols, rows } = geo.effectiveGridSize();
       return {
-        viewBox: "0 0 " + geo.cols + " " + geo.rows,
-        width: (geo.cols * 100) + "dvw",
-        height: (geo.rows * 100) + "dvh",
+        viewBox: "0 0 " + cols + " " + rows,
+        width: (cols * 100) + "dvw",
+        height: (rows * 100) + "dvh",
         paths: geo.edges.map((edge) => geo.buildPath(edge)).filter(Boolean),
       };
     }
