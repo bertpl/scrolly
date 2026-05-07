@@ -655,6 +655,18 @@ body.view-slide:has(.slide-container.selected.has-scroll) .snap-control {
  * as a view-toggle and is always visible and clickable.
  */
 
+/* In slide view, hide non-selected slides to reduce GPU compositor layers.
+ * Prevents Chrome subpixel rendering artefacts (intermittent 1px black
+ * lines at transform boundaries). During transitions all slides must be
+ * visible for the zoom animation to look correct. */
+body.view-slide .slide-container:not(.selected) {
+  visibility: hidden;
+}
+
+body.view-slide.view-transitioning .slide-container:not(.selected) {
+  visibility: visible;
+}
+
 /* In deck view, slides are click-targets for navigation. Gaps between
  * slides are handled by the --gap-x / --gap-y custom properties set by
  * JS on each slide container — no per-slide transform needed. */
