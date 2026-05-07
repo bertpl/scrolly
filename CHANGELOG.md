@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compositor layers.
 - Improved rendering performance in scrollimation slides by hiding elements at zero opacity,
   reducing GPU compositor layers during scroll.
+- Improved rendering quality for animated elements by promoting them to dedicated GPU
+  layers, avoiding invalidation rectangle rounding artefacts.
 
 ### Security
 

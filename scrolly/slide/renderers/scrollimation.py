@@ -205,11 +205,13 @@ def _element_css(ns: str, el: AnyElement, eid: str, index: int) -> str:
 
     origin_x, origin_y, anchor_translate = _anchor_exprs(el.anchor)
 
-    markdown_lines = ""
+    extra_lines = ""
+    if el.position.is_animated or el.anchor.is_animated or el.angle.is_animated:
+        extra_lines += "  will-change: transform;\n"
     if isinstance(el, MarkdownElement):
-        markdown_lines = f"  color: {el.color};\n"
+        extra_lines += f"  color: {el.color};\n"
         if el.text_align != "left":
-            markdown_lines += f"  text-align: {el.text_align};\n"
+            extra_lines += f"  text-align: {el.text_align};\n"
 
     return (
         f"{sel} {{\n"
@@ -221,7 +223,7 @@ def _element_css(ns: str, el: AnyElement, eid: str, index: int) -> str:
         f"  transform: {anchor_translate}scale({scale_val}) rotate({angle_val});\n"
         f"  opacity: {opacity_val};\n"
         f"  z-index: {index};\n"
-        f"{markdown_lines}"
+        f"{extra_lines}"
         f"}}"
     )
 
