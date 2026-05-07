@@ -90,7 +90,10 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
 
     edges_data = _build_edges(deck, fan)
 
-    groups_data = [{"label": g.label, "slide_ids": list(g.slide_ids)} for g in deck.groups]
+    groups_data = [
+        {"label": g.label, "slide_ids": list(g.slide_ids), **({"color": g.color} if g.color else {})}
+        for g in deck.groups
+    ]
 
     return {
         "initial_slide": deck.slides[0].id if deck.slides else None,

@@ -8,6 +8,7 @@ rejection) live in `validator.py` and `inference.py`.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -75,13 +76,29 @@ def _parse_slides_and_groups(slides_raw: list, deck_path: Path) -> tuple[tuple[S
                 group_slide_ids.append(slide.id)
                 flat_idx += 1
 
-            groups.append(SlideGroup(label=label, slide_ids=tuple(group_slide_ids)))
+            color = _parse_group_color(item, ctx)
+            groups.append(SlideGroup(label=label, slide_ids=tuple(group_slide_ids), color=color))
         else:
             slide = _parse_slide(item, deck_dir, flat_idx, ctx)
             slides.append(slide)
             flat_idx += 1
 
     return tuple(slides), tuple(groups)
+
+
+_HEX_COLOR_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+
+
+def _parse_group_color(raw: dict, ctx: str) -> str | None:
+    """Parse and validate an optional hex color from a group object."""
+    if "color" not in raw:
+        return None
+    color = raw["color"]
+    if not isinstance(color, str):
+        raise DeckParseError(f"{ctx}: 'color' must be a string, got {type(color).__name__}")
+    if not _HEX_COLOR_RE.match(color):
+        raise DeckParseError(f"{ctx}: 'color' must be #RGB or #RRGGBB, got '{color}'")
+    return color
 
 
 def _require_list(d: dict, key: str, deck_path: Path) -> list:

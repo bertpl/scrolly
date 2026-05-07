@@ -259,3 +259,15 @@ def test_groups_array_carries_label_and_slide_ids():
     g = data["groups"][0]
     assert g["label"] == "My Group"
     assert g["slide_ids"] == ["a", "b"]
+    assert "color" not in g
+
+
+def test_groups_array_includes_color_when_set():
+    deck = Deck(
+        title=None,
+        slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
+        edges=(),
+        groups=(SlideGroup(label="Colored", slide_ids=("a", "b"), color="#f5cba7"),),
+    )
+    data = build_nav_data(deck, _chunks_for("a", "b"))
+    assert data["groups"][0]["color"] == "#f5cba7"
