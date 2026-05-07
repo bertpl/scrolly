@@ -110,16 +110,14 @@ def test_assembler_embeds_nav_data_json(inline):
     }
 
 
-def test_slide_container_carries_scrollbar_element(inline):
-    # Each slide-container ships with a scrollbar element + thumb in the DOM;
-    # CSS hides them unless the slide is selected, in slide view, and has
-    # live scroll range > 0 (canvas.js sets the .has-scroll class).
+def test_scrollbar_in_navigation_scroll_ui(inline):
+    # The scrollbar lives inside .scroll-ui in .navigation (single instance,
+    # not per slide). JS manages its visibility based on selected slide state.
     deck, chunks = _l_shape()
     html = assemble(deck, chunks, inline=inline)
-    # One scrollbar-track + thumb per slide-container.
-    n = len(deck.slides)
-    assert html.count('class="slide-scrollbar"') == n
-    assert html.count('class="slide-scrollbar-thumb"') == n
+    assert html.count('class="slide-scrollbar"') == 1
+    assert html.count('class="slide-scrollbar-thumb"') == 1
+    assert html.count('class="scroll-ui"') == 1
 
 
 def test_nav_data_carries_per_slide_titles(inline):

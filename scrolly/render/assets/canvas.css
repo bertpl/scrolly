@@ -191,15 +191,29 @@ body {
   box-sizing: border-box;
 }
 
+/* ---- Scroll UI wrapper --------------------------------------------------
+ *
+ * Groups the scrollbar and snap control inside .navigation. Idle-fade
+ * is applied here so all children inherit a single multiplicative opacity.
+ * Visibility of individual children is managed by canvas.js.
+ */
+.scroll-ui {
+  opacity: 1;
+  transition: opacity 0s;  /* instant fade-in */
+}
+
+.scroll-ui.scroll-ui-idle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease-out;
+}
+
 /* ---- Custom left-edge scrollbar -----------------------------------------
  *
- * Always in the DOM (per slide-container) but hidden unless we're in slide
- * view, the container is .selected, and canvas.js has marked it
- * .has-scroll (= live scroll range > 0). The thumb's height and top
- * position are written by JS as inline styles based on the live range and
- * --scroll-position. Layered below left-edge edge arrows when both are
- * present (per the design — edge arrows live in .navigation at z-index 20,
- * which sits above .canvas).
+ * Single instance inside .scroll-ui (in .navigation). Hidden by default;
+ * canvas.js toggles display:block when the selected slide has scroll range
+ * and we're in slide view. The thumb's height and top position are written
+ * by JS as inline styles.
  */
 .slide-scrollbar {
   position: absolute;
@@ -214,10 +228,6 @@ body {
   background: rgba(215, 215, 215, 0.25);
   display: none;
   pointer-events: auto;
-}
-
-body.view-slide .slide-container.selected.has-scroll .slide-scrollbar {
-  display: block;
 }
 
 .slide-scrollbar-snap {
@@ -622,7 +632,7 @@ body.view-slide:has(.slide-container.selected.has-scroll) .snap-control {
 }
 
 /* Snap dots hidden when snap is disabled. */
-.slide-container.snap-disabled .slide-scrollbar-snap {
+.slide-scrollbar.snap-disabled .slide-scrollbar-snap {
   opacity: 0;
   transition: opacity 200ms ease-out;
 }
