@@ -25,14 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bezier edge curves in deck view were clipped for slides on the bottom row or far-right
   column when group-label gaps pushed coordinates outside the SVG viewBox.
-- Reduced intermittent 1px black line artefacts in Chrome by hiding off-screen slides
-  in slide view.
-
-### Security
-
-### Removed
-
-### Fixed
+- Improved rendering performance in slide view by hiding off-screen slides, reducing GPU
+  compositor layers.
 
 ### Security
 
