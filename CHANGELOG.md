@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.4 (2026-05-07)
 
 ### Added
 
@@ -17,10 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scrollbar and snap control auto-hide after 1 second of inactivity (0.5s fade-out,
   instant fade-in on interaction).
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Bezier edge curves in deck view were clipped for slides on the bottom row or far-right
@@ -31,9 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reducing GPU compositor layers during scroll.
 - Improved rendering quality for animated elements by promoting them to dedicated GPU
   layers, avoiding invalidation rectangle rounding artefacts.
-
-### Security
-
 ## 0.1.3 (2026-05-06)
 
 ### Added
