@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, resolveTarget } = require("../../scrolly/render/assets/canvas.js");
+const { CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, resolveTarget, evaluatePiecewiseLinear } = require("../../scrolly/render/assets/canvas.js");
 
 function _geo(slides, fanSpacingFactor) {
   return new CanvasGeometry({
@@ -926,5 +926,36 @@ describe("ScrollManager.trackGeometry snap-aware thumb", () => {
 
     const geo = scrollMgr.trackGeometry("s1");
     expect(geo.thumbHeight).toBe(ScrollManager.DEFAULT_THUMB_HEIGHT);
+  });
+});
+
+// ---- evaluatePiecewiseLinear --------------------------------------------
+
+describe("evaluatePiecewiseLinear", () => {
+  const kf = [[0, 0], [200, 1], [400, 1], [600, 0]];
+
+  it("holds first value before first keyframe", () => {
+    expect(evaluatePiecewiseLinear(kf, -100)).toBe(0);
+  });
+
+  it("holds last value after last keyframe", () => {
+    expect(evaluatePiecewiseLinear(kf, 800)).toBe(0);
+  });
+
+  it("returns exact keyframe values", () => {
+    expect(evaluatePiecewiseLinear(kf, 0)).toBe(0);
+    expect(evaluatePiecewiseLinear(kf, 200)).toBe(1);
+    expect(evaluatePiecewiseLinear(kf, 400)).toBe(1);
+    expect(evaluatePiecewiseLinear(kf, 600)).toBe(0);
+  });
+
+  it("interpolates linearly between keyframes", () => {
+    expect(evaluatePiecewiseLinear(kf, 100)).toBeCloseTo(0.5);
+    expect(evaluatePiecewiseLinear(kf, 500)).toBeCloseTo(0.5);
+    expect(evaluatePiecewiseLinear(kf, 300)).toBeCloseTo(1.0);
+  });
+
+  it("returns 1 for empty keyframes", () => {
+    expect(evaluatePiecewiseLinear([], 50)).toBe(1);
   });
 });

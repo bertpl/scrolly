@@ -6,6 +6,7 @@ properties.  Static properties emit plain CSS values.
 
 from __future__ import annotations
 
+import json
 from html import escape as html_escape
 from pathlib import Path
 
@@ -97,9 +98,11 @@ class ScrollimationRenderer(Renderer):
         has_mermaid = False
         for i, el in enumerate(ir.elements):
             content_html = _render_element_content(el)
-            element_htmls.append(
-                f'<div class="scrollimation-element" data-element-id="{prefix}{i}">{content_html}</div>'
-            )
+            attrs = f'class="scrollimation-element" data-element-id="{prefix}{i}"'
+            if el.opacity.is_animated:
+                kf_json = json.dumps(el.opacity.keyframes, separators=(",", ":"))
+                attrs += f" data-opacity-keyframes='{html_escape(kf_json)}'"
+            element_htmls.append(f"<div {attrs}>{content_html}</div>")
             if isinstance(el, ImageElement):
                 asset_paths.append(el.image)
             if isinstance(el, MermaidElement):

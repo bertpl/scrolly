@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   column when group-label gaps pushed coordinates outside the SVG viewBox.
 - Improved rendering performance in slide view by hiding off-screen slides, reducing GPU
   compositor layers.
+- Improved rendering performance in scrollimation slides by hiding elements at zero opacity,
+  reducing GPU compositor layers during scroll.
 
 ### Security
 
