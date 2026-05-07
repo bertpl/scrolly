@@ -40,9 +40,6 @@
           {{ chunks[slide.id].html | safe }}
         </div>
       </div>
-      <div class="slide-scrollbar" aria-hidden="true">
-        <div class="slide-scrollbar-thumb"></div>
-      </div>
     </div>
     {%- endfor %}
   </div>
@@ -53,18 +50,23 @@
     </button>
     {#- edge arrows are rebuilt by canvas.js on selected_slide change -#}
 
-    {#- Snap-position control: prev / toggle / next.
-        Hidden by default; canvas.js shows it when the current slide has snap positions. -#}
-    <div class="snap-control" aria-label="Snap position controls" style="display: none;">
-      <button type="button" class="snap-control-prev" aria-label="Previous snap position">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 15l-6-6-6 6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button type="button" class="snap-control-toggle" aria-label="Toggle snap positions">
-        <div class="snap-control-dot"></div>
-      </button>
-      <button type="button" class="snap-control-next" aria-label="Next snap position">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+    {#- Scroll UI: scrollbar + snap control, wrapped for unified idle-fade.
+        Visibility managed by canvas.js based on selected slide state. -#}
+    <div class="scroll-ui">
+      <div class="slide-scrollbar" aria-hidden="true">
+        <div class="slide-scrollbar-thumb"></div>
+      </div>
+      <div class="snap-control" aria-label="Snap position controls" style="display: none;">
+        <button type="button" class="snap-control-prev" aria-label="Previous snap position">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 15l-6-6-6 6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="snap-control-toggle" aria-label="Toggle snap positions">
+          <div class="snap-control-dot"></div>
+        </button>
+        <button type="button" class="snap-control-next" aria-label="Next snap position">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 

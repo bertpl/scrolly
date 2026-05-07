@@ -904,14 +904,14 @@ describe("ScrollManager.trackGeometry snap-aware thumb", () => {
     const scrollCfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0 } };
     const snapCfg = { s1: { snapPositions: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] } };
 
-    const trackEl = { clientHeight: 300 };
-    const container = { querySelector: (sel) => sel === ".slide-scrollbar" ? trackEl : null };
+    const scrollbarEl = { clientHeight: 300 };
+    const container = { querySelector: () => null };
 
-    const scrollMgr = new ScrollManager(scrollCfg, () => container);
+    const scrollMgr = new ScrollManager(scrollCfg, () => container, scrollbarEl);
     const snapMgr = new SnapManager(scrollMgr, snapCfg, () => container);
     scrollMgr.setSnapManager(snapMgr);
 
-    const geo = scrollMgr.trackGeometry(container, "s1");
+    const geo = scrollMgr.trackGeometry("s1");
     // 11 snaps, track 300px → cap = (2/3) * (300/11) ≈ 18.18
     const expected = (2 / 3) * (300 / 11);
     expect(geo.thumbHeight).toBeCloseTo(expected);
@@ -920,12 +920,11 @@ describe("ScrollManager.trackGeometry snap-aware thumb", () => {
   it("uses default thumb height when no snapManager is set", () => {
     const scrollCfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0 } };
 
-    const trackEl = { clientHeight: 300 };
-    const container = { querySelector: (sel) => sel === ".slide-scrollbar" ? trackEl : null };
+    const scrollbarEl = { clientHeight: 300 };
 
-    const scrollMgr = new ScrollManager(scrollCfg, () => container);
+    const scrollMgr = new ScrollManager(scrollCfg, () => null, scrollbarEl);
 
-    const geo = scrollMgr.trackGeometry(container, "s1");
+    const geo = scrollMgr.trackGeometry("s1");
     expect(geo.thumbHeight).toBe(ScrollManager.DEFAULT_THUMB_HEIGHT);
   });
 });

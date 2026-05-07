@@ -237,9 +237,10 @@
       return h;
     }
 
-    constructor(scrollConfig, containerFn) {
+    constructor(scrollConfig, containerFn, scrollbarEl) {
       this._config = scrollConfig;
       this._containerFn = containerFn;
+      this._scrollbarEl = scrollbarEl;
       this._positions = new Map();
       this._ranges = new Map();
       this._drag = null;
@@ -261,7 +262,7 @@
       const container = this._containerFn(slideId);
       if (!container) return;
       container.style.setProperty("--scroll-position", String(clamped));
-      this.syncScrollbar(container, slideId);
+      this.syncScrollbar(slideId);
       if (this.onPositionChange) this.onPositionChange(slideId);
     }
 
@@ -283,15 +284,17 @@
       }
     }
 
-    trackGeometry(container, slideId) {
-      const trackEl = container.querySelector(".slide-scrollbar");
+    trackGeometry(slideId) {
+      const trackEl = this._scrollbarEl;
       if (!trackEl) return null;
       const trackHeight = trackEl.clientHeight;
       if (trackHeight <= 0) return null;
 
+      const container = this._containerFn(slideId);
       const cfg = this._config[slideId];
       let thumbHeight;
       if (cfg && cfg.scrollRange === null) {
+        if (!container) return null;
         const subcanvas = container.querySelector(".subcanvas");
         const chunk = container.querySelector(".chunk");
         if (!subcanvas || !chunk) return null;
@@ -306,10 +309,10 @@
       return { trackEl, trackHeight, thumbHeight, maxOffset };
     }
 
-    syncScrollbar(container, slideId) {
-      const geo = this.trackGeometry(container, slideId);
+    syncScrollbar(slideId) {
+      const geo = this.trackGeometry(slideId);
       if (!geo) return;
-      const thumb = container.querySelector(".slide-scrollbar-thumb");
+      const thumb = this._scrollbarEl.querySelector(".slide-scrollbar-thumb");
       if (!thumb) return;
 
       const position = this._positions.get(slideId) || 0;
@@ -317,6 +320,12 @@
 
       thumb.style.height = geo.thumbHeight + "px";
       thumb.style.top = offset + "px";
+    }
+
+    syncVisibility(slideId, zoomLevel) {
+      if (!this._scrollbarEl) return;
+      const range = this._ranges.get(slideId) || 0;
+      this._scrollbarEl.style.display = (zoomLevel === 1 && range > 0) ? "block" : "none";
     }
 
     init(canvas) {
@@ -352,25 +361,23 @@
       });
     }
 
-    startDrag(e) {
+    startDrag(e, selectedSlide) {
       const target = e.target;
       if (!target.classList || !target.classList.contains("slide-scrollbar-thumb")) return false;
+      if (!selectedSlide) return false;
       e.preventDefault();
-      const container = target.closest(".slide-container");
-      if (!container) return false;
-      const slideId = container.dataset.id;
-      const range = this._ranges.get(slideId) || 0;
+      const range = this._ranges.get(selectedSlide) || 0;
       if (range <= 0) return false;
 
-      const trackEl = target.parentElement;
+      const trackEl = this._scrollbarEl;
       const trackHeight = trackEl.clientHeight;
       const thumbHeight = target.clientHeight;
       const maxOffset = trackHeight - thumbHeight;
 
       this._drag = {
-        slideId,
+        slideId: selectedSlide,
         startY: e.clientY,
-        startPosition: this._positions.get(slideId) || 0,
+        startPosition: this._positions.get(selectedSlide) || 0,
         range,
         maxOffset,
       };
@@ -577,13 +584,13 @@
 
     _applyEnabledState() {
       if (!this._controlEl) return;
-      const container = this._containerFn(this._selectedSlide);
+      const scrollbarEl = this._scrollManager._scrollbarEl;
       if (this._enabled) {
         this._controlEl.classList.remove("snap-off");
-        if (container) container.classList.remove("snap-disabled");
+        if (scrollbarEl) scrollbarEl.classList.remove("snap-disabled");
       } else {
         this._controlEl.classList.add("snap-off");
-        if (container) container.classList.add("snap-disabled");
+        if (scrollbarEl) scrollbarEl.classList.add("snap-disabled");
       }
     }
 
@@ -617,15 +624,15 @@
       return null;
     }
 
-    syncDots(container, slideId) {
-      const trackEl = container.querySelector(".slide-scrollbar");
+    syncDots(slideId) {
+      const trackEl = this._scrollManager._scrollbarEl;
       if (!trackEl) return;
       trackEl.querySelectorAll(".slide-scrollbar-snap").forEach((el) => el.remove());
       const snaps = this._snapsFor(slideId);
       if (!snaps) return;
       const range = this._scrollManager.range(slideId);
       if (range <= 0) return;
-      const geo = this._scrollManager.trackGeometry(container, slideId);
+      const geo = this._scrollManager.trackGeometry(slideId);
       if (!geo) return;
       for (const pos of snaps) {
         const dot = document.createElement("div");
@@ -915,6 +922,7 @@
       this.selectedSlide = initialSlide;
       this.zoomLevel = 1;
       this._transitionEndTimer = null;
+      this.onViewChange = null;
     }
 
     setView(next) {
@@ -929,6 +937,7 @@
       if (slideChanged) this._edgeArrows.rebuild(this.selectedSlide);
       if (slideChanged || zoomChanged) this._startTransition(slideChanged, zoomChanged);
       this.syncView();
+      if (this.onViewChange) this.onViewChange(this.selectedSlide, this.zoomLevel);
     }
 
     toggleView() {
@@ -940,6 +949,7 @@
       this._applyBodyClass();
       this._applySelectedClass();
       this._snapManager.syncControl(this.selectedSlide, this.zoomLevel);
+      this._scrollManager.syncVisibility(this.selectedSlide, this.zoomLevel);
     }
 
     _startTransition(slideChanged, zoomChanged) {
@@ -957,11 +967,9 @@
       this._transitionEndTimer = setTimeout(() => {
         classes.remove("view-transitioning");
         classes.remove("pan-transitioning");
-        const container = this._containerFn(this.selectedSlide);
-        if (container) {
-          this._scrollManager.syncScrollbar(container, this.selectedSlide);
-          this._snapManager.syncDots(container, this.selectedSlide);
-        }
+        this._scrollManager.syncScrollbar(this.selectedSlide);
+        this._scrollManager.syncVisibility(this.selectedSlide, this.zoomLevel);
+        this._snapManager.syncDots(this.selectedSlide);
       }, ViewState.TRANSITION_MS + ViewState.TRANSITION_BUFFER_MS);
     }
 
@@ -1248,8 +1256,7 @@
     bezierOverlay.rebuild();
     edgeArrows.refreshFanOffsets();
     groupLayout.refresh();
-    const container = _container(viewState.selectedSlide);
-    if (container) snapManager.syncDots(container, viewState.selectedSlide);
+    snapManager.syncDots(viewState.selectedSlide);
   });
 
   // ---- Scroll plumbing (ScrollManager) ------------------------------------
@@ -1258,6 +1265,7 @@
     return canvas.querySelector('.slide-container[data-id="' + slideId + '"]');
   }
 
+  const scrollbarEl = document.querySelector(".scroll-ui .slide-scrollbar");
   const scrollManager = new ScrollManager(
     Object.fromEntries(
       Object.entries(deck.slides).map(([id, s]) => [id, {
@@ -1266,7 +1274,8 @@
         initialScrollPosition: s.initial_scroll_position,
       }])
     ),
-    _container
+    _container,
+    scrollbarEl
   );
   const snapManager = new SnapManager(
     scrollManager,
@@ -1282,10 +1291,6 @@
     geometry, edgeArrows, snapManager, scrollManager,
     deck.initial_slide, canvas, _container
   );
-
-  scrollManager.onPositionChange = (slideId) => {
-    snapManager.onScrollPositionChanged(slideId);
-  };
 
   // Wheel / trackpad input on the active slide.
   document.addEventListener(
@@ -1312,7 +1317,7 @@
 
   // Scrollbar thumb drag — dispatches to ScrollManager.
   document.addEventListener("mousedown", (e) => {
-    if (scrollManager.startDrag(e)) snapManager.cancel();
+    if (scrollManager.startDrag(e, viewState.selectedSlide)) snapManager.cancel();
   });
 
   document.addEventListener("mousemove", (e) => {
@@ -1327,6 +1332,46 @@
   // ---- Snap control wiring --------------------------------------------------
 
   snapManager.initControl(document.querySelector(".snap-control"));
+
+  // ---- Scroll-UI idle timer -----------------------------------------------
+
+  const SCROLL_UI_IDLE_MS = 1000;
+  const scrollUiEl = document.querySelector(".scroll-ui");
+  let scrollUiIdleTimer = null;
+
+  function scrollUiResetIdle() {
+    if (scrollUiEl) scrollUiEl.classList.remove("scroll-ui-idle");
+    clearTimeout(scrollUiIdleTimer);
+    scrollUiIdleTimer = setTimeout(() => {
+      if (scrollUiEl) scrollUiEl.classList.add("scroll-ui-idle");
+    }, SCROLL_UI_IDLE_MS);
+  }
+
+  function scrollUiClearIdle() {
+    if (scrollUiEl) scrollUiEl.classList.remove("scroll-ui-idle");
+    clearTimeout(scrollUiIdleTimer);
+    scrollUiIdleTimer = null;
+  }
+
+  // Reset idle on scroll position change.
+  scrollManager.onPositionChange = (slideId) => {
+    snapManager.onScrollPositionChanged(slideId);
+    scrollUiResetIdle();
+  };
+
+  // Reset idle on scroll-UI hover.
+  if (scrollUiEl) {
+    scrollUiEl.addEventListener("mouseenter", scrollUiResetIdle);
+  }
+
+  // Reset/clear idle on view change (slide change or zoom toggle).
+  viewState.onViewChange = (slideId, zoomLevel) => {
+    if (zoomLevel === 1) {
+      scrollUiResetIdle();
+    } else {
+      scrollUiClearIdle();
+    }
+  };
 
   // ---- Init ---------------------------------------------------------------
 
@@ -1345,5 +1390,6 @@
     groupLayout.refresh();
     scrollManager.init(canvas);
     snapManager.syncControl(viewState.selectedSlide, viewState.zoomLevel);
+    scrollUiResetIdle();
   }
 })(typeof module !== "undefined" ? module.exports : {});

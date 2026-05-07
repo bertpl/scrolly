@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Scrollbar and snap control auto-hide after 1 second of inactivity (0.5s fade-out,
+  instant fade-in on interaction). Both are now grouped in a shared navigation wrapper.
+
 ### Deprecated
 
 ### Removed
