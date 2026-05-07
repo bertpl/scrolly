@@ -1067,6 +1067,53 @@
     }
   }
 
+  // ---- ElementVisibility ----------------------------------------------------
+
+  const VISIBILITY_THRESHOLD = 0.001;
+
+  function evaluatePiecewiseLinear(keyframes, position) {
+    if (keyframes.length === 0) return 1;
+    if (position <= keyframes[0][0]) return keyframes[0][1];
+    if (position >= keyframes[keyframes.length - 1][0]) return keyframes[keyframes.length - 1][1];
+    for (let i = 1; i < keyframes.length; i++) {
+      if (position <= keyframes[i][0]) {
+        const [x0, y0] = keyframes[i - 1];
+        const [x1, y1] = keyframes[i];
+        const t = (position - x0) / (x1 - x0);
+        return y0 + t * (y1 - y0);
+      }
+    }
+    return keyframes[keyframes.length - 1][1];
+  }
+
+  class ElementVisibility {
+    constructor(canvasEl) {
+      this._entries = new Map();
+      const elements = canvasEl.querySelectorAll("[data-opacity-keyframes]");
+      for (const el of elements) {
+        const container = el.closest(".slide-container");
+        if (!container) continue;
+        const slideId = container.dataset.id;
+        const keyframes = JSON.parse(el.dataset.opacityKeyframes);
+        if (!this._entries.has(slideId)) this._entries.set(slideId, []);
+        this._entries.get(slideId).push({ el, keyframes, hidden: false });
+      }
+    }
+
+    update(slideId, scrollPosition) {
+      const entries = this._entries.get(slideId);
+      if (!entries) return;
+      for (const entry of entries) {
+        const opacity = evaluatePiecewiseLinear(entry.keyframes, scrollPosition);
+        const shouldHide = opacity < VISIBILITY_THRESHOLD;
+        if (shouldHide !== entry.hidden) {
+          entry.el.style.visibility = shouldHide ? "hidden" : "";
+          entry.hidden = shouldHide;
+        }
+      }
+    }
+  }
+
   // ---- resolveTarget (pure navigation resolution) --------------------------
 
   const _KEY_TO_SIDE = {
@@ -1115,6 +1162,8 @@
     exports.SnapManager = SnapManager;
     exports.EdgeArrows = EdgeArrows;
     exports.BezierOverlay = BezierOverlay;
+    exports.ElementVisibility = ElementVisibility;
+    exports.evaluatePiecewiseLinear = evaluatePiecewiseLinear;
     exports.GroupLayout = GroupLayout;
     exports.ViewState = ViewState;
     exports.resolveTarget = resolveTarget;
@@ -1353,9 +1402,11 @@
     scrollUiIdleTimer = null;
   }
 
-  // Reset idle on scroll position change.
+  // Reset idle on scroll position change + update element visibility.
+  const elementVisibility = new ElementVisibility(canvas);
   scrollManager.onPositionChange = (slideId) => {
     snapManager.onScrollPositionChanged(slideId);
+    elementVisibility.update(slideId, scrollManager.position(slideId));
     scrollUiResetIdle();
   };
 
@@ -1390,6 +1441,10 @@
     groupLayout.refresh();
     scrollManager.init(canvas);
     snapManager.syncControl(viewState.selectedSlide, viewState.zoomLevel);
+    elementVisibility.update(
+      viewState.selectedSlide,
+      scrollManager.position(viewState.selectedSlide)
+    );
     scrollUiResetIdle();
   }
 })(typeof module !== "undefined" ? module.exports : {});
