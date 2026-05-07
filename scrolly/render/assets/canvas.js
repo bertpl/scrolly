@@ -785,6 +785,7 @@
         svg.setAttribute("class", "slide-group");
         const path = document.createElementNS(ns, "path");
         path.setAttribute("class", "slide-group-bg");
+        if (group.color) path.style.fill = group.color;
         svg.appendChild(path);
         const label = document.createElement("span");
         label.className = "slide-group-label";

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Slide groups can now have a custom `color` (`#RGB` or `#RRGGBB`), shown as a solid fill
+  on the group tab background in deck view.
+
 ### Changed
 
 ### Deprecated

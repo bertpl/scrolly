@@ -2,7 +2,7 @@
   title: "Worked Example",
   slides: [
     {
-      group: "Setup",
+      group: "Setup", color: "#a8d8ea",
       slides: [
         { id: "setup",    position: [0, 0], source: "slides/setup.static.md" },
         { id: "overview", position: [1, 0], source: "slides/overview.static.md" },
@@ -10,7 +10,7 @@
     },
     { id: "intro",    position: [0, 1], source: "slides/intro.static.md" },
     {
-      group: "Content",
+      group: "Content", color: "#f5cba7",
       slides: [
         { id: "details",  position: [1, 1], source: "slides/details.static.md" },
         { id: "notes",    position: [2, 1], source: "slides/notes.static.md" },

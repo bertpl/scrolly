@@ -707,14 +707,14 @@ body.view-deck .slide-container.selected:hover .subcanvas {
 }
 
 .slide-group-bg {
-  fill: rgba(0, 0, 0, 0.07);
+  fill: #dcdcdc;
   stroke: none;
 }
 
 .slide-group-label {
   position: absolute;
   transform: translate(-50%, -50%);
-  color: rgba(0, 0, 0, 0.35);
+  color: #000000;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 5dvmax;
   font-weight: 600;
