@@ -12,6 +12,7 @@ from scrolly.slide.ir import (
     AnimatedVec2,
     HtmlElement,
     ImageElement,
+    ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
     ScalarKeyframes,
@@ -39,6 +40,18 @@ def _md(**overrides) -> dict:
 
 def _mermaid(**overrides) -> dict:
     base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "width": 80, "height": "auto"}
+    return {**base, **overrides}
+
+
+def _image_sequence(**overrides) -> dict:
+    base = {
+        "image_sequence": ["a.svg", "b.svg", "c.svg"],
+        "frame_distance": 400,
+        "hold": 200,
+        "position": [0, 0],
+        "width": 80,
+        "height": "auto",
+    }
     return {**base, **overrides}
 
 
@@ -167,6 +180,85 @@ class TestImageElement:
     def test_extra_field_rejected(self):
         with pytest.raises(ValidationError, match="Extra inputs"):
             ImageElement(**_asset(html="sneaky"))
+
+
+# ── ImageSequenceElement ──────────────────────────────────────────
+
+
+class TestImageSequenceElement:
+    def test_valid(self):
+        el = ImageSequenceElement(**_image_sequence())
+        assert [p.name for p in el.image_sequence] == ["a.svg", "b.svg", "c.svg"]
+        assert el.frame_distance == 400
+        assert el.hold == 200
+
+    def test_defaults(self):
+        el = ImageSequenceElement(**_image_sequence())
+        assert el.scroll_offset == 0
+        assert el.fade_in == 0
+        assert el.fade_out == 0
+        assert el.object_fit is None
+
+    def test_repeats_allowed(self):
+        el = ImageSequenceElement(**_image_sequence(image_sequence=["a.svg", "b.svg", "b.svg", "c.svg"]))
+        assert len(el.image_sequence) == 4
+        assert el.image_sequence[1] == el.image_sequence[2]
+
+    def test_too_few_frames_rejected(self):
+        with pytest.raises(ValidationError, match="image_sequence must contain at least 2 entries"):
+            ImageSequenceElement(**_image_sequence(image_sequence=["a.svg"]))
+
+    def test_zero_hold_rejected(self):
+        with pytest.raises(ValidationError, match="hold must be > 0"):
+            ImageSequenceElement(**_image_sequence(hold=0))
+
+    def test_negative_hold_rejected(self):
+        with pytest.raises(ValidationError, match="hold must be > 0"):
+            ImageSequenceElement(**_image_sequence(hold=-50))
+
+    def test_frame_distance_equal_to_hold_rejected(self):
+        with pytest.raises(ValidationError, match=r"frame_distance .* must be > hold"):
+            ImageSequenceElement(**_image_sequence(frame_distance=200, hold=200))
+
+    def test_frame_distance_less_than_hold_rejected(self):
+        with pytest.raises(ValidationError, match=r"frame_distance .* must be > hold"):
+            ImageSequenceElement(**_image_sequence(frame_distance=100, hold=200))
+
+    def test_negative_fade_in_rejected(self):
+        with pytest.raises(ValidationError, match="fade_in must be >= 0"):
+            ImageSequenceElement(**_image_sequence(fade_in=-1))
+
+    def test_negative_fade_out_rejected(self):
+        with pytest.raises(ValidationError, match="fade_out must be >= 0"):
+            ImageSequenceElement(**_image_sequence(fade_out=-1))
+
+    def test_zero_fade_in_allowed(self):
+        el = ImageSequenceElement(**_image_sequence(fade_in=0))
+        assert el.fade_in == 0
+
+    def test_positive_fade_in_allowed(self):
+        el = ImageSequenceElement(**_image_sequence(fade_in=150))
+        assert el.fade_in == 150
+
+    def test_object_fit_required_when_both_numeric(self):
+        with pytest.raises(ValidationError, match="object_fit is required"):
+            ImageSequenceElement(**_image_sequence(width=80, height=60))
+
+    def test_object_fit_with_both_numeric(self):
+        el = ImageSequenceElement(**_image_sequence(width=80, height=60, object_fit="cover"))
+        assert el.object_fit == "cover"
+
+    def test_object_fit_forbidden_with_auto(self):
+        with pytest.raises(ValidationError, match="object_fit is forbidden"):
+            ImageSequenceElement(**_image_sequence(object_fit="cover"))
+
+    def test_extra_field_rejected(self):
+        with pytest.raises(ValidationError, match="Extra inputs"):
+            ImageSequenceElement(**_image_sequence(image="sneaky.png"))
+
+    def test_inherits_animated_position(self):
+        el = ImageSequenceElement(**_image_sequence(position={"keyframes": [(0, (0, 0)), (1000, (50, 50))]}))
+        assert el.position.is_animated
 
 
 # ── HtmlElement ───────────────────────────────────────────────────

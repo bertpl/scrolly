@@ -7,7 +7,14 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from scrolly.slide.ir import HtmlElement, ImageElement, MarkdownElement, MermaidElement, SlideIR
+from scrolly.slide.ir import (
+    HtmlElement,
+    ImageElement,
+    ImageSequenceElement,
+    MarkdownElement,
+    MermaidElement,
+    SlideIR,
+)
 from scrolly.slide.ir.storyboard import StoryboardIR, StoryboardScene
 
 # ── helpers ───────────────────────────────────────────────────────
@@ -30,6 +37,18 @@ def _md_element(**overrides) -> dict:
 
 def _mermaid_element(**overrides) -> dict:
     base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "width": 80, "height": "auto"}
+    return {**base, **overrides}
+
+
+def _image_sequence_element(**overrides) -> dict:
+    base = {
+        "image_sequence": ["a.svg", "b.svg"],
+        "frame_distance": 400,
+        "hold": 200,
+        "position": [0, 0],
+        "width": 80,
+        "height": "auto",
+    }
     return {**base, **overrides}
 
 
@@ -109,6 +128,20 @@ class TestMermaidElement:
         scene = StoryboardScene(elements=[_html_element(), _mermaid_element()])
         assert isinstance(scene.elements[0], HtmlElement)
         assert isinstance(scene.elements[1], MermaidElement)
+
+
+class TestImageSequenceElement:
+    def test_valid_in_scene(self):
+        scene = StoryboardScene(elements=[_image_sequence_element()])
+        assert isinstance(scene.elements[0], ImageSequenceElement)
+
+    def test_valid_in_background(self):
+        sb = StoryboardIR(**_storyboard(background=[_image_sequence_element()]))
+        assert isinstance(sb.background[0], ImageSequenceElement)
+
+    def test_animated_position_rejected(self):
+        with pytest.raises(ValidationError, match="position.*must be static"):
+            StoryboardScene(elements=[_image_sequence_element(position={"keyframes": [(0, (0, 0)), (1000, (50, 50))]})])
 
 
 # ── Size validation ───────────────────────────────────────────────

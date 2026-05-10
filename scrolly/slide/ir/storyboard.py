@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from scrolly.slide.ir import (
     HtmlElement,
     ImageElement,
+    ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
     SlideIR,

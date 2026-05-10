@@ -148,11 +148,14 @@ def test_ungrouped_deck_has_empty_groups():
     assert deck.groups == ()
 
 
-@pytest.mark.parametrize("color,expected", [
-    ("#abc", "#abc"),
-    ("#AABBCC", "#AABBCC"),
-    ("#f5cba7", "#f5cba7"),
-])
+@pytest.mark.parametrize(
+    "color,expected",
+    [
+        ("#abc", "#abc"),
+        ("#AABBCC", "#AABBCC"),
+        ("#f5cba7", "#f5cba7"),
+    ],
+)
 def test_parse_group_color(tmp_path, color, expected):
     # --- arrange ----------------------------
     f = tmp_path / "color.deck.json"
@@ -171,14 +174,17 @@ def test_parse_group_color(tmp_path, color, expected):
     assert deck.groups[0].color == expected
 
 
-@pytest.mark.parametrize("color", [
-    "abc",
-    "#ab",
-    "#abcde",
-    "#GGHHII",
-    "red",
-    "rgb(0,0,0)",
-])
+@pytest.mark.parametrize(
+    "color",
+    [
+        "abc",
+        "#ab",
+        "#abcde",
+        "#GGHHII",
+        "red",
+        "rgb(0,0,0)",
+    ],
+)
 def test_parse_error_on_invalid_group_color(tmp_path, color):
     # --- arrange ----------------------------
     f = tmp_path / "bad-color.deck.json"

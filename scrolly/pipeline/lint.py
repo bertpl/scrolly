@@ -13,6 +13,7 @@ from typing import Literal
 
 from scrolly.deck.model import Deck
 from scrolly.slide.ir._framework.animated_values import AnimatedScalar, AnimatedVec2
+from scrolly.slide.ir._framework.element import ImageSequenceElement
 from scrolly.slide.ir.scrollimation import ScrollimationIR
 from scrolly.slide.registry import get_ir_class_for_path
 
@@ -58,6 +59,8 @@ def _check_out_of_range_keyframes(deck: Deck) -> list[Diagnostic]:
             _check_vec2_field(el.anchor, "anchor", location, scroll_range, diagnostics)
             _check_size_field(el.width, "width", location, scroll_range, diagnostics)
             _check_size_field(el.height, "height", location, scroll_range, diagnostics)
+            if isinstance(el, ImageSequenceElement):
+                _check_image_sequence(el, location, scroll_range, diagnostics)
 
     return diagnostics
 
@@ -126,6 +129,34 @@ def _check_size_field(
                 )
             )
             break
+
+
+def _check_image_sequence(
+    el: ImageSequenceElement,
+    location: str,
+    scroll_range: float,
+    diagnostics: list[Diagnostic],
+) -> None:
+    """Check the auto-generated opacity keyframes for an image sequence element."""
+    n = len(el.image_sequence)
+    timeline_start = el.scroll_offset - el.fade_in
+    timeline_end = el.scroll_offset + (n - 1) * el.frame_distance + el.hold + el.fade_out
+    if timeline_start < 0:
+        diagnostics.append(
+            Diagnostic(
+                level="warning",
+                message=f"image_sequence timeline starts at {timeline_start}, before 0",
+                location=f"{location}, field 'image_sequence'",
+            )
+        )
+    if timeline_end > scroll_range:
+        diagnostics.append(
+            Diagnostic(
+                level="warning",
+                message=f"image_sequence timeline ends at {timeline_end}, past scroll_range ({scroll_range})",
+                location=f"{location}, field 'image_sequence'",
+            )
+        )
 
 
 def _parse_slide_ir(source: Path):

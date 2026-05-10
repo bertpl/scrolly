@@ -1,8 +1,9 @@
 """Shared slide-element models.
 
 ``SlideElement`` is the base for all positioned visual units within a
-slide.  Concrete types (``ImageElement``, ``HtmlElement``,
-``MarkdownElement``, ``MermaidElement``) carry content-specific fields.
+slide.  Concrete types (``ImageElement``, ``ImageSequenceElement``,
+``HtmlElement``, ``MarkdownElement``, ``MermaidElement``) carry
+content-specific fields.
 
 Each animatable property accepts either a static value or a keyframe
 animation definition (piecewise linear, held constant beyond extremes).
@@ -113,6 +114,88 @@ class ImageElement(SlideElement, frozen=True):
     @model_validator(mode="after")
     def _validate_object_fit(self) -> ImageElement:
         """Validate object_fit rules based on size dimensions."""
+        w_is_auto = self.width.is_auto
+        h_is_auto = self.height.is_auto
+        both_non_auto = not w_is_auto and not h_is_auto
+        if both_non_auto and self.object_fit is None:
+            raise ValueError("object_fit is required when both size dimensions are numeric or animated")
+        if (w_is_auto or h_is_auto) and self.object_fit is not None:
+            raise ValueError('object_fit is forbidden when a size dimension is "auto"')
+        return self
+
+
+class ImageSequenceElement(SlideElement, frozen=True):
+    """A scroll-driven filmstrip: an ordered sequence of images that crossfade as the user scrolls.
+
+    Each image is shown in turn on an equidistant scroll grid. Repeating the same
+    path consecutively in ``image_sequence`` extends its visible duration by one
+    slot per repeat. Optional ``fade_in`` / ``fade_out`` add leading / trailing
+    opacity ramps independent of the inter-frame crossfade timing.
+    """
+
+    image_sequence: list[Path] = Field(
+        description=(
+            "Ordered image paths, relative to the slide source file. Min 2 entries. "
+            "Repeating the same path consecutively extends its visible duration by one slot per repeat."
+        ),
+    )
+    frame_distance: float = Field(
+        description=(
+            "Scroll distance between the start of consecutive frames' hold periods. "
+            "Must be > hold (so the crossfade duration frame_distance - hold is > 0)."
+        ),
+    )
+    hold: float = Field(
+        description="Scroll distance each frame stays at full opacity. Must be > 0.",
+    )
+    scroll_offset: float = Field(
+        default=0,
+        description="Scroll position where frame 0's hold period begins.",
+    )
+    fade_in: float = Field(
+        default=0,
+        description=(
+            "Scroll distance of the leading fade-in ramp. "
+            "0 (default) = frame 0 starts at full opacity (hard cut). "
+            "> 0 = frame 0 ramps from opacity 0 to 1 over [scroll_offset - fade_in, scroll_offset]."
+        ),
+    )
+    fade_out: float = Field(
+        default=0,
+        description=(
+            "Scroll distance of the trailing fade-out ramp. "
+            "0 (default) = last frame stays at full opacity past the end of its hold (hard cut). "
+            "> 0 = last frame ramps from opacity 1 to 0 over fade_out scroll units after its hold ends."
+        ),
+    )
+    object_fit: Literal["cover", "contain", "fill"] | None = Field(
+        default=None,
+        description=(
+            "How each image fills its box. Required when both size dimensions are numeric "
+            '(or animated), forbidden when one is "auto". Same semantics as ImageElement.object_fit.'
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_image_sequence(self) -> ImageSequenceElement:
+        """Validate image-sequence-specific timing and asset fields."""
+        if len(self.image_sequence) < 2:
+            raise ValueError(f"image_sequence must contain at least 2 entries, got {len(self.image_sequence)}")
+        if self.hold <= 0:
+            raise ValueError(f"hold must be > 0, got {self.hold}")
+        if self.frame_distance <= self.hold:
+            raise ValueError(
+                f"frame_distance ({self.frame_distance}) must be > hold ({self.hold}) to allow a non-zero crossfade"
+            )
+        if self.fade_in < 0:
+            raise ValueError(f"fade_in must be >= 0, got {self.fade_in}")
+        if self.fade_out < 0:
+            raise ValueError(f"fade_out must be >= 0, got {self.fade_out}")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_object_fit(self) -> ImageSequenceElement:
+        """Validate object_fit rules based on size dimensions (mirrors ImageElement)."""
         w_is_auto = self.width.is_auto
         h_is_auto = self.height.is_auto
         both_non_auto = not w_is_auto and not h_is_auto
