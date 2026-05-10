@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.5 (2026-05-10)
 
 ### Added
 
@@ -16,17 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   duration by one slot per repeat.
 - `--strict` lint check warns when an `image_sequence` timeline extends below `0` (via
   `fade_in`) or past `scroll_range` (via `fade_out`).
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.1.4 (2026-05-07)
 
 ### Added
