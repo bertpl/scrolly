@@ -11,6 +11,7 @@ from scrolly.slide.ir._framework.base import SlideIR
 from scrolly.slide.ir._framework.element import (
     HtmlElement,
     ImageElement,
+    ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
     SlideElement,
@@ -23,6 +24,7 @@ __all__ = [
     "AnimatedVec2",
     "HtmlElement",
     "ImageElement",
+    "ImageSequenceElement",
     "MarkdownElement",
     "MermaidElement",
     "ScalarKeyframes",

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `image_sequence` element type for scroll-driven filmstrips: an ordered list of images
+  that crossfade as the user scrolls. Configurable `frame_distance` (slot width), `hold`
+  (full-opacity span per frame), `scroll_offset`, and `fade_in` / `fade_out` (leading /
+  trailing ramp distances). Repeating a path consecutively in the list extends its visible
+  duration by one slot per repeat.
+- `--strict` lint check warns when an `image_sequence` timeline extends below `0` (via
+  `fade_in`) or past `scroll_range` (via `fade_out`).
+
 ### Changed
 
 ### Deprecated

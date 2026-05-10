@@ -647,3 +647,260 @@ class TestScopedCssStacking:
         assert "z-index: 0" in bottom_section.split("}")[0]
         assert "z-index: 1" in middle_section.split("}")[0]
         assert "z-index: 2" in top_section.split("}")[0]
+
+
+# ── ImageSequenceElement ──────────────────────────────────────────
+
+
+def _seq_slide(images: list[str], **extra: object) -> str:
+    """Build a JSON5 source for a slide with a single image-sequence element."""
+    image_list = "[" + ", ".join(f'"{name}"' for name in images) + "]"
+    extra_lines = "".join(f"      {k}: {repr(v) if isinstance(v, str) else v},\n" for k, v in extra.items())
+    return (
+        "{\n"
+        '  title: "T",\n'
+        "  scroll_range: 2000,\n"
+        "  elements: [\n"
+        "    {\n"
+        f'      name: "seq",\n'
+        f"      image_sequence: {image_list},\n"
+        f"      frame_distance: 400,\n"
+        f"      hold: 200,\n"
+        f"      position: [0, 0],\n"
+        f"      width: 80,\n"
+        f'      height: "auto",\n'
+        f"{extra_lines}"
+        "    },\n"
+        "  ],\n"
+        "}\n"
+    )
+
+
+class TestImageSequenceHtml:
+    def test_one_img_per_unique_consecutive_path(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        chunk = _build(src)
+        assert chunk.html.count("<img ") == 3
+
+    def test_consecutive_repeats_collapse_to_one_img(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            _seq_slide(["a.svg", "b.svg", "b.svg", "b.svg", "c.svg"]),
+        )
+        chunk = _build(src)
+        assert chunk.html.count("<img ") == 3
+
+    def test_data_frame_index_uses_run_start(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            _seq_slide(["a.svg", "b.svg", "b.svg", "c.svg"]),
+        )
+        chunk = _build(src)
+        assert 'data-frame-index="0"' in chunk.html
+        assert 'data-frame-index="1"' in chunk.html
+        assert 'data-frame-index="3"' in chunk.html
+        assert 'data-frame-index="2"' not in chunk.html
+
+    def test_each_img_has_data_opacity_keyframes(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        chunk = _build(src)
+        assert chunk.html.count("data-opacity-keyframes") == 3
+
+    def test_img_src_uses_asset_prefix(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        chunk = _build(src)
+        for name in ("a.svg", "b.svg", "c.svg"):
+            assert f'src="__asset__/{name}"' in chunk.html
+
+
+class TestImageSequenceAssets:
+    def test_asset_paths_resolved_and_unique(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            _seq_slide(["a.svg", "b.svg", "b.svg", "c.svg"]),
+        )
+        chunk = _build(src)
+        names = [p.name for p in chunk.assets]
+        assert sorted(names) == ["a.svg", "b.svg", "c.svg"]
+
+    def test_assets_are_absolute_paths(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg"]))
+        chunk = _build(src)
+        for path in chunk.assets:
+            assert path.is_absolute()
+
+
+class TestImageSequenceCss:
+    def test_first_img_in_flow_rest_absolute_for_stacking(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg"]))
+        chunk = _build(src)
+        # Base img rule covers all imgs and does NOT use absolute positioning
+        # (the first img must stay in normal flow so it establishes the box height).
+        base_idx = chunk.scoped_css.index("img {")
+        base_section = chunk.scoped_css[base_idx : base_idx + chunk.scoped_css[base_idx:].index("}")]
+        assert "position: absolute" not in base_section
+        # The :not(:first-of-type) rule overlays the rest.
+        assert "img:not(:first-of-type)" in chunk.scoped_css
+        stack_idx = chunk.scoped_css.index("img:not(:first-of-type)")
+        stack_section = chunk.scoped_css[stack_idx : stack_idx + chunk.scoped_css[stack_idx:].index("}")]
+        assert "position: absolute" in stack_section
+        assert "top: 0" in stack_section
+        assert "left: 0" in stack_section
+
+    def test_per_run_opacity_rule_emitted(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg", "c.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        chunk = _build(src)
+        assert 'img[data-frame-index="0"]' in chunk.scoped_css
+        assert 'img[data-frame-index="1"]' in chunk.scoped_css
+        assert 'img[data-frame-index="2"]' in chunk.scoped_css
+        assert "opacity: calc(" in chunk.scoped_css
+
+    def test_object_fit_emitted_when_set(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            _seq_slide(["a.svg", "b.svg"], height=100, object_fit="cover"),
+        )
+        chunk = _build(src)
+        assert "object-fit: cover" in chunk.scoped_css
+
+
+class TestImageSequenceTimeline:
+    def test_run_keyframes_basic(self) -> None:
+        from pathlib import Path
+
+        from scrolly.slide.ir import ImageSequenceElement
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = ImageSequenceElement(
+            image_sequence=[Path("a.svg"), Path("b.svg"), Path("c.svg"), Path("d.svg")],
+            frame_distance=400,
+            hold=200,
+            scroll_offset=0,
+            position=[0, 0],
+            width=80,
+            height="auto",
+        )
+        runs = _image_sequence_runs(list(el.image_sequence))
+        assert len(runs) == 4
+        assert _image_sequence_run_keyframes(el, runs, 0) == [(0.0, 1.0), (200.0, 1.0), (400.0, 0.0)]
+        assert _image_sequence_run_keyframes(el, runs, 1) == [
+            (200.0, 0.0),
+            (400.0, 1.0),
+            (600.0, 1.0),
+            (800.0, 0.0),
+        ]
+        assert _image_sequence_run_keyframes(el, runs, 3) == [(1000.0, 0.0), (1200.0, 1.0), (1400.0, 1.0)]
+
+    def test_run_keyframes_with_repeats(self) -> None:
+        from pathlib import Path
+
+        from scrolly.slide.ir import ImageSequenceElement
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = ImageSequenceElement(
+            image_sequence=[Path("a.svg"), Path("b.svg"), Path("b.svg"), Path("c.svg")],
+            frame_distance=400,
+            hold=200,
+            scroll_offset=0,
+            position=[0, 0],
+            width=80,
+            height="auto",
+        )
+        runs = _image_sequence_runs(list(el.image_sequence))
+        # b is run [1, 2]: hold from 400 to 1000 (covers slot 1 and slot 2)
+        assert runs[1] == (Path("b.svg"), 1, 2)
+        b_kfs = _image_sequence_run_keyframes(el, runs, 1)
+        assert b_kfs == [(200.0, 0.0), (400.0, 1.0), (1000.0, 1.0), (1200.0, 0.0)]
+
+    def test_run_keyframes_with_fade_in_out(self) -> None:
+        from pathlib import Path
+
+        from scrolly.slide.ir import ImageSequenceElement
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = ImageSequenceElement(
+            image_sequence=[Path("a.svg"), Path("b.svg")],
+            frame_distance=400,
+            hold=200,
+            scroll_offset=500,
+            fade_in=300,
+            fade_out=150,
+            position=[0, 0],
+            width=80,
+            height="auto",
+        )
+        runs = _image_sequence_runs(list(el.image_sequence))
+        # First run: fade in from (500 - 300) = 200, hold 500 to 700, then crossfade to 0 at 900.
+        assert _image_sequence_run_keyframes(el, runs, 0) == [
+            (200.0, 0.0),
+            (500.0, 1.0),
+            (700.0, 1.0),
+            (900.0, 0.0),
+        ]
+        # Last run: crossfade in from 700 to 900, hold 900 to 1100, fade out to 0 at 1250.
+        assert _image_sequence_run_keyframes(el, runs, 1) == [
+            (700.0, 0.0),
+            (900.0, 1.0),
+            (1100.0, 1.0),
+            (1250.0, 0.0),
+        ]
+
+
+class TestImageSequenceInteractions:
+    def test_element_level_animated_opacity_on_outer_div(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 2000,
+  elements: [
+    {
+      name: "seq",
+      image_sequence: ["a.svg", "b.svg"],
+      frame_distance: 400,
+      hold: 200,
+      position: [0, 0],
+      width: 80,
+      height: "auto",
+      opacity: { keyframes: [[0, 0.0], [500, 1.0]] },
+    },
+  ],
+}
+""",
+        )
+        chunk = _build(src)
+        # The outer div gets data-opacity-keyframes from element-level opacity (inherited mechanism).
+        # Plus per-img data-opacity-keyframes from frame ramps.
+        assert chunk.html.count("data-opacity-keyframes") == 1 + 2

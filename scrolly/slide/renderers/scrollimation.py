@@ -16,6 +16,7 @@ from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import (
     HtmlElement,
     ImageElement,
+    ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
     SlideIR,
@@ -105,6 +106,8 @@ class ScrollimationRenderer(Renderer):
             element_htmls.append(f"<div {attrs}>{content_html}</div>")
             if isinstance(el, ImageElement):
                 asset_paths.append(el.image)
+            elif isinstance(el, ImageSequenceElement):
+                asset_paths.extend(el.image_sequence)
             if isinstance(el, MermaidElement):
                 has_mermaid = True
 
@@ -114,6 +117,8 @@ class ScrollimationRenderer(Renderer):
 
         scoped_css = _build_scoped_css(ir, slide_type, prefix)
 
+        unique_assets = list(dict.fromkeys(asset_paths))
+
         return SlideHTML(
             title=ir.title,
             html=html,
@@ -121,7 +126,7 @@ class ScrollimationRenderer(Renderer):
             scroll_range=int(ir.scroll_range) if ir.scroll_range > 0 else None,
             initial_scroll_position=int(ir.initial_scroll_position),
             scroll_speed=ir.scroll_speed,
-            assets=tuple(asset_paths),
+            assets=tuple(unique_assets),
             snap_positions=ir.snap_positions,
             has_mermaid=has_mermaid,
         )
@@ -136,11 +141,87 @@ def _render_element_content(el: AnyElement) -> str:
     """Render an element's content to HTML."""
     if isinstance(el, ImageElement):
         return f'<img src="__asset__/{el.image.name}" alt="">'
+    if isinstance(el, ImageSequenceElement):
+        return _render_image_sequence_imgs(el)
     if isinstance(el, HtmlElement):
         return el.html
     if isinstance(el, MermaidElement):
         return f'<pre class="mermaid">{html_escape(el.mermaid)}</pre>'
     return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS))
+
+
+# --------------------------------------------------------------------------
+#  Image sequence helpers
+# --------------------------------------------------------------------------
+
+
+def _render_image_sequence_imgs(el: ImageSequenceElement) -> str:
+    """Render image-sequence content: one <img> per consecutive-run, each with its own opacity ramp."""
+    runs = _image_sequence_runs(list(el.image_sequence))
+    img_tags = []
+    for run_idx, (path, i_start, _) in enumerate(runs):
+        kfs = _image_sequence_run_keyframes(el, runs, run_idx)
+        kf_json = json.dumps(kfs, separators=(",", ":"))
+        img_tags.append(
+            f'<img data-frame-index="{i_start}" '
+            f"data-opacity-keyframes='{html_escape(kf_json)}' "
+            f'src="__asset__/{path.name}" alt="">'
+        )
+    return "\n".join(img_tags)
+
+
+def _image_sequence_runs(paths: list[Path]) -> list[tuple[Path, int, int]]:
+    """Group consecutive identical paths into ``(path, start_idx, end_idx)`` runs."""
+    runs: list[tuple[Path, int, int]] = []
+    i = 0
+    while i < len(paths):
+        j = i
+        while j + 1 < len(paths) and paths[j + 1] == paths[i]:
+            j += 1
+        runs.append((paths[i], i, j))
+        i = j + 1
+    return runs
+
+
+def _image_sequence_run_keyframes(
+    el: ImageSequenceElement,
+    runs: list[tuple[Path, int, int]],
+    run_idx: int,
+) -> list[tuple[float, float]]:
+    """Build opacity keyframes for one post-dedup run.
+
+    The leading edge is ``fade_in`` for the first run (or absent when ``fade_in == 0``),
+    and the inter-frame crossfade for every other run. The trailing edge is ``fade_out``
+    for the last run (or absent when ``fade_out == 0``), and the inter-frame crossfade
+    for every other run.
+    """
+    _, i_start, i_end = runs[run_idx]
+    hold_start = el.scroll_offset + i_start * el.frame_distance
+    hold_end = el.scroll_offset + i_end * el.frame_distance + el.hold
+    crossfade = el.frame_distance - el.hold
+
+    is_first = run_idx == 0
+    is_last = run_idx == len(runs) - 1
+
+    kfs: list[tuple[float, float]] = []
+
+    if is_first:
+        if el.fade_in > 0:
+            kfs.append((hold_start - el.fade_in, 0.0))
+        kfs.append((hold_start, 1.0))
+    else:
+        kfs.append((hold_start - crossfade, 0.0))
+        kfs.append((hold_start, 1.0))
+
+    kfs.append((hold_end, 1.0))
+
+    if is_last:
+        if el.fade_out > 0:
+            kfs.append((hold_end + el.fade_out, 0.0))
+    else:
+        kfs.append((hold_end + crossfade, 0.0))
+
+    return kfs
 
 
 # ==================================================================================================
@@ -180,6 +261,8 @@ def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> s
                 f"  display: block;\n"
                 f"}}"
             )
+        elif isinstance(el, ImageSequenceElement):
+            rules.extend(_image_sequence_css(ns, el, eid))
         if isinstance(el, MermaidElement):
             has_mermaid = True
 
@@ -187,6 +270,39 @@ def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> s
         rules.append(f"{ns} .mermaid svg {{\n  width: 100%;\n  height: 100%;\n}}")
 
     return "\n\n".join(rules)
+
+
+def _image_sequence_css(ns: str, el: ImageSequenceElement, eid: str) -> list[str]:
+    """Build CSS rules for an image-sequence element: stacked img layout + per-run opacity ramps.
+
+    The first ``<img>`` sits in normal flow so it establishes the container's intrinsic
+    height (important when ``height: auto``); subsequent ``<img>`` tags are absolutely
+    positioned to overlay it pixel-for-pixel.
+    """
+    sel = f'{ns} [data-element-id="{eid}"]'
+    obj_fit_line = f"  object-fit: {el.object_fit};\n" if el.object_fit else ""
+
+    rules = [
+        f"{sel} img {{\n"
+        f"  width: 100%;\n"
+        f"  height: 100%;\n"
+        f"{obj_fit_line}"
+        f"  display: block;\n"
+        f"}}",
+        f"{sel} img:not(:first-of-type) {{\n  position: absolute;\n  top: 0;\n  left: 0;\n}}",
+    ]
+
+    runs = _image_sequence_runs(list(el.image_sequence))
+    for run_idx, (_, i_start, _) in enumerate(runs):
+        kfs = _image_sequence_run_keyframes(el, runs, run_idx)
+        expr = ramp_expr(kfs)
+        if expr is None:
+            opacity_val = _num(kfs[0][1])
+        else:
+            opacity_val = f"calc({expr})"
+        rules.append(f'{sel} img[data-frame-index="{i_start}"] {{\n  opacity: {opacity_val};\n}}')
+
+    return rules
 
 
 def _element_css(ns: str, el: AnyElement, eid: str, index: int) -> str:

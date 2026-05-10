@@ -227,6 +227,67 @@ class TestOutOfRangeKeyframes:
         assert diagnostics == []
 
 
+class TestImageSequenceTimeline:
+    """Tests for the image-sequence timeline lint rule."""
+
+    def _seq_slide(self, scroll_range: int, **fields) -> str:
+        extra = "".join(f"      {k}: {v},\n" for k, v in fields.items())
+        return (
+            "{\n"
+            '  title: "T",\n'
+            f"  scroll_range: {scroll_range},\n"
+            "  elements: [\n"
+            "    {\n"
+            '      image_sequence: ["a.svg", "b.svg"],\n'
+            "      frame_distance: 400,\n"
+            "      hold: 200,\n"
+            "      position: [0, 0],\n"
+            "      width: 80,\n"
+            '      height: "auto",\n'
+            f"{extra}"
+            "    },\n"
+            "  ],\n"
+            "}\n"
+        )
+
+    def test_no_warning_when_timeline_fits(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / "slides" / name, "<svg/>")
+        deck = _make_deck(tmp_path, self._seq_slide(scroll_range=1000))
+
+        # --- act --------------------------
+        diagnostics = lint_deck(deck)
+
+        # --- assert -----------------------
+        assert diagnostics == []
+
+    def test_warns_when_fade_in_pushes_below_zero(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / "slides" / name, "<svg/>")
+        deck = _make_deck(tmp_path, self._seq_slide(scroll_range=1000, scroll_offset=100, fade_in=300))
+
+        # --- act --------------------------
+        diagnostics = lint_deck(deck)
+
+        # --- assert -----------------------
+        assert any("starts at -200" in d.message for d in diagnostics)
+
+    def test_warns_when_fade_out_pushes_past_scroll_range(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / "slides" / name, "<svg/>")
+        deck = _make_deck(tmp_path, self._seq_slide(scroll_range=500, fade_out=200))
+
+        # --- act --------------------------
+        diagnostics = lint_deck(deck)
+
+        # --- assert -----------------------
+        # Timeline ends at 0 + 1*400 + 200 + 200 = 800, past scroll_range=500.
+        assert any("ends at 800" in d.message for d in diagnostics)
+
+
 class TestDiagnosticDataclass:
     """Tests for the Diagnostic dataclass."""
 

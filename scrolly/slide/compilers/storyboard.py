@@ -11,6 +11,7 @@ from __future__ import annotations
 from scrolly.slide.ir import (
     HtmlElement,
     ImageElement,
+    ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
     SlideIR,
@@ -88,7 +89,7 @@ def _scene_opacity_keyframes(scene_idx: int, num_scenes: int, D: int, H: int) ->
 
 
 def _set_opacity(
-    el: ImageElement | HtmlElement | MarkdownElement | MermaidElement,
+    el: ImageElement | ImageSequenceElement | HtmlElement | MarkdownElement | MermaidElement,
     init_opacity: float,
     opacity_kfs: list[tuple[float, float]],
 ) -> AnyElement:
