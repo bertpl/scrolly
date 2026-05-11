@@ -5,24 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.7 (2026-05-11)
 
 ### Added
 
 - `reverse: true` flag on scrollimation slides — thumb starts at the bottom and rises as scroll advances, for naturally bottom-up content.
 - Empty `image_sequence` slots — `""` reserves a slot in the timeline that renders blank, with neighbouring frames fading out before and in after it.
 - Edge arrows and zoom-out control now auto-fade after 2 seconds of mouse inactivity, independent of the scrollbar fade.
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.1.6 (2026-05-11)
 
 ### Changed
