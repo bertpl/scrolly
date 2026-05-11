@@ -88,7 +88,10 @@ def resolve_asset_paths(
             abs_path = (source_dir / item.image).resolve()
             item = item.model_copy(update={"image": abs_path})
         elif isinstance(item, ImageSequenceElement):
-            abs_paths = [(source_dir / p).resolve() for p in item.image_sequence]
+            abs_paths = [
+                (source_dir / p).resolve() if p is not None else None
+                for p in item.image_sequence
+            ]
             item = item.model_copy(update={"image_sequence": abs_paths})
         resolved.append(item)
     return resolved

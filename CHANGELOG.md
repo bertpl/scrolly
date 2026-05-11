@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `reverse: true` flag on scrollimation slides — thumb starts at the bottom and rises as scroll advances, for naturally bottom-up content.
+- Empty `image_sequence` slots — `""` reserves a slot in the timeline that renders blank, with neighbouring frames fading out before and in after it.
 
 ### Changed
 
