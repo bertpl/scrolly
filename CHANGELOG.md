@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- README CI badge now reads "CI" instead of taking its label from the
+  underlying workflow file name.
+
 ### Security
 
 ## 0.1.5 (2026-05-10)
