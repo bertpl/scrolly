@@ -128,6 +128,7 @@ class ScrollimationRenderer(Renderer):
             scroll_speed=ir.scroll_speed,
             assets=tuple(unique_assets),
             snap_positions=ir.snap_positions,
+            reverse=ir.reverse,
             has_mermaid=has_mermaid,
         )
 

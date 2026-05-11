@@ -1374,6 +1374,7 @@
         scrollRange: s.scroll_range,
         scrollSpeed: s.scroll_speed,
         initialScrollPosition: s.initial_scroll_position,
+        reverse: !!s.reverse,
       }])
     ),
     _container,

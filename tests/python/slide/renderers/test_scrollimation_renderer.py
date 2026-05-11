@@ -346,6 +346,28 @@ class TestMetadata:
         chunk = _build(src)
         assert chunk.snap_positions == (0, 500, 1000)
 
+    def test_reverse_default_false(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        chunk = _build(src)
+        assert chunk.reverse is False
+
+    def test_reverse_flag_flows_to_chunk(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 1000,
+  reverse: true,
+  elements: [
+    {name: "L", html: "<p>hi</p>", position: [0, 0], width: 100, height: 100 },
+  ],
+}
+""",
+        )
+        chunk = _build(src)
+        assert chunk.reverse is True
+
 
 # ── Scoped CSS: static positioning ────────────────────────────────
 

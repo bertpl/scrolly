@@ -58,6 +58,18 @@ class ScrollimationIR(SlideIR, frozen=True):
             "Scroll positions where the view settles after scrolling stops. Values must be within [0, scroll_range]."
         ),
     )
+    reverse: bool = Field(
+        default=False,
+        description=(
+            "When true, the scrollbar thumb starts at the bottom of the track and "
+            "rises as the scroll value increases. Authoring values (keyframe `at`, "
+            "`snap_positions`, `initial_scroll_position`) keep their normal "
+            "meaning; only the scrollbar's thumb-position mapping and the sign of "
+            "user-input deltas are flipped. Intended for naturally bottom-up "
+            "content (e.g. git-tree visualisations) so authors can keep keyframes "
+            "and image lists in their natural ascending order."
+        ),
+    )
     elements: list[AnyElement] = Field(
         description="The elements in this slide, rendered in array order (first = bottom, last = top).",
     )

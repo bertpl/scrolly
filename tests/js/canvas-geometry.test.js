@@ -899,6 +899,190 @@ describe("SnapManager.getNumSnaps", () => {
   });
 });
 
+function _mockContainer() {
+  // Minimal container stub: setRange touches classList; setPosition touches
+  // style.setProperty + classList; syncScrollbar queries the scrollbar element.
+  return {
+    querySelector: () => null,
+    classList: { add: () => {}, remove: () => {} },
+    style: { setProperty: () => {} },
+  };
+}
+
+describe("ScrollManager position <-> offset mapping", () => {
+  function _mgr(reverse) {
+    const cfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0, reverse } };
+    const scrollbarEl = { clientHeight: 300, querySelector: () => null };
+    const mgr = new ScrollManager(cfg, () => _mockContainer(), scrollbarEl);
+    mgr.setRange("s1", 1000);
+    return mgr;
+  }
+
+  const geo = { maxOffset: 200 };
+
+  it("non-reverse: position 0 maps to offset 0", () => {
+    expect(_mgr(false)._positionToOffset("s1", 0, geo)).toBeCloseTo(0);
+  });
+
+  it("non-reverse: position == range maps to maxOffset", () => {
+    expect(_mgr(false)._positionToOffset("s1", 1000, geo)).toBeCloseTo(200);
+  });
+
+  it("non-reverse: half position maps to half offset", () => {
+    expect(_mgr(false)._positionToOffset("s1", 500, geo)).toBeCloseTo(100);
+  });
+
+  it("reverse: position 0 maps to maxOffset (thumb at bottom)", () => {
+    expect(_mgr(true)._positionToOffset("s1", 0, geo)).toBeCloseTo(200);
+  });
+
+  it("reverse: position == range maps to 0 (thumb at top)", () => {
+    expect(_mgr(true)._positionToOffset("s1", 1000, geo)).toBeCloseTo(0);
+  });
+
+  it("reverse: half position maps to half offset (symmetric)", () => {
+    expect(_mgr(true)._positionToOffset("s1", 500, geo)).toBeCloseTo(100);
+  });
+
+  it("non-reverse: _offsetToPosition is the inverse of _positionToOffset", () => {
+    const mgr = _mgr(false);
+    for (const p of [0, 250, 500, 750, 1000]) {
+      const off = mgr._positionToOffset("s1", p, geo);
+      expect(mgr._offsetToPosition("s1", off, geo)).toBeCloseTo(p);
+    }
+  });
+
+  it("reverse: _offsetToPosition is the inverse of _positionToOffset", () => {
+    const mgr = _mgr(true);
+    for (const p of [0, 250, 500, 750, 1000]) {
+      const off = mgr._positionToOffset("s1", p, geo);
+      expect(mgr._offsetToPosition("s1", off, geo)).toBeCloseTo(p);
+    }
+  });
+
+  it("returns 0 when range is 0", () => {
+    const mgr = _mgr(false);
+    mgr.setRange("s1", 0);
+    expect(mgr._positionToOffset("s1", 100, geo)).toBe(0);
+    expect(mgr._offsetToPosition("s1", 100, geo)).toBe(0);
+  });
+
+  it("returns 0 when maxOffset is 0", () => {
+    const mgr = _mgr(false);
+    expect(mgr._positionToOffset("s1", 100, { maxOffset: 0 })).toBe(0);
+    expect(mgr._offsetToPosition("s1", 100, { maxOffset: 0 })).toBe(0);
+  });
+});
+
+describe("ScrollManager.applyScrollDelta", () => {
+  function _mgr(reverse) {
+    const cfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0, reverse } };
+    const scrollbarEl = { clientHeight: 300, querySelector: () => null };
+    const mgr = new ScrollManager(cfg, () => _mockContainer(), scrollbarEl);
+    mgr.setRange("s1", 1000);
+    mgr.setPosition("s1", 500);
+    return mgr;
+  }
+
+  it("non-reverse: positive delta increases position", () => {
+    const mgr = _mgr(false);
+    mgr.applyScrollDelta("s1", 100);
+    expect(mgr.position("s1")).toBeCloseTo(600);
+  });
+
+  it("non-reverse: negative delta decreases position", () => {
+    const mgr = _mgr(false);
+    mgr.applyScrollDelta("s1", -100);
+    expect(mgr.position("s1")).toBeCloseTo(400);
+  });
+
+  it("reverse: positive delta decreases position (sign flip)", () => {
+    const mgr = _mgr(true);
+    mgr.applyScrollDelta("s1", 100);
+    expect(mgr.position("s1")).toBeCloseTo(400);
+  });
+
+  it("reverse: negative delta increases position (sign flip)", () => {
+    const mgr = _mgr(true);
+    mgr.applyScrollDelta("s1", -100);
+    expect(mgr.position("s1")).toBeCloseTo(600);
+  });
+
+  it("clamps to [0, range] in either mode", () => {
+    const fwd = _mgr(false);
+    fwd.applyScrollDelta("s1", 9999);
+    expect(fwd.position("s1")).toBe(1000);
+    const rev = _mgr(true);
+    rev.applyScrollDelta("s1", 9999);
+    expect(rev.position("s1")).toBe(0);
+  });
+});
+
+describe("ScrollManager.isReverse", () => {
+  it("returns false when reverse is unset", () => {
+    const mgr = new ScrollManager({ s1: {} }, () => null, null);
+    expect(mgr.isReverse("s1")).toBe(false);
+  });
+
+  it("returns true when reverse is true", () => {
+    const mgr = new ScrollManager({ s1: { reverse: true } }, () => null, null);
+    expect(mgr.isReverse("s1")).toBe(true);
+  });
+
+  it("returns false for unknown slide", () => {
+    const mgr = new ScrollManager({}, () => null, null);
+    expect(mgr.isReverse("unknown")).toBe(false);
+  });
+});
+
+describe("SnapManager up/down (visual direction)", () => {
+  function _make(reverse, position) {
+    const scrollCfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0, reverse } };
+    const snapCfg = { s1: { snapPositions: [0, 100, 200, 300] } };
+    const scrollbarEl = { clientHeight: 300, querySelector: () => null };
+    const container = _mockContainer();
+    const scrollMgr = new ScrollManager(scrollCfg, () => container, scrollbarEl);
+    scrollMgr.setRange("s1", 1000);
+    scrollMgr.setPosition("s1", position);
+    const snapMgr = new SnapManager(scrollMgr, snapCfg, () => container);
+    return { scrollMgr, snapMgr };
+  }
+
+  it("non-reverse: upTarget == prevTarget", () => {
+    const { snapMgr } = _make(false, 150);
+    expect(snapMgr.upTarget("s1")).toBe(100);
+    expect(snapMgr.upTarget("s1")).toBe(snapMgr.prevTarget("s1"));
+  });
+
+  it("non-reverse: downTarget == nextTarget", () => {
+    const { snapMgr } = _make(false, 150);
+    expect(snapMgr.downTarget("s1")).toBe(200);
+    expect(snapMgr.downTarget("s1")).toBe(snapMgr.nextTarget("s1"));
+  });
+
+  it("reverse: upTarget == nextTarget (visually up = larger scroll value)", () => {
+    const { snapMgr } = _make(true, 150);
+    expect(snapMgr.upTarget("s1")).toBe(200);
+    expect(snapMgr.upTarget("s1")).toBe(snapMgr.nextTarget("s1"));
+  });
+
+  it("reverse: downTarget == prevTarget", () => {
+    const { snapMgr } = _make(true, 150);
+    expect(snapMgr.downTarget("s1")).toBe(100);
+    expect(snapMgr.downTarget("s1")).toBe(snapMgr.prevTarget("s1"));
+  });
+
+  it("non-reverse: upTarget is null at position 0 (no prev)", () => {
+    const { snapMgr } = _make(false, 0);
+    expect(snapMgr.upTarget("s1")).toBeNull();
+  });
+
+  it("reverse: upTarget is null at max position (no next)", () => {
+    const { snapMgr } = _make(true, 300);
+    expect(snapMgr.upTarget("s1")).toBeNull();
+  });
+});
+
 describe("ScrollManager.trackGeometry snap-aware thumb", () => {
   it("uses snapManager to determine numSnaps for thumb sizing", () => {
     const scrollCfg = { s1: { scrollRange: 1000, scrollSpeed: 1, initialScrollPosition: 0 } };
