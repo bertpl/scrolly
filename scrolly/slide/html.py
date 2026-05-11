@@ -23,6 +23,7 @@ class SlideHTML:
     font_scale: float = 1.0
     assets: tuple[Path, ...] = ()
     snap_positions: tuple[int, ...] = ()
+    reverse: bool = False
     has_mermaid: bool = False
 
     def __post_init__(self) -> None:

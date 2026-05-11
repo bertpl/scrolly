@@ -42,6 +42,7 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
               "scroll_range": null | <int>,
               "scroll_speed": <float>,
               "initial_scroll_position": <int>,
+              "reverse": <bool>,
               "edges": {
                 "left":   [{"target": "<id>", "fan_index": <int>,
                             "fan_size": <int>}, ...],
@@ -72,6 +73,7 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
             "scroll_speed": chunks[slide.id].scroll_speed,
             "initial_scroll_position": chunks[slide.id].initial_scroll_position,
             "snap_positions": list(chunks[slide.id].snap_positions),
+            "reverse": chunks[slide.id].reverse,
             "edges": {},
         }
         for slide in deck.slides

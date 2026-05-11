@@ -13,6 +13,12 @@ def test_chunk_defaults():
     assert c.initial_scroll_position == 0
     assert c.scroll_speed == 1.0
     assert c.font_scale == 1.0
+    assert c.reverse is False
+
+
+def test_chunk_reverse_true():
+    c = SlideHTML(title="T", html="", reverse=True)
+    assert c.reverse is True
 
 
 def test_chunk_all_fields():

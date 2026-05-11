@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `reverse: true` flag on scrollimation slides. The scrollbar thumb starts at
+  the bottom of the track and rises as the scroll value increases — keyframes
+  and image lists stay in their natural ascending order. Intended for
+  bottom-up content such as git-tree visualisations where time progresses
+  upward.
+
 ### Changed
 
 ### Deprecated

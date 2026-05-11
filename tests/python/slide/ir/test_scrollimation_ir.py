@@ -219,6 +219,15 @@ class TestScrollimationIR:
         assert slide.initial_scroll_position == 0
         assert slide.scroll_speed == 1.0
         assert slide.easing == "linear"
+        assert slide.reverse is False
+
+    def test_reverse_true(self) -> None:
+        slide = ScrollimationIR(**_slide(reverse=True))
+        assert slide.reverse is True
+
+    def test_reverse_false_explicit(self) -> None:
+        slide = ScrollimationIR(**_slide(reverse=False))
+        assert slide.reverse is False
 
     def test_scroll_range_zero_valid(self) -> None:
         slide = ScrollimationIR(**_slide(scroll_range=0))

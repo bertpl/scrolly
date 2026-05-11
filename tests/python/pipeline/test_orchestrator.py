@@ -147,8 +147,8 @@ def test_worked_example_long_bg_slide_is_content_driven(tmp_path):
 def test_validate_deck_sources_on_worked_example():
     deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
     deck = validate_deck_sources(deck_file)
-    assert len(deck.slides) == 13
-    assert len(deck.edges) == 16
+    assert len(deck.slides) == 14
+    assert len(deck.edges) == 17
 
 
 def test_validate_deck_sources_on_minimal_deck(tmp_path):

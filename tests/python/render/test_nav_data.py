@@ -54,6 +54,7 @@ def test_content_driven_chunk_emits_null_scroll_range():
     assert data["slides"]["a"]["scroll_range"] is None
     assert data["slides"]["a"]["scroll_speed"] == 1.0
     assert data["slides"]["a"]["initial_scroll_position"] == 0
+    assert data["slides"]["a"]["reverse"] is False
 
 
 def test_fixed_timeline_chunk_emits_int_scroll_range():
@@ -71,6 +72,14 @@ def test_fixed_timeline_chunk_emits_int_scroll_range():
     assert data["slides"]["a"]["scroll_range"] == 1000
     assert data["slides"]["a"]["scroll_speed"] == 2.0
     assert data["slides"]["a"]["initial_scroll_position"] == 50
+    assert data["slides"]["a"]["reverse"] is False
+
+
+def test_reverse_chunk_emits_reverse_true():
+    deck = Deck(title=None, slides=(_slide("a", 0, 0),), edges=())
+    chunks = {"a": SlideHTML(title="A", html="", scroll_range=1000, reverse=True)}
+    data = build_nav_data(deck, chunks)
+    assert data["slides"]["a"]["reverse"] is True
 
 
 def test_undirected_edge_appears_on_both_endpoints_with_fan_composition():
