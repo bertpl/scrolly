@@ -1139,6 +1139,45 @@
     return keyframes[keyframes.length - 1][1];
   }
 
+  // ---- IdleTimer ----------------------------------------------------------
+  //
+  // Small reusable scheduler for the "fade after N ms of inactivity" pattern.
+  // Used twice: once for the scroll-UI fade (scrollbar + snap control), once
+  // for the container-chrome fade (zoom-out + edge arrows). Owns the target
+  // element, the idle class name, the delay, and the setTimeout handle.
+  //
+  //   reset()  remove the idle class immediately, then re-add it after delay.
+  //   clear()  remove the idle class and cancel any pending re-add.
+  //
+  // Tolerates a null `target` so callers can construct the timer before the
+  // matching DOM element is queried (or for the no-DOM case in tests).
+
+  class IdleTimer {
+    constructor(target, idleClass, delayMs) {
+      this._target = target;
+      this._class = idleClass;
+      this._delay = delayMs;
+      this._handle = null;
+    }
+
+    reset() {
+      if (this._target) this._target.classList.remove(this._class);
+      if (this._handle !== null) clearTimeout(this._handle);
+      this._handle = setTimeout(() => {
+        this._handle = null;
+        if (this._target) this._target.classList.add(this._class);
+      }, this._delay);
+    }
+
+    clear() {
+      if (this._target) this._target.classList.remove(this._class);
+      if (this._handle !== null) {
+        clearTimeout(this._handle);
+        this._handle = null;
+      }
+    }
+  }
+
   class ElementVisibility {
     constructor(canvasEl) {
       this._entries = new Map();
@@ -1216,6 +1255,7 @@
     exports.EdgeArrows = EdgeArrows;
     exports.BezierOverlay = BezierOverlay;
     exports.ElementVisibility = ElementVisibility;
+    exports.IdleTimer = IdleTimer;
     exports.evaluatePiecewiseLinear = evaluatePiecewiseLinear;
     exports.GroupLayout = GroupLayout;
     exports.ViewState = ViewState;
@@ -1435,45 +1475,30 @@
 
   snapManager.initControl(document.querySelector(".snap-control"));
 
-  // ---- Scroll-UI idle timer -----------------------------------------------
+  // ---- Idle timers --------------------------------------------------------
 
-  const SCROLL_UI_IDLE_MS = 1000;
   const scrollUiEl = document.querySelector(".scroll-ui");
-  let scrollUiIdleTimer = null;
-
-  function scrollUiResetIdle() {
-    if (scrollUiEl) scrollUiEl.classList.remove("scroll-ui-idle");
-    clearTimeout(scrollUiIdleTimer);
-    scrollUiIdleTimer = setTimeout(() => {
-      if (scrollUiEl) scrollUiEl.classList.add("scroll-ui-idle");
-    }, SCROLL_UI_IDLE_MS);
-  }
-
-  function scrollUiClearIdle() {
-    if (scrollUiEl) scrollUiEl.classList.remove("scroll-ui-idle");
-    clearTimeout(scrollUiIdleTimer);
-    scrollUiIdleTimer = null;
-  }
+  const scrollUiTimer = new IdleTimer(scrollUiEl, "scroll-ui-idle", 1000);
 
   // Reset idle on scroll position change + update element visibility.
   const elementVisibility = new ElementVisibility(canvas);
   scrollManager.onPositionChange = (slideId) => {
     snapManager.onScrollPositionChanged(slideId);
     elementVisibility.update(slideId, scrollManager.position(slideId));
-    scrollUiResetIdle();
+    scrollUiTimer.reset();
   };
 
   // Reset idle on scroll-UI hover.
   if (scrollUiEl) {
-    scrollUiEl.addEventListener("mouseenter", scrollUiResetIdle);
+    scrollUiEl.addEventListener("mouseenter", () => scrollUiTimer.reset());
   }
 
   // Reset/clear idle on view change (slide change or zoom toggle).
   viewState.onViewChange = (slideId, zoomLevel) => {
     if (zoomLevel === 1) {
-      scrollUiResetIdle();
+      scrollUiTimer.reset();
     } else {
-      scrollUiClearIdle();
+      scrollUiTimer.clear();
     }
   };
 
@@ -1498,6 +1523,6 @@
       viewState.selectedSlide,
       scrollManager.position(viewState.selectedSlide)
     );
-    scrollUiResetIdle();
+    scrollUiTimer.reset();
   }
 })(typeof module !== "undefined" ? module.exports : {});
