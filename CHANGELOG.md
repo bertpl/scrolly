@@ -5,9 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-
-### Added
+## 0.1.6 (2026-05-11)
 
 ### Changed
 
@@ -15,17 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dots and an opaque track, keeping the dots clearly visible against any
   slide background.
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - README CI badge now reads "CI" instead of taking its label from the
   underlying workflow file name.
-
-### Security
-
 ## 0.1.5 (2026-05-10)
 
 ### Added
