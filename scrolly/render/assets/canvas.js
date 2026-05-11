@@ -254,6 +254,34 @@
     position(slideId) { return this._positions.get(slideId) || 0; }
     range(slideId) { return this._ranges.get(slideId) || 0; }
     scrollSpeed(slideId) { return (this._config[slideId] && this._config[slideId].scrollSpeed) || 1.0; }
+    isReverse(slideId) { return !!(this._config[slideId] && this._config[slideId].reverse); }
+
+    // ---- position <-> track-offset mapping -----------------------------
+    // The scrollbar thumb's top-edge offset on the track and the slide's
+    // scroll value are linked by a single mapping. Non-reverse mode maps
+    // position=0 to offset=0 (thumb at top); reverse mode maps position=0
+    // to offset=maxOffset (thumb at bottom). Both helpers handle the flip
+    // so every call site can stay direction-agnostic. The same formula
+    // applies to deltas: dragging the thumb by dy pixels translates to the
+    // same dPosition via `_offsetToPosition(slideId, dy, geo)` (with the
+    // appropriate sign in reverse mode).
+    _positionToOffset(slideId, position, geo) {
+      const range = this._ranges.get(slideId) || 0;
+      if (range <= 0 || geo.maxOffset <= 0) return 0;
+      const base = (position / range) * geo.maxOffset;
+      return this.isReverse(slideId) ? geo.maxOffset - base : base;
+    }
+    _offsetToPosition(slideId, offset, geo) {
+      const range = this._ranges.get(slideId) || 0;
+      if (range <= 0 || geo.maxOffset <= 0) return 0;
+      const base = this.isReverse(slideId) ? geo.maxOffset - offset : offset;
+      return (base / geo.maxOffset) * range;
+    }
+
+    applyScrollDelta(slideId, delta) {
+      const sign = this.isReverse(slideId) ? -1 : 1;
+      this.setPosition(slideId, this.position(slideId) + sign * delta);
+    }
 
     setPosition(slideId, position) {
       const range = this._ranges.get(slideId) || 0;
@@ -316,7 +344,7 @@
       if (!thumb) return;
 
       const position = this._positions.get(slideId) || 0;
-      const offset = geo.maxOffset > 0 ? (position / this.range(slideId)) * geo.maxOffset : 0;
+      const offset = this._positionToOffset(slideId, position, geo);
 
       thumb.style.height = geo.thumbHeight + "px";
       thumb.style.top = offset + "px";
@@ -366,20 +394,17 @@
       if (!target.classList || !target.classList.contains("slide-scrollbar-thumb")) return false;
       if (!selectedSlide) return false;
       e.preventDefault();
-      const range = this._ranges.get(selectedSlide) || 0;
-      if (range <= 0) return false;
+      if ((this._ranges.get(selectedSlide) || 0) <= 0) return false;
 
-      const trackEl = this._scrollbarEl;
-      const trackHeight = trackEl.clientHeight;
-      const thumbHeight = target.clientHeight;
-      const maxOffset = trackHeight - thumbHeight;
+      const geo = this.trackGeometry(selectedSlide);
+      if (!geo) return false;
 
+      const startPosition = this._positions.get(selectedSlide) || 0;
       this._drag = {
         slideId: selectedSlide,
         startY: e.clientY,
-        startPosition: this._positions.get(selectedSlide) || 0,
-        range,
-        maxOffset,
+        startOffset: this._positionToOffset(selectedSlide, startPosition, geo),
+        geo,
       };
       target.classList.add("dragging");
       return true;
@@ -387,10 +412,11 @@
 
     moveDrag(e) {
       if (!this._drag) return;
-      if (this._drag.maxOffset <= 0) return;
+      if (this._drag.geo.maxOffset <= 0) return;
       const dy = e.clientY - this._drag.startY;
-      const dPos = (dy / this._drag.maxOffset) * this._drag.range;
-      this.setPosition(this._drag.slideId, this._drag.startPosition + dPos);
+      const newOffset = this._drag.startOffset + dy;
+      const newPosition = this._offsetToPosition(this._drag.slideId, newOffset, this._drag.geo);
+      this.setPosition(this._drag.slideId, newPosition);
     }
 
     endDrag() {
@@ -440,14 +466,14 @@
       if (this._prevBtn) {
         this._prevBtn.addEventListener("click", (e) => {
           e.preventDefault();
-          this.prev();
+          this.up();
           this._prevBtn.blur();
         });
       }
       if (this._nextBtn) {
         this._nextBtn.addEventListener("click", (e) => {
           e.preventDefault();
-          this.next();
+          this.down();
           this._nextBtn.blur();
         });
       }
@@ -529,6 +555,11 @@
       this.animateTo(slideId, SnapManager._nearest(current, snaps));
     }
 
+    // `prev`/`next` are the semantic primitives (lower/higher scroll value);
+    // `up`/`down` are the visual layer used by chevrons and shift+arrow,
+    // dispatching through the slide's reverse flag so that visually-up
+    // input always moves the thumb visually up regardless of the scroll
+    // coordinate system.
     prev() {
       if (!this._enabled || !this._selectedSlide) return;
       this.finishIfRunning(this._selectedSlide);
@@ -545,6 +576,28 @@
       if (target === null) return;
       this.cancel();
       this.animateTo(this._selectedSlide, target);
+    }
+
+    up() {
+      if (this._scrollManager.isReverse(this._selectedSlide)) this.next();
+      else this.prev();
+    }
+
+    down() {
+      if (this._scrollManager.isReverse(this._selectedSlide)) this.prev();
+      else this.next();
+    }
+
+    upTarget(slideId) {
+      return this._scrollManager.isReverse(slideId)
+        ? this.nextTarget(slideId)
+        : this.prevTarget(slideId);
+    }
+
+    downTarget(slideId) {
+      return this._scrollManager.isReverse(slideId)
+        ? this.prevTarget(slideId)
+        : this.nextTarget(slideId);
     }
 
     toggle() {
@@ -596,12 +649,12 @@
 
     _syncChevronState() {
       if (!this._prevBtn || !this._nextBtn) return;
-      const hasPrev = this.prevTarget(this._selectedSlide) !== null;
-      const hasNext = this.nextTarget(this._selectedSlide) !== null;
-      this._prevBtn.disabled = !hasPrev;
-      this._prevBtn.style.opacity = hasPrev ? "" : "0.3";
-      this._nextBtn.disabled = !hasNext;
-      this._nextBtn.style.opacity = hasNext ? "" : "0.3";
+      const hasUp = this.upTarget(this._selectedSlide) !== null;
+      const hasDown = this.downTarget(this._selectedSlide) !== null;
+      this._prevBtn.disabled = !hasUp;
+      this._prevBtn.style.opacity = hasUp ? "" : "0.3";
+      this._nextBtn.disabled = !hasDown;
+      this._nextBtn.style.opacity = hasDown ? "" : "0.3";
     }
 
     prevTarget(slideId) {
@@ -630,14 +683,14 @@
       trackEl.querySelectorAll(".slide-scrollbar-snap").forEach((el) => el.remove());
       const snaps = this._snapsFor(slideId);
       if (!snaps) return;
-      const range = this._scrollManager.range(slideId);
-      if (range <= 0) return;
+      if (this._scrollManager.range(slideId) <= 0) return;
       const geo = this._scrollManager.trackGeometry(slideId);
       if (!geo) return;
       for (const pos of snaps) {
         const dot = document.createElement("div");
         dot.className = "slide-scrollbar-snap";
-        dot.style.top = geo.thumbHeight / 2 + (pos / range) * geo.maxOffset + "px";
+        const offset = this._scrollManager._positionToOffset(slideId, pos, geo);
+        dot.style.top = geo.thumbHeight / 2 + offset + "px";
         geo.trackEl.appendChild(dot);
       }
     }
@@ -1246,8 +1299,8 @@
     if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
       e.preventDefault();
       if (document.body.classList.contains("view-transitioning")) return;
-      if (e.key === "ArrowUp") snapManager.prev();
-      else snapManager.next();
+      if (e.key === "ArrowUp") snapManager.up();
+      else snapManager.down();
       return;
     }
 
@@ -1356,8 +1409,7 @@
       snapManager.cancel();
 
       const speed = scrollManager.scrollSpeed(slideId);
-      const current = scrollManager.position(slideId);
-      scrollManager.setPosition(slideId, current + e.deltaY * speed);
+      scrollManager.applyScrollDelta(slideId, e.deltaY * speed);
 
       snapManager.schedule(slideId);
     },
