@@ -204,6 +204,22 @@ class TestImageSequenceElement:
         assert len(el.image_sequence) == 4
         assert el.image_sequence[1] == el.image_sequence[2]
 
+    def test_empty_string_becomes_none(self):
+        el = ImageSequenceElement(**_image_sequence(image_sequence=["a.svg", "", "b.svg"]))
+        assert len(el.image_sequence) == 3
+        assert el.image_sequence[0] is not None
+        assert el.image_sequence[1] is None
+        assert el.image_sequence[2] is not None
+
+    def test_consecutive_empty_strings_allowed(self):
+        el = ImageSequenceElement(**_image_sequence(image_sequence=["a.svg", "", "", "b.svg"]))
+        assert el.image_sequence[1] is None
+        assert el.image_sequence[2] is None
+
+    def test_empty_string_counts_toward_min_two(self):
+        el = ImageSequenceElement(**_image_sequence(image_sequence=["a.svg", ""]))
+        assert len(el.image_sequence) == 2
+
     def test_too_few_frames_rejected(self):
         with pytest.raises(ValidationError, match="image_sequence must contain at least 2 entries"):
             ImageSequenceElement(**_image_sequence(image_sequence=["a.svg"]))

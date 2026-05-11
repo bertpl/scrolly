@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from scrolly.slide.ir._framework.animated_values import (
     AnimatedScalar,
@@ -129,16 +129,29 @@ class ImageSequenceElement(SlideElement, frozen=True):
 
     Each image is shown in turn on an equidistant scroll grid. Repeating the same
     path consecutively in ``image_sequence`` extends its visible duration by one
-    slot per repeat. Optional ``fade_in`` / ``fade_out`` add leading / trailing
-    opacity ramps independent of the inter-frame crossfade timing.
+    slot per repeat. An empty string (``""``) in any slot reserves that slot in
+    the timeline but renders nothing — neighbouring frames fade out before and
+    in after the blank, so the slot is a clean "no image visible" period.
+    Optional ``fade_in`` / ``fade_out`` add leading / trailing opacity ramps
+    independent of the inter-frame crossfade timing.
     """
 
-    image_sequence: list[Path] = Field(
+    image_sequence: list[Path | None] = Field(
         description=(
             "Ordered image paths, relative to the slide source file. Min 2 entries. "
+            "An empty string (\"\") reserves a blank slot in the timeline — neighbouring frames "
+            "crossfade out before and in after it. "
             "Repeating the same path consecutively extends its visible duration by one slot per repeat."
         ),
     )
+
+    @field_validator("image_sequence", mode="before")
+    @classmethod
+    def _empty_string_means_blank(cls, value: object) -> object:
+        """Normalise ``""`` entries to ``None`` so blank slots are represented uniformly."""
+        if isinstance(value, list):
+            return [None if item == "" else item for item in value]
+        return value
     frame_distance: float = Field(
         description=(
             "Scroll distance between the start of consecutive frames' hold periods. "

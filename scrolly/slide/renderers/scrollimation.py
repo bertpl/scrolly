@@ -107,7 +107,7 @@ class ScrollimationRenderer(Renderer):
             if isinstance(el, ImageElement):
                 asset_paths.append(el.image)
             elif isinstance(el, ImageSequenceElement):
-                asset_paths.extend(el.image_sequence)
+                asset_paths.extend(p for p in el.image_sequence if p is not None)
             if isinstance(el, MermaidElement):
                 has_mermaid = True
 
@@ -157,10 +157,17 @@ def _render_element_content(el: AnyElement) -> str:
 
 
 def _render_image_sequence_imgs(el: ImageSequenceElement) -> str:
-    """Render image-sequence content: one <img> per consecutive-run, each with its own opacity ramp."""
+    """Render image-sequence content: one <img> per non-empty consecutive-run, each with its own opacity ramp.
+
+    Empty runs (``path is None``) are skipped entirely — they reserve a slot in
+    the timeline but emit no markup. The crossfade keyframes on the neighbouring
+    runs naturally bracket the empty period so nothing is visible during it.
+    """
     runs = _image_sequence_runs(list(el.image_sequence))
     img_tags = []
     for run_idx, (path, i_start, _) in enumerate(runs):
+        if path is None:
+            continue
         kfs = _image_sequence_run_keyframes(el, runs, run_idx)
         kf_json = json.dumps(kfs, separators=(",", ":"))
         img_tags.append(
@@ -171,9 +178,12 @@ def _render_image_sequence_imgs(el: ImageSequenceElement) -> str:
     return "\n".join(img_tags)
 
 
-def _image_sequence_runs(paths: list[Path]) -> list[tuple[Path, int, int]]:
-    """Group consecutive identical paths into ``(path, start_idx, end_idx)`` runs."""
-    runs: list[tuple[Path, int, int]] = []
+def _image_sequence_runs(paths: list[Path | None]) -> list[tuple[Path | None, int, int]]:
+    """Group consecutive identical paths into ``(path, start_idx, end_idx)`` runs.
+
+    Empty slots (``None``) group together the same way as identical paths.
+    """
+    runs: list[tuple[Path | None, int, int]] = []
     i = 0
     while i < len(paths):
         j = i
@@ -294,7 +304,9 @@ def _image_sequence_css(ns: str, el: ImageSequenceElement, eid: str) -> list[str
     ]
 
     runs = _image_sequence_runs(list(el.image_sequence))
-    for run_idx, (_, i_start, _) in enumerate(runs):
+    for run_idx, (path, i_start, _) in enumerate(runs):
+        if path is None:
+            continue  # no <img> emitted for empty runs, so no opacity rule needed
         kfs = _image_sequence_run_keyframes(el, runs, run_idx)
         expr = ramp_expr(kfs)
         if expr is None:

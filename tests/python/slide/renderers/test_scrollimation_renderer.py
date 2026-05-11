@@ -744,6 +744,25 @@ class TestImageSequenceHtml:
         for name in ("a.svg", "b.svg", "c.svg"):
             assert f'src="__asset__/{name}"' in chunk.html
 
+    def test_empty_slot_emits_no_img(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "b.svg"]))
+        chunk = _build(src)
+        # Two real frames -> two <img> tags; the empty slot emits nothing.
+        assert chunk.html.count("<img ") == 2
+        # No data-frame-index="1" since that slot is empty.
+        assert 'data-frame-index="0"' in chunk.html
+        assert 'data-frame-index="1"' not in chunk.html
+        assert 'data-frame-index="2"' in chunk.html
+
+    def test_consecutive_empty_slots_emit_no_img(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "", "b.svg"]))
+        chunk = _build(src)
+        assert chunk.html.count("<img ") == 2
+
 
 class TestImageSequenceAssets:
     def test_asset_paths_resolved_and_unique(self, tmp_path: Path) -> None:
@@ -764,6 +783,14 @@ class TestImageSequenceAssets:
         chunk = _build(src)
         for path in chunk.assets:
             assert path.is_absolute()
+
+    def test_empty_slots_excluded_from_assets(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "b.svg", ""]))
+        chunk = _build(src)
+        names = sorted(p.name for p in chunk.assets)
+        assert names == ["a.svg", "b.svg"]
 
 
 class TestImageSequenceCss:
@@ -805,6 +832,15 @@ class TestImageSequenceCss:
         chunk = _build(src)
         assert "object-fit: cover" in chunk.scoped_css
 
+    def test_no_opacity_rule_for_empty_slot(self, tmp_path: Path) -> None:
+        for name in ("a.svg", "b.svg"):
+            _write(tmp_path / name, "<svg/>")
+        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "b.svg"]))
+        chunk = _build(src)
+        assert 'img[data-frame-index="0"]' in chunk.scoped_css
+        assert 'img[data-frame-index="1"]' not in chunk.scoped_css
+        assert 'img[data-frame-index="2"]' in chunk.scoped_css
+
 
 class TestImageSequenceTimeline:
     def test_run_keyframes_basic(self) -> None:
@@ -835,6 +871,40 @@ class TestImageSequenceTimeline:
             (800.0, 0.0),
         ]
         assert _image_sequence_run_keyframes(el, runs, 3) == [(1000.0, 0.0), (1200.0, 1.0), (1400.0, 1.0)]
+
+    def test_runs_group_consecutive_empty_slots(self) -> None:
+        from pathlib import Path
+
+        from scrolly.slide.renderers.scrollimation import _image_sequence_runs
+
+        runs = _image_sequence_runs([Path("a.svg"), None, None, Path("b.svg")])
+        # Two consecutive Nones collapse to a single run, just like two identical paths would.
+        assert runs == [(Path("a.svg"), 0, 0), (None, 1, 2), (Path("b.svg"), 3, 3)]
+
+    def test_real_frame_keyframes_unchanged_by_empty_slot(self) -> None:
+        from pathlib import Path
+
+        from scrolly.slide.ir import ImageSequenceElement
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = ImageSequenceElement(
+            image_sequence=[Path("a.svg"), None, Path("b.svg")],
+            frame_distance=400,
+            hold=200,
+            scroll_offset=0,
+            position=[0, 0],
+            width=80,
+            height="auto",
+        )
+        runs = _image_sequence_runs(list(el.image_sequence))
+        # A (first, not last) fades out into the empty slot's hold window.
+        assert _image_sequence_run_keyframes(el, runs, 0) == [(0.0, 1.0), (200.0, 1.0), (400.0, 0.0)]
+        # B (not first, last) fades in out of the empty slot's hold window.
+        assert _image_sequence_run_keyframes(el, runs, 2) == [(600.0, 0.0), (800.0, 1.0), (1000.0, 1.0)]
+        # The empty slot's hold [400, 600] sits cleanly between A's fade-out end and B's fade-in start.
 
     def test_run_keyframes_with_repeats(self) -> None:
         from pathlib import Path
