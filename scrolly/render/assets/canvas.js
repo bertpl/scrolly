@@ -1476,11 +1476,23 @@
   snapManager.initControl(document.querySelector(".snap-control"));
 
   // ---- Idle timers --------------------------------------------------------
+  //
+  // Two independent idle-fade pipelines:
+  //
+  //  - scroll-UI (scrollbar + snap control): resets on scroll-position
+  //    changes and scrollbar hover, 1000 ms delay, 0.5 s fade-out.
+  //  - hover-UI (zoom-out + edge arrows): resets on any mouse movement,
+  //    2000 ms delay, 1.0 s fade-out (twice the scroll-UI values).
+  //
+  // Both clear (not just reset) on zoom-out to deck view so neither pipeline
+  // affects deck-view chrome, and both reset on entry to slide view.
 
   const scrollUiEl = document.querySelector(".scroll-ui");
+  const navigationEl = document.querySelector(".navigation");
   const scrollUiTimer = new IdleTimer(scrollUiEl, "scroll-ui-idle", 1000);
+  const hoverUiTimer = new IdleTimer(navigationEl, "hover-ui-idle", 2000);
 
-  // Reset idle on scroll position change + update element visibility.
+  // Reset scroll-UI idle on scroll position change + update element visibility.
   const elementVisibility = new ElementVisibility(canvas);
   scrollManager.onPositionChange = (slideId) => {
     snapManager.onScrollPositionChanged(slideId);
@@ -1488,17 +1500,25 @@
     scrollUiTimer.reset();
   };
 
-  // Reset idle on scroll-UI hover.
+  // Reset scroll-UI idle on scroll-UI hover.
   if (scrollUiEl) {
     scrollUiEl.addEventListener("mouseenter", () => scrollUiTimer.reset());
   }
 
-  // Reset/clear idle on view change (slide change or zoom toggle).
+  // Reset hover-UI idle on any mouse movement in slide view.
+  document.addEventListener("mousemove", () => {
+    if (viewState.zoomLevel !== 1) return;
+    hoverUiTimer.reset();
+  });
+
+  // Reset/clear both idle timers on view change (slide change or zoom toggle).
   viewState.onViewChange = (slideId, zoomLevel) => {
     if (zoomLevel === 1) {
       scrollUiTimer.reset();
+      hoverUiTimer.reset();
     } else {
       scrollUiTimer.clear();
+      hoverUiTimer.clear();
     }
   };
 
@@ -1524,5 +1544,6 @@
       scrollManager.position(viewState.selectedSlide)
     );
     scrollUiTimer.reset();
+    hoverUiTimer.reset();
   }
 })(typeof module !== "undefined" ? module.exports : {});

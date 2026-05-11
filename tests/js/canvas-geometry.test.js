@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, resolveTarget, evaluatePiecewiseLinear } = require("../../scrolly/render/assets/canvas.js");
+const { CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, IdleTimer, resolveTarget, evaluatePiecewiseLinear } = require("../../scrolly/render/assets/canvas.js");
 
 function _geo(slides, fanSpacingFactor) {
   return new CanvasGeometry({
@@ -1141,5 +1141,92 @@ describe("evaluatePiecewiseLinear", () => {
 
   it("returns 1 for empty keyframes", () => {
     expect(evaluatePiecewiseLinear([], 50)).toBe(1);
+  });
+});
+
+// ---- IdleTimer ------------------------------------------------------------
+
+describe("IdleTimer", () => {
+  function _target() {
+    // Minimal classList stub.
+    const classes = new Set();
+    return {
+      classList: {
+        add: (c) => { classes.add(c); },
+        remove: (c) => { classes.delete(c); },
+        has: (c) => classes.has(c),
+      },
+      _classes: classes,
+    };
+  }
+
+  it("starts without the idle class", () => {
+    const t = _target();
+    new IdleTimer(t, "idle", 100);
+    expect(t.classList.has("idle")).toBe(false);
+  });
+
+  it("reset removes the class immediately if present", () => {
+    const t = _target();
+    t.classList.add("idle");
+    const timer = new IdleTimer(t, "idle", 100);
+    timer.reset();
+    expect(t.classList.has("idle")).toBe(false);
+  });
+
+  it("reset adds the class after the delay", () => {
+    vi.useFakeTimers();
+    const t = _target();
+    const timer = new IdleTimer(t, "idle", 500);
+    timer.reset();
+    expect(t.classList.has("idle")).toBe(false);
+    vi.advanceTimersByTime(499);
+    expect(t.classList.has("idle")).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(t.classList.has("idle")).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("reset called twice restarts the delay", () => {
+    vi.useFakeTimers();
+    const t = _target();
+    const timer = new IdleTimer(t, "idle", 500);
+    timer.reset();
+    vi.advanceTimersByTime(400);
+    timer.reset();  // restart
+    vi.advanceTimersByTime(400);  // total elapsed 800, but only 400 since restart
+    expect(t.classList.has("idle")).toBe(false);
+    vi.advanceTimersByTime(100);
+    expect(t.classList.has("idle")).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("clear cancels a pending add", () => {
+    vi.useFakeTimers();
+    const t = _target();
+    const timer = new IdleTimer(t, "idle", 500);
+    timer.reset();
+    timer.clear();
+    vi.advanceTimersByTime(1000);
+    expect(t.classList.has("idle")).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("clear removes the class if already added", () => {
+    vi.useFakeTimers();
+    const t = _target();
+    const timer = new IdleTimer(t, "idle", 100);
+    timer.reset();
+    vi.advanceTimersByTime(100);
+    expect(t.classList.has("idle")).toBe(true);
+    timer.clear();
+    expect(t.classList.has("idle")).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("tolerates a null target", () => {
+    const timer = new IdleTimer(null, "idle", 100);
+    expect(() => timer.reset()).not.toThrow();
+    expect(() => timer.clear()).not.toThrow();
   });
 });

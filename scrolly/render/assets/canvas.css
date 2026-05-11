@@ -208,6 +208,18 @@ body {
   transition: opacity 0.5s ease-out;
 }
 
+/* Container-chrome (zoom-out + edge arrows) fade — driven by mouse-movement
+ * inactivity, independent of the scroll-UI fade above. The opacity is set on
+ * specific children (not the .navigation wrapper) so .scroll-ui is unaffected
+ * by parent-opacity multiplication. The base 150ms transition on the children
+ * handles fade-back-in when the idle class is removed. */
+.navigation.hover-ui-idle .zoom-out-control,
+.navigation.hover-ui-idle .edge-arrow {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease-out;
+}
+
 /* ---- Custom left-edge scrollbar -----------------------------------------
  *
  * Single instance inside .scroll-ui (in .navigation). Hidden by default;
