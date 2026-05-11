@@ -225,20 +225,19 @@ body {
   bottom: 2px;
   width: 8px;
   border-radius: 4px;
-  background: rgba(215, 215, 215, 0.25);
+  background: rgb(215, 215, 215);
   display: none;
   pointer-events: auto;
 }
 
 .slide-scrollbar-snap {
   position: absolute;
-  left: 0;
-  width: 8px;
-  height: 8px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: rgba(160, 160, 160, 0.5);
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.3);
-  transform: translateY(-50%);
+  background: #000;
+  transform: translate(-50%, -50%);
   z-index: 0;
   pointer-events: none;
 }

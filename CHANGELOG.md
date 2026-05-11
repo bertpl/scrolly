@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refined snap-position styling in the scrollbar gutter: smaller solid-black
+  dots and an opaque track, keeping the dots clearly visible against any
+  slide background.
+
 ### Deprecated
 
 ### Removed
