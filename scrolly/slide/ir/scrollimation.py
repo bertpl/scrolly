@@ -61,13 +61,24 @@ class ScrollimationIR(SlideIR, frozen=True):
     reverse: bool = Field(
         default=False,
         description=(
-            "When true, the scrollbar thumb starts at the bottom of the track and "
-            "rises as the scroll value increases. Authoring values (keyframe `at`, "
-            "`snap_positions`, `initial_scroll_position`) keep their normal "
-            "meaning; only the scrollbar's thumb-position mapping and the sign of "
-            "user-input deltas are flipped. Intended for naturally bottom-up "
-            "content (e.g. git-tree visualisations) so authors can keep keyframes "
-            "and image lists in their natural ascending order."
+            "Reverses the scrollbar direction so the slide reads bottom-up. "
+            "When false (default), scroll value 0 places the scrollbar thumb "
+            "at the TOP of the track and the user scrolls DOWN to advance "
+            "through the slide — the conventional direction. When true, "
+            "scroll value 0 places the thumb at the BOTTOM of the track, the "
+            "thumb rises as the scroll value increases, and the user scrolls "
+            "UP to advance. "
+            "Authoring values are UNCHANGED in either mode: keyframe `at` "
+            "values, `snap_positions`, and `initial_scroll_position` are "
+            "still interpreted in the usual [0, scroll_range] range, with "
+            "`at=0` rendering the slide's initial state regardless of "
+            "`reverse`. Only the scrollbar's value-to-thumb-position mapping "
+            "and the sign of user-input deltas (wheel, shift+arrows, "
+            "chevrons, drag) are flipped at render time. "
+            "Intended for naturally bottom-up content (e.g. git-tree "
+            "visualisations) so authors can keep keyframes and image lists "
+            "in their natural ascending order rather than writing them "
+            "in reverse."
         ),
     )
     elements: list[AnyElement] = Field(
