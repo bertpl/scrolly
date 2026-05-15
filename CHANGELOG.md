@@ -5,23 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.8 (2026-05-15)
 
 ### Added
 
 - `.avif` accepted as an image asset format alongside the existing `.png`, `.jpg`, `.svg`, `.gif`, and `.webp`. README now enumerates the supported set.
 - `compositing` field on `image_sequence` elements selects one of three frame-compositing strategies: `blend` (default, current behaviour — symmetric crossfade), `overlay` (opaque-frame mode that keeps a fully-opaque underlayer through every transition, eliminating mid-transition background bleed-through), or `incremental` (additive transparent layers that build up a composite as the sequence advances).
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.1.7 (2026-05-11)
 
 ### Added
