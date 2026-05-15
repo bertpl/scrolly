@@ -81,5 +81,17 @@
       text_align: "center",
       opacity: { keyframes: [[1350, 0], [1450, 1]] },
     },
+
+    // Small AVIF badge — exercises the AVIF asset format end-to-end.
+    // Bottom-right corner, fades in alongside the attribution.
+    {
+      name: "avif-badge",
+      image: "avif-badge.avif",
+      position: [92, 92],
+      width: 6,
+      height: "auto",
+      anchor: [100, 100],
+      opacity: { keyframes: [[1350, 0], [1450, 1]] },
+    },
   ],
 }

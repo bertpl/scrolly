@@ -29,6 +29,11 @@ open /tmp/scrolly-out/index.html
 See [`examples/worked-example/`](examples/worked-example/) for a reference deck
 demonstrating all supported slide types.
 
+## Supported image formats
+
+Image assets referenced from slides may use any of the following formats:
+`.png`, `.jpg` / `.jpeg`, `.svg`, `.gif`, `.webp`, `.avif`.
+
 ## License
 
 [MIT](https://github.com/bertpl/scrolly/blob/main/LICENSE).

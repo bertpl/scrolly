@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import SlideSourceError
-from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
+from scrolly.pipeline.assets import _MIME_TYPES, copy_assets, rewrite_asset_refs
 from scrolly.slide.html import SlideHTML
 
 
@@ -168,6 +168,63 @@ class TestCopyAssets:
         copy_assets(chunks, out)
         assert not (out / "_assets" / "plain").exists()
         assert (out / "_assets" / "rich" / "hero.jpg").exists()
+
+
+class TestMimeTypeCoverage:
+    """Parametrized coverage of every entry in ``_MIME_TYPES``.
+
+    Guards against silent regressions when a format is added to or removed
+    from the supported set: every entry must round-trip cleanly through both
+    the inline (``data:`` URI) and external-asset (file copy) paths.
+    """
+
+    @pytest.mark.parametrize(("ext", "expected_mime"), sorted(_MIME_TYPES.items()))
+    def test_inline_data_uri_uses_correct_mime(
+        self,
+        tmp_path: Path,
+        ext: str,
+        expected_mime: str,
+    ) -> None:
+        # --- arrange ----------------------
+        src = tmp_path / f"asset{ext}"
+        src.write_bytes(b"sentinel-payload")
+        chunk = _chunk(html=f'<img src="__asset__/asset{ext}">', assets=(src,))
+
+        # --- act --------------------------
+        result = rewrite_asset_refs({"s1": chunk})
+
+        # --- assert -----------------------
+        assert f"data:{expected_mime};base64," in result["s1"].html
+
+    @pytest.mark.parametrize("ext", sorted(_MIME_TYPES))
+    def test_external_mode_rewrites_ref(self, tmp_path: Path, ext: str) -> None:
+        # --- arrange ----------------------
+        src = _write_file(tmp_path / "src" / f"asset{ext}")
+        chunk = _chunk(html=f'<img src="__asset__/asset{ext}">', assets=(src,))
+
+        # --- act --------------------------
+        result = rewrite_asset_refs({"s1": chunk}, inline=False)
+
+        # --- assert -----------------------
+        assert "__asset__/" not in result["s1"].html
+        assert f"_assets/s1/asset{ext}" in result["s1"].html
+
+    @pytest.mark.parametrize("ext", sorted(_MIME_TYPES))
+    def test_copy_assets_copies_file(self, tmp_path: Path, ext: str) -> None:
+        # --- arrange ----------------------
+        content = b"\x00\x01\x02 fake bytes"
+        src = tmp_path / "src" / f"asset{ext}"
+        src.parent.mkdir(parents=True, exist_ok=True)
+        src.write_bytes(content)
+        chunk = _chunk(assets=(src,))
+        out = tmp_path / "out"
+        out.mkdir()
+
+        # --- act --------------------------
+        copy_assets({"s": chunk}, out)
+
+        # --- assert -----------------------
+        assert (out / "_assets" / "s" / f"asset{ext}").read_bytes() == content
 
 
 class TestValidation:

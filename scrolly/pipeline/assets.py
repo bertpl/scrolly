@@ -33,6 +33,7 @@ _MIME_TYPES: dict[str, str] = {
     ".svg": "image/svg+xml",
     ".gif": "image/gif",
     ".webp": "image/webp",
+    ".avif": "image/avif",
 }
 
 
