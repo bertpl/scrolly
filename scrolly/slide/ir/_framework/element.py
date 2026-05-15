@@ -188,6 +188,24 @@ class ImageSequenceElement(SlideElement, frozen=True):
             '(or animated), forbidden when one is "auto". Same semantics as ImageElement.object_fit.'
         ),
     )
+    compositing: Literal["blend", "overlay", "incremental"] = Field(
+        default="blend",
+        description=(
+            "How successive frames composite on top of one another as the sequence advances. "
+            '"blend" (default): symmetric crossfade — each frame ramps 0→1 in and 1→0 out, '
+            "leaving a brief mid-transition window where both frames are partially transparent and the "
+            "slide background may show through. Use for frames that have their own per-pixel "
+            "transparency and should fully replace each other. "
+            '"overlay": each frame ramps 0→1 in, then holds at 1 until the next frame has fully faded in, '
+            "then instantly drops to 0. The next frame fully covers it before it disappears, so the "
+            "slide background never shows through. Use for opaque image sequences (photos, screenshots). "
+            '"incremental": each frame ramps 0→1 in, then holds at 1 until the sequence ends — all '
+            "revealed frames stay layered and the rendered image is the alpha-composite of every "
+            "frame to date. Use for build-up sequences where each frame adds a new element on a "
+            "transparent background (a flowchart growing, an equation revealed line by line, a map "
+            "gaining markers)."
+        ),
+    )
 
     @model_validator(mode="after")
     def _validate_image_sequence(self) -> ImageSequenceElement:

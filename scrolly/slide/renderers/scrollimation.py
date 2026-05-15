@@ -28,6 +28,15 @@ from scrolly.slide.processor import Renderer
 _MD_EXTENSIONS: tuple[str, ...] = ("fenced_code", "tables", "sane_lists")
 _SCROLL_VAR = "var(--scroll-position, 0)"
 
+# Width (in scroll units) of the near-instantaneous opacity drop used by
+# ``compositing: "overlay"`` to take a frame from full opacity to 0 once
+# its successor has fully faded in. A true step discontinuity cannot be
+# expressed by the CSS ``calc()``-based ramp generator (which produces
+# continuous piecewise-linear functions), so we use a 1-unit ramp that
+# is visually indistinguishable from a step at any reasonable scroll
+# speed but keeps slope computation well-defined.
+_STEP_RAMP_WIDTH = 1.0
+
 
 # ==================================================================================================
 #  CSS ramp expression generation
@@ -201,10 +210,33 @@ def _image_sequence_run_keyframes(
 ) -> list[tuple[float, float]]:
     """Build opacity keyframes for one post-dedup run.
 
-    The leading edge is ``fade_in`` for the first run (or absent when ``fade_in == 0``),
-    and the inter-frame crossfade for every other run. The trailing edge is ``fade_out``
-    for the last run (or absent when ``fade_out == 0``), and the inter-frame crossfade
-    for every other run.
+    The leading edge always uses ``fade_in`` for the first run (absent when
+    ``fade_in == 0``) and the inter-run crossfade for every other run. The
+    trailing edge depends on ``el.compositing``:
+
+    - ``"blend"`` (default): each run ramps 1→0 over the crossfade into the
+      next run; the last run uses ``fade_out`` (or stays at 1 if 0).
+      Symmetric crossfade — leaves a brief mid-transition window where both
+      neighbours are partially transparent.
+    - ``"overlay"``: non-last runs hold at 1 through the *next* run's fade-in
+      window, then step instantly to 0 at the moment the next run reaches
+      opacity 1. The last run behaves like ``"blend"``'s last run. Keeps a
+      fully-opaque underlayer through every transition (no background
+      bleed-through for opaque frames).
+    - ``"incremental"``: every run holds at 1 until the sequence's final
+      ``hold_end``, then participates in any trailing ``fade_out``. All
+      revealed runs ramp out together. Used for additive transparent layers
+      that build up a composite.
+
+    Args:
+        el: The image-sequence element whose run is being laid out.
+        runs: Post-dedup runs as ``(path, i_start, i_end)`` tuples, where
+            ``i_start`` / ``i_end`` are inclusive scroll-grid slot indices.
+        run_idx: Index of the run to emit keyframes for.
+
+    Returns:
+        Ordered list of ``(scroll_position, opacity)`` keyframes suitable
+        for piecewise-linear evaluation.
     """
     _, i_start, i_end = runs[run_idx]
     hold_start = el.scroll_offset + i_start * el.frame_distance
@@ -216,6 +248,7 @@ def _image_sequence_run_keyframes(
 
     kfs: list[tuple[float, float]] = []
 
+    # --- leading edge -------------------------------
     if is_first:
         if el.fade_in > 0:
             kfs.append((hold_start - el.fade_in, 0.0))
@@ -224,13 +257,33 @@ def _image_sequence_run_keyframes(
         kfs.append((hold_start - crossfade, 0.0))
         kfs.append((hold_start, 1.0))
 
-    kfs.append((hold_end, 1.0))
-
-    if is_last:
+    # --- trailing edge ------------------------------
+    if el.compositing == "blend":
+        kfs.append((hold_end, 1.0))
+        if is_last:
+            if el.fade_out > 0:
+                kfs.append((hold_end + el.fade_out, 0.0))
+        else:
+            kfs.append((hold_end + crossfade, 0.0))
+    elif el.compositing == "overlay":
+        if is_last:
+            kfs.append((hold_end, 1.0))
+            if el.fade_out > 0:
+                kfs.append((hold_end + el.fade_out, 0.0))
+        else:
+            # Extended hold through the next run's fade-in, then a 1-unit
+            # ramp to 0 at the instant the next run reaches full opacity.
+            # See ``_STEP_RAMP_WIDTH`` for why this is a ramp rather than
+            # a true step discontinuity.
+            kfs.append((hold_end + crossfade, 1.0))
+            kfs.append((hold_end + crossfade + _STEP_RAMP_WIDTH, 0.0))
+    else:  # "incremental"
+        # Hold at 1 until the sequence's final hold_end; every run
+        # participates in the trailing fade-out together (if any).
+        last_hold_end = el.scroll_offset + runs[-1][2] * el.frame_distance + el.hold
+        kfs.append((last_hold_end, 1.0))
         if el.fade_out > 0:
-            kfs.append((hold_end + el.fade_out, 0.0))
-    else:
-        kfs.append((hold_end + crossfade, 0.0))
+            kfs.append((last_hold_end + el.fade_out, 0.0))
 
     return kfs
 

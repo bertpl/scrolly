@@ -1,0 +1,42 @@
+{
+  title: "Compositing: incremental",
+  scroll_range: 2400,
+  snap_positions: [0, 500, 1100, 1700, 2300, 2400],
+
+  // Four transparent additive layers; each frame adds a new line to a
+  // build-up checklist on top of all previous frames. With
+  // compositing: "incremental" every revealed frame stays at opacity 1
+  // until the sequence ends, so the rendered output is the
+  // alpha-composite of every frame to date.
+  elements: [
+    {
+      name: "title",
+      markdown: "## `compositing: incremental`\n\nEach frame contributes only its new content on a transparent background; previously-revealed frames stay layered.",
+      color: "#1a3552",
+      position: [10, 10],
+      width: 80,
+      height: "auto",
+      opacity: { keyframes: [[0, 0], [200, 1], [2200, 1], [2400, 0]] },
+    },
+
+    {
+      name: "checklist",
+      image_sequence: [
+        "incr-1.svg",
+        "incr-2.svg",
+        "incr-3.svg",
+        "incr-4.svg",
+      ],
+      compositing: "incremental",
+      frame_distance: 400,
+      hold: 200,
+      scroll_offset: 400,
+      fade_in: 200,
+      fade_out: 200,
+      position: [50, 55],
+      anchor: [50, 50],
+      width: 40,
+      height: "auto",
+    },
+  ],
+}
