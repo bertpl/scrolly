@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `.avif` accepted as an image asset format alongside the existing `.png`, `.jpg`, `.svg`, `.gif`, and `.webp`. README now enumerates the supported set.
+
 ### Changed
 
 ### Deprecated
