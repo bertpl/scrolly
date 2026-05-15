@@ -1230,3 +1230,49 @@ describe("IdleTimer", () => {
     expect(() => timer.clear()).not.toThrow();
   });
 });
+
+// Step-function support in evaluatePiecewiseLinear.
+//
+// The ImageSequenceElement "overlay" compositing mode emits keyframes with
+// two entries at the same scroll position to express an instantaneous
+// opacity step (1 → 0 at the instant the next frame reaches full opacity).
+// The evaluator already handles this correctly via its early-outs and the
+// "<=" loop comparison; these tests pin that behaviour so it cannot
+// regress silently.
+describe("evaluatePiecewiseLinear — step functions", () => {
+  it("returns post-step value when the step is at the end of the keyframes", () => {
+    // Step at end: [..., (T, 1), (T, 0)]. At position >= T the second
+    // early-out matches and returns the last keyframe's value.
+    const kfs = [[0, 0], [10, 1], [10, 0]];
+    expect(evaluatePiecewiseLinear(kfs, 10)).toBe(0);
+    expect(evaluatePiecewiseLinear(kfs, 10.5)).toBe(0);
+  });
+
+  it("returns pre-step value at exactly the step and post-step value just past it", () => {
+    // Step in the middle: [..., (T, 1), (T, 0), ...].
+    const kfs = [[0, 0], [10, 1], [10, 0], [20, 0]];
+    // At position 10 exactly: loop matches the pre-step keyframe → 1.
+    expect(evaluatePiecewiseLinear(kfs, 10)).toBe(1);
+    // Just past 10: loop skips both tied keyframes naturally → 0.
+    expect(evaluatePiecewiseLinear(kfs, 10.0001)).toBeCloseTo(0, 5);
+  });
+
+  it("interpolates correctly on either side of a step", () => {
+    const kfs = [[0, 0], [10, 1], [10, 0], [20, 0]];
+    // Mid-ramp before the step: linear interpolation 0 → 1.
+    expect(evaluatePiecewiseLinear(kfs, 5)).toBeCloseTo(0.5, 5);
+    // Past the step: flat 0.
+    expect(evaluatePiecewiseLinear(kfs, 15)).toBe(0);
+  });
+
+  it("does not divide by zero when tied keyframes appear", () => {
+    // Critical property: the loop can never land on a tied pair as
+    // (x0, x1), so x1 - x0 is never 0. Spot-check around several step
+    // locations.
+    const kfs = [[0, 0], [10, 1], [10, 0], [20, 1], [20, 0], [30, 0]];
+    for (const pos of [-1, 0, 5, 10, 15, 20, 25, 30, 35]) {
+      const y = evaluatePiecewiseLinear(kfs, pos);
+      expect(Number.isFinite(y)).toBe(true);
+    }
+  });
+});

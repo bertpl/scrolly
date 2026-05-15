@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `.avif` accepted as an image asset format alongside the existing `.png`, `.jpg`, `.svg`, `.gif`, and `.webp`. README now enumerates the supported set.
+- `compositing` field on `image_sequence` elements selects one of three frame-compositing strategies: `blend` (default, current behaviour — symmetric crossfade), `overlay` (opaque-frame mode that keeps a fully-opaque underlayer through every transition, eliminating mid-transition background bleed-through), or `incremental` (additive transparent layers that build up a composite as the sequence advances).
 
 ### Changed
 

@@ -967,6 +967,197 @@ class TestImageSequenceTimeline:
         ]
 
 
+class TestImageSequenceCompositingModes:
+    """Per-mode coverage of the trailing-edge keyframe shape.
+
+    Leading edges are identical across modes (fade-in only differs by
+    ``fade_in``); the trailing edge is what each mode controls.
+    """
+
+    @staticmethod
+    def _make_el(
+        compositing: str = "blend",
+        fade_in: float = 0,
+        fade_out: float = 0,
+    ) -> "ImageSequenceElement":
+        from pathlib import Path
+
+        from scrolly.slide.ir import ImageSequenceElement
+
+        return ImageSequenceElement(
+            image_sequence=[Path("a.svg"), Path("b.svg"), Path("c.svg"), Path("d.svg")],
+            frame_distance=400,
+            hold=200,
+            scroll_offset=0,
+            fade_in=fade_in,
+            fade_out=fade_out,
+            compositing=compositing,
+            position=[0, 0],
+            width=80,
+            height="auto",
+        )
+
+    def test_default_compositing_is_blend(self) -> None:
+        # --- arrange / act ----------------
+        el = self._make_el()
+
+        # --- assert -----------------------
+        assert el.compositing == "blend"
+
+    def test_blend_mode_matches_legacy_shape(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = self._make_el(compositing="blend")
+        runs = _image_sequence_runs(list(el.image_sequence))
+
+        # --- act / assert -----------------
+        # Symmetric crossfade: 1→0 over the crossfade window into the next run.
+        assert _image_sequence_run_keyframes(el, runs, 1) == [
+            (200.0, 0.0),
+            (400.0, 1.0),
+            (600.0, 1.0),
+            (800.0, 0.0),
+        ]
+
+    def test_overlay_extends_hold_and_drops_to_zero(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _STEP_RAMP_WIDTH,
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = self._make_el(compositing="overlay")
+        runs = _image_sequence_runs(list(el.image_sequence))
+
+        # --- act --------------------------
+        kfs = _image_sequence_run_keyframes(el, runs, 1)
+
+        # --- assert -----------------------
+        # Run 1's hold extends to 800 (end of run 2's fade-in window),
+        # then drops to 0 over a tiny 1-unit ramp — a true step
+        # discontinuity isn't expressible in CSS calc(), so we use a
+        # near-instantaneous ramp that is visually indistinguishable
+        # from a step but keeps slopes well-defined.
+        assert kfs == [
+            (200.0, 0.0),
+            (400.0, 1.0),
+            (800.0, 1.0),
+            (800.0 + _STEP_RAMP_WIDTH, 0.0),
+        ]
+
+    def test_overlay_last_run_behaves_like_blend(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = self._make_el(compositing="overlay")
+        runs = _image_sequence_runs(list(el.image_sequence))
+
+        # --- act / assert -----------------
+        # No next-run hold to extend through; trailing edge is just the hold,
+        # plus optional fade_out (none here).
+        assert _image_sequence_run_keyframes(el, runs, 3) == [
+            (1000.0, 0.0),
+            (1200.0, 1.0),
+            (1400.0, 1.0),
+        ]
+
+    def test_incremental_holds_until_sequence_end(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = self._make_el(compositing="incremental")
+        runs = _image_sequence_runs(list(el.image_sequence))
+
+        # --- act / assert -----------------
+        # Run 0 holds at 1 from hold_start (0) until the sequence's final
+        # hold_end (1400). No fade_out, so no trailing 0 keyframe.
+        assert _image_sequence_run_keyframes(el, runs, 0) == [
+            (0.0, 1.0),
+            (1400.0, 1.0),
+        ]
+        # Run 1 fades in normally, then also holds until 1400.
+        assert _image_sequence_run_keyframes(el, runs, 1) == [
+            (200.0, 0.0),
+            (400.0, 1.0),
+            (1400.0, 1.0),
+        ]
+        # Last run: identical trailing edge — its own hold_end already
+        # equals the sequence's final hold_end.
+        assert _image_sequence_run_keyframes(el, runs, 3) == [
+            (1000.0, 0.0),
+            (1200.0, 1.0),
+            (1400.0, 1.0),
+        ]
+
+    def test_incremental_fade_out_applies_to_every_run(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = self._make_el(compositing="incremental", fade_out=150)
+        runs = _image_sequence_runs(list(el.image_sequence))
+
+        # --- act / assert -----------------
+        # Every run shares the trailing fade — 1400 → 0 at 1550.
+        expected_trailer = [(1400.0, 1.0), (1550.0, 0.0)]
+        for run_idx in range(len(runs)):
+            kfs = _image_sequence_run_keyframes(el, runs, run_idx)
+            assert kfs[-2:] == expected_trailer, f"run {run_idx} trailing edge"
+
+    def test_overlay_fade_out_only_on_last_run(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _STEP_RAMP_WIDTH,
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        el = self._make_el(compositing="overlay", fade_out=150)
+        runs = _image_sequence_runs(list(el.image_sequence))
+
+        # --- act / assert -----------------
+        # Non-last runs still drop out at the next run's fade-in end;
+        # only the last run uses the trailing fade_out.
+        assert _image_sequence_run_keyframes(el, runs, 1)[-2:] == [
+            (800.0, 1.0),
+            (800.0 + _STEP_RAMP_WIDTH, 0.0),
+        ]
+        assert _image_sequence_run_keyframes(el, runs, 3) == [
+            (1000.0, 0.0),
+            (1200.0, 1.0),
+            (1400.0, 1.0),
+            (1550.0, 0.0),
+        ]
+
+    def test_fade_in_unchanged_across_modes(self) -> None:
+        # --- arrange ----------------------
+        from scrolly.slide.renderers.scrollimation import (
+            _image_sequence_run_keyframes,
+            _image_sequence_runs,
+        )
+
+        # --- act / assert -----------------
+        # Leading-edge fade_in keyframes are identical regardless of mode.
+        for mode in ("blend", "overlay", "incremental"):
+            el = self._make_el(compositing=mode, fade_in=100)
+            runs = _image_sequence_runs(list(el.image_sequence))
+            kfs = _image_sequence_run_keyframes(el, runs, 0)
+            assert kfs[:2] == [(-100.0, 0.0), (0.0, 1.0)], mode
+
+
 class TestImageSequenceInteractions:
     def test_element_level_animated_opacity_on_outer_div(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
