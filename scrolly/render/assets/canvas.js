@@ -1325,6 +1325,12 @@
       if (!snapManager.isControlVisible) return;
       e.preventDefault();
       snapManager.toggle();
+      // The toggle is unambiguous user activity: reset both idle-fade
+      // pipelines so the scrollbar + snap control fade back in (and stay
+      // in long enough for the toggle's visible feedback to register) and
+      // the hover-UI chrome follows the same active-user signal.
+      scrollUiTimer.reset();
+      hoverUiTimer.reset();
       return;
     }
 
@@ -1480,9 +1486,11 @@
   // Two independent idle-fade pipelines:
   //
   //  - scroll-UI (scrollbar + snap control): resets on scroll-position
-  //    changes and scrollbar hover, 1000 ms delay, 0.5 s fade-out.
-  //  - hover-UI (zoom-out + edge arrows): resets on any mouse movement,
-  //    2000 ms delay, 1.0 s fade-out (twice the scroll-UI values).
+  //    changes, scrollbar hover, and the snap-toggle keypress ('s'),
+  //    1000 ms delay, 0.5 s fade-out.
+  //  - hover-UI (zoom-out + edge arrows): resets on any mouse movement
+  //    and on the snap-toggle keypress ('s'), 2000 ms delay, 1.0 s
+  //    fade-out (twice the scroll-UI values).
   //
   // Both clear (not just reset) on zoom-out to deck view so neither pipeline
   // affects deck-view chrome, and both reset on entry to slide view.
