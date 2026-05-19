@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Pressing `s` to toggle scroll snapping now brings the scrollbar and snap control back from their idle fade-out, instead of mutating snap state invisibly.
+- Slide-group tabs in deck view now stay wider than their label text across all viewport sizes and resize sequences, instead of squeezing in around the text after a window resize.
 
 ### Security
 
