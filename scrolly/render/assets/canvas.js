@@ -862,8 +862,16 @@
     }
 
     _measureLabels() {
+      // Use offsetWidth (CSS layout width, transform-immune) rather than
+      // getBoundingClientRect().width (post-transform screen width). The
+      // labels live inside the canvas, which carries a transform whose scale
+      // factor varies with view state and viewport size; tabW is consumed
+      // downstream as a canvas-coordinate value that the same transform is
+      // applied to at paint time, so feeding it a post-transform measurement
+      // would re-apply the scale and shrink the tab flat-top below the label
+      // text envelope.
       this._labelWidths = this._elements.map(({ label }) =>
-        label.getBoundingClientRect().width
+        label.offsetWidth
       );
     }
 
