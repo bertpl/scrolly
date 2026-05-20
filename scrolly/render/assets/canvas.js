@@ -19,6 +19,39 @@
   "use strict";
 
   // ---- CanvasGeometry (pure — no DOM access) --------------------------------
+  //
+  // Coordinate systems used throughout this class. Mixing them is the
+  // most common source of subtle bugs in this file.
+  //
+  //  1. Cell coords — integer (col, row) addresses from the deck source.
+  //     Slide positions are stored as `[col, row]` in `_slides[id]`;
+  //     the occupied bounding box is `_bbox = {minX, minY, maxX, maxY}`.
+  //     `_rowGaps[i]` is indexed by absolute row.
+  //
+  //  2. Abstract coords — floats in viewport-fraction units, with the
+  //     column and row gaps stretched in. A slide at cell (c, r) occupies
+  //     abstract x in [c·(1 + colGap), c·(1 + colGap) + 1] and similarly
+  //     for y with row-gap accumulation. `slideAbstractPos`, `deckBounds`,
+  //     `effectiveGridSize`, `deckCenter`, `attachmentPoint`,
+  //     `controlPoint`, and `buildPath` all live here.
+  //
+  //  3. Viewport pixel coords — returned by `cellBounds` after multiplying
+  //     by the viewport dimensions cached by `refresh()`.
+  //
+  // Conversion factors live on the instance:
+  //  - `_colGap`: per-column horizontal gap, in abstract-x units per
+  //    column boundary. Set by `refresh()` from viewport width.
+  //  - `_dvmaxToRow`: converts dvmax-distance to abstract-y-distance.
+  //    Set by `refresh()` from viewport height.
+  //  - `_rowGaps[i]`: total gap above row i, in dvmax units. Decomposes
+  //    into two named components, both indexed by absolute row:
+  //      `_innerRowGap(i)` — inter-row spacing (only meaningful when the
+  //        row above is occupied); empty when row i is the topmost
+  //        occupied row of the deck.
+  //      `_labelExtra(i)` — label-tab room (LABEL_EXTRA whenever row i
+  //        itself carries a group label).
+  //    `deckBounds` uses the decomposed components directly; everything
+  //    else reads through `_rowGaps` / `_cumulativeRowGap`.
 
   class CanvasGeometry {
     static DECK_MARGIN_FACTOR = 0.85;
@@ -92,18 +125,25 @@
       this._dvmaxToRow = vmax / (100 * viewportHeight);
     }
 
-    effectiveGridSize() {
+    deckBounds() {
+      // The deck's visible bounding box in abstract coords. The top edge
+      // includes the label-tab extension above the topmost occupied row
+      // (when that row carries a label); the bottom, left, and right
+      // edges are the outer edges of the corner slide cells.
+      // effectiveGridSize and deckCenter are pure derivations of this.
       const { minX, minY, maxX, maxY } = this._bbox;
-      if (maxX < minX || maxY < minY) return { cols: 0, rows: 0 };
-      const colSpan = maxX - minX + 1;
-      const rowSpan = maxY - minY + 1;
-      let rowGapSum = this._topRowGapDvmax(minY);
-      for (let i = minY + 1; i <= maxY; i++) rowGapSum += this._rowGaps[i];
-      rowGapSum *= this._dvmaxToRow;
-      return {
-        cols: colSpan + Math.max(0, colSpan - 1) * this._colGap,
-        rows: rowSpan + rowGapSum,
-      };
+      if (maxX < minX || maxY < minY) return { left: 0, top: 0, right: 0, bottom: 0 };
+      const leftX = minX * (1 + this._colGap);
+      const rightX = maxX * (1 + this._colGap) + 1;
+      const slideTopY = minY + this._cumulativeRowGap(minY) * this._dvmaxToRow;
+      const topY = slideTopY - this._labelExtra(minY) * this._dvmaxToRow;
+      const bottomY = maxY + this._cumulativeRowGap(maxY) * this._dvmaxToRow + 1;
+      return { left: leftX, top: topY, right: rightX, bottom: bottomY };
+    }
+
+    effectiveGridSize() {
+      const b = this.deckBounds();
+      return { cols: b.right - b.left, rows: b.bottom - b.top };
     }
 
     fitAllScale() {
@@ -113,16 +153,8 @@
     }
 
     deckCenter() {
-      const { minX, minY, maxX, maxY } = this._bbox;
-      if (maxX < minX || maxY < minY) return { x: 0, y: 0 };
-      const leftX = minX * (1 + this._colGap);
-      const rightX = maxX * (1 + this._colGap) + 1;
-      // Slide top edge of the topmost occupied row, with the label-tab
-      // extension subtracted to land at the visible top of the deck.
-      const slideTopY = minY + this._cumulativeRowGap(minY) * this._dvmaxToRow;
-      const topY = slideTopY - this._topRowGapDvmax(minY) * this._dvmaxToRow;
-      const bottomY = maxY + this._cumulativeRowGap(maxY) * this._dvmaxToRow + 1;
-      return { x: (leftX + rightX) / 2, y: (topY + bottomY) / 2 };
+      const b = this.deckBounds();
+      return { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 };
     }
 
     fanOffset(side, fanIndex, fanSize) {
@@ -170,8 +202,7 @@
 
     _computeLabelRows() {
       // Set of absolute row indices that carry a group label (the
-      // minimum row of each group). Each labelled row gets extra height
-      // for its tab via _computeRowGaps + _topRowGapDvmax.
+      // minimum row of each group). _labelExtra(row) reads from this.
       const set = new Set();
       for (const group of this._groups) {
         const ys = group.slide_ids.map((id) => this._slides[id][1]);
@@ -180,31 +211,33 @@
       return set;
     }
 
+    _innerRowGap(row) {
+      // Inter-row spacing above row r, in dvmax units. GAP whenever the
+      // row above could host a slide (r > 0). Has no effect on the deck's
+      // visible bounding box when r is the topmost occupied row — there's
+      // no neighbour above to separate from — which is why deckBounds
+      // pulls _labelExtra(minY) out of the topmost gap directly.
+      return row > 0 ? CanvasGeometry.GAP : 0;
+    }
+
+    _labelExtra(row) {
+      // Label-tab room above row r, in dvmax units. LABEL_EXTRA whenever
+      // row r itself carries a group label.
+      return this._labelRows.has(row) ? CanvasGeometry.LABEL_EXTRA : 0;
+    }
+
     _computeRowGaps() {
-      // _rowGaps is indexed by absolute row number, so its length must
-      // reach maxY + 1 even when the deck doesn't start at row 0 —
+      // Precomputed `_innerRowGap(i) + _labelExtra(i)` for each absolute
+      // row, indexed up to maxY (inclusive). Length must reach maxY + 1
+      // even when the deck doesn't start at row 0, because
       // _cumulativeRowGap(r) traverses gaps[0..r] regardless of minY.
       const { maxY } = this._bbox;
       if (maxY < 0) return [];
       const gaps = [];
       for (let i = 0; i <= maxY; i++) {
-        if (i === 0) {
-          gaps.push(this._labelRows.has(0) ? CanvasGeometry.LABEL_EXTRA : 0);
-        } else {
-          gaps.push(this._labelRows.has(i)
-            ? CanvasGeometry.GAP + CanvasGeometry.LABEL_EXTRA
-            : CanvasGeometry.GAP);
-        }
+        gaps.push(this._innerRowGap(i) + this._labelExtra(i));
       }
       return gaps;
-    }
-
-    _topRowGapDvmax(row) {
-      // Effective gap above the TOPMOST occupied row, in dvmax units.
-      // Only the LABEL_EXTRA portion is meaningful — the inter-row GAP
-      // is empty space when the row above is unoccupied, so it doesn't
-      // contribute to the deck's visible bounding box.
-      return this._labelRows.has(row) ? CanvasGeometry.LABEL_EXTRA : 0;
     }
 
     _cumulativeRowGap(row) {
