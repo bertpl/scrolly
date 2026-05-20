@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Deck view now centres on the actual slide cluster when the leftmost column or topmost row of the deck is not at zero, instead of including the empty leading columns/rows in its fit-and-centre computation.
+
 ### Security
 
 ## 0.1.9 (2026-05-19)
