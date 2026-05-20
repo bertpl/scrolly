@@ -31,18 +31,14 @@ Branch names follow the pattern:
 
 - **Prefix** -- one of `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`,
   `test/`. CI rejects anything else.
-- **NN** -- two-digit zero-padded sequence number, continuous across all
-  branches in the project (substitutes for an issue number where one
-  doesn't exist). Use the next free number; check `git branch -a` if
-  unsure.
+- **NN** -- the GitHub issue number this PR addresses. Open an issue
+  first if one doesn't already exist; that gives the change a public
+  tracking point and pins the branch number unambiguously. If the
+  issue number is `42`, the branch is `feat/42-add-export-formats`.
 - **Slug** -- short kebab-case description, lowercase letters, digits,
   and hyphens only.
 
-Examples: `chore/01-oss-scaffolding`, `feat/07-new-slide-type`,
-`fix/12-build-crash-on-empty-deck`.
-
-When a GitHub issue exists, its number replaces the sequence
-(`feat/42-...`).
+Examples: `feat/07-new-slide-type`, `fix/12-build-crash-on-empty-deck`.
 
 ## Pull requests
 
