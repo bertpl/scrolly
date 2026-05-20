@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Zoom-out control now defaults to a deck mini-map — light-grey square per slide at its grid position, a brighter square for the current slide — instead of a single chevron icon. Pass `--simplified-zoom-control` to `scrolly build` to keep the legacy icon.
+
 ### Changed
 
 ### Deprecated

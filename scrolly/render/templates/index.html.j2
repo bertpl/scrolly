@@ -45,9 +45,19 @@
   </div>
 
   <div class="navigation">
+    {%- if minimap %}
+    <button type="button" class="zoom-out-control zoom-out-control-minimap" aria-label="Go to deck"
+            style="width: {{ minimap.container_size | round(2) }}px; height: {{ minimap.container_size | round(2) }}px;">
+      {%- for cell in minimap.cells %}
+      <span class="minimap-cell" data-slide-id="{{ cell.slide_id }}"
+            style="left: {{ cell.x | round(2) }}px; top: {{ cell.y | round(2) }}px; width: {{ minimap.cell_size | round(2) }}px; height: {{ minimap.cell_size | round(2) }}px;"></span>
+      {%- endfor %}
+    </button>
+    {%- else %}
     <button type="button" class="zoom-out-control" aria-label="Go to deck">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4V4zM20 14v6h-6v-2h4v-4h2zM10 20H4v-6h2v4h4v2z" fill="currentColor"/></svg>
     </button>
+    {%- endif %}
     {#- edge arrows are rebuilt by canvas.js on selected_slide change -#}
 
     {#- Scroll UI: scrollbar + snap control, wrapped for unified idle-fade.

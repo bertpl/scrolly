@@ -31,10 +31,28 @@ def cli() -> None:
 @click.option("--force", is_flag=True, help="Overwrite a non-empty output directory.")
 @click.option("--no-inline", is_flag=True, help="Write assets as separate files instead of inlining.")
 @click.option("--strict", is_flag=True, help="Enable additional lint checks (e.g. out-of-range keyframes).")
-def build(deck_path: Path, out_dir: Path, force: bool, no_inline: bool, strict: bool) -> None:
+@click.option(
+    "--simplified-zoom-control",
+    is_flag=True,
+    help="Use the legacy single-icon zoom-out control instead of the default deck mini-map.",
+)
+def build(
+    deck_path: Path,
+    out_dir: Path,
+    force: bool,
+    no_inline: bool,
+    strict: bool,
+    simplified_zoom_control: bool,
+) -> None:
     """Build a deck into a self-contained HTML presentation."""
     try:
-        deck = build_deck(deck_path, out_dir, force=force, inline=not no_inline)
+        deck = build_deck(
+            deck_path,
+            out_dir,
+            force=force,
+            inline=not no_inline,
+            simplified_zoom_control=simplified_zoom_control,
+        )
     except ScrollyError as e:
         _err_console.print(f"[red]error:[/red] {e}")
         sys.exit(1)

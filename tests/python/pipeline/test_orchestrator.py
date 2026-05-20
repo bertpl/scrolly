@@ -36,7 +36,10 @@ def test_example_deck_builds(deck_file, tmp_path):
         assert f'data-id="{slide.id}"' in html
 
     assert html.count('class="navigation"') == 1
-    assert html.count('class="zoom-out-control"') == 1
+    # Exactly one zoom-out control (either the legacy icon or the default
+    # mini-map variant — the latter also carries a second class). Match
+    # the button-opening fragment so both variants count the same.
+    assert html.count('<button type="button" class="zoom-out-control') == 1
 
     assert 'class="canvas-edges"' in html
 
