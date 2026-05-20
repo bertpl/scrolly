@@ -5,24 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.10 (2026-05-20)
 
 ### Added
 
 - Zoom-out control now defaults to a deck mini-map. Pass `--simplified-zoom-control` to `scrolly build` to keep the legacy icon.
 
-### Changed
-
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Deck view now centres on the actual slide cluster when the leftmost column or topmost row of the deck is not at zero, instead of including the empty leading columns/rows in its fit-and-centre computation.
-
-### Security
-
 ## 0.1.9 (2026-05-19)
 
 ### Fixed
