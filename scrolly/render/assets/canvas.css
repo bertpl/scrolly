@@ -529,6 +529,29 @@ body.view-slide:has(.slide-container.selected.has-scroll) .zoom-out-control {
   display: block;
 }
 
+/* ---- Mini-map zoom-out-control variant --------------------------------- */
+/* Container inherits look-and-feel from .zoom-out-control above (dark
+ * translucent bg, idle fade, hover, click semantics, position). Width
+ * and height come from inline style (deck-shape-driven, capped at 80px).
+ * Cells are positioned absolutely inside it by inline style as well. */
+
+.zoom-out-control-minimap {
+  /* Override the legacy 40x40 sizing — actual size set inline. */
+  padding: 0;
+}
+
+.zoom-out-control-minimap .minimap-cell {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 1px;
+  transition: background 150ms ease-out;
+  pointer-events: none;
+}
+
+.zoom-out-control-minimap .minimap-cell.selected {
+  background: rgba(255, 255, 255, 1);
+}
+
 /* ---- Snap-position control --------------------------------------------- */
 
 /* Vertical pill at bottom-left with three zones: prev chevron, toggle,

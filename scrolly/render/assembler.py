@@ -14,15 +14,34 @@ from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescap
 from scrolly.deck import Deck
 from scrolly.render.bundled_assets import bundled_css, bundled_js, mermaid_js
 from scrolly.render.nav_data import build_nav_data
+from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
 from scrolly.slide import SlideHTML
 
 
-def assemble(deck: Deck, chunks: dict[str, SlideHTML], *, inline: bool = True) -> str:
-    """Render the deck and its chunks into a single HTML string."""
+def assemble(
+    deck: Deck,
+    chunks: dict[str, SlideHTML],
+    *,
+    inline: bool = True,
+    simplified_zoom_control: bool = False,
+) -> str:
+    """Render the deck and its chunks into a single HTML string.
+
+    Args:
+        deck: The fully-resolved deck.
+        chunks: Rendered per-slide HTML chunks, keyed by slide id.
+        inline: Inline CSS/JS into the page (vs. emitting separate files).
+        simplified_zoom_control: Use the legacy single-icon zoom-out
+            control instead of the default deck mini-map.
+
+    Returns:
+        The rendered HTML page as a single string.
+    """
     template = _env().get_template("index.html.j2")
     nav_data = build_nav_data(deck, chunks)
     scoped_css_blocks = _collect_scoped_css(deck, chunks)
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
+    minimap: MinimapGeometry | None = None if simplified_zoom_control else compute_minimap_geometry(deck)
 
     inline_vars = {}
     if inline:
@@ -39,6 +58,7 @@ def assemble(deck: Deck, chunks: dict[str, SlideHTML], *, inline: bool = True) -
         scoped_css_blocks=scoped_css_blocks,
         has_mermaid=has_mermaid,
         inline=inline,
+        minimap=minimap,
         **inline_vars,
     )
 

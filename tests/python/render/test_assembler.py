@@ -206,7 +206,29 @@ def test_zoom_out_control_rendered_once_in_navigation_layer(inline):
     deck, chunks = _l_shape()
     html = assemble(deck, chunks, inline=inline)
     # One zoom-out control for the whole page (was: one per slide in v0.0.1).
-    assert html.count('class="zoom-out-control"') == 1
+    # Match the button-opening fragment so both the legacy icon and the
+    # default mini-map (which carries a second class) count the same.
+    assert html.count('<button type="button" class="zoom-out-control') == 1
+
+
+def test_default_zoom_control_is_minimap_with_one_cell_per_slide():
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks)
+    assert "zoom-out-control-minimap" in html
+    assert html.count('<span class="minimap-cell"') == len(deck.slides)
+    for slide in deck.slides:
+        assert f'data-slide-id="{slide.id}"' in html
+
+
+def test_simplified_zoom_control_flag_emits_legacy_icon():
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, simplified_zoom_control=True)
+    # Inspect the rendered button, not the embedded stylesheet (which
+    # always carries the `.zoom-out-control-minimap` selector).
+    assert 'class="zoom-out-control zoom-out-control-minimap"' not in html
+    assert 'class="minimap-cell"' not in html
+    # Legacy chevron SVG is back.
+    assert '<svg viewBox="0 0 24 24"' in html
 
 
 def test_edge_arrows_not_in_static_html():

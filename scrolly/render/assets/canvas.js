@@ -1144,11 +1144,14 @@
     _applySelectedClass() {
       const containers = this._canvas.querySelectorAll(".slide-container");
       containers.forEach((el) => {
-        if (el.dataset.id === this.selectedSlide) {
-          el.classList.add("selected");
-        } else {
-          el.classList.remove("selected");
-        }
+        el.classList.toggle("selected", el.dataset.id === this.selectedSlide);
+      });
+      // Mirror the highlight on the mini-map zoom-out control (default
+      // zoom-control variant; the legacy single-icon variant has no
+      // .minimap-cell children so this selector returns nothing).
+      const minimapCells = document.querySelectorAll(".zoom-out-control-minimap .minimap-cell");
+      minimapCells.forEach((el) => {
+        el.classList.toggle("selected", el.dataset.slideId === this.selectedSlide);
       });
     }
   }

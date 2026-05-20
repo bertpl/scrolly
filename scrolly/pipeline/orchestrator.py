@@ -35,7 +35,14 @@ def validate_deck_sources(deck_path: Path) -> Deck:
     return deck
 
 
-def build_deck(deck_path: Path, out_dir: Path, *, force: bool = False, inline: bool = True) -> Deck:
+def build_deck(
+    deck_path: Path,
+    out_dir: Path,
+    *,
+    force: bool = False,
+    inline: bool = True,
+    simplified_zoom_control: bool = False,
+) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`."""
     raw_deck = parse_deck(deck_path)
     validate_raw_deck(raw_deck)
@@ -44,7 +51,7 @@ def build_deck(deck_path: Path, out_dir: Path, *, force: bool = False, inline: b
 
     chunks = _render_slides(deck.slides)
     chunks = rewrite_asset_refs(chunks, inline=inline)
-    html = assemble(deck, chunks, inline=inline)
+    html = assemble(deck, chunks, inline=inline, simplified_zoom_control=simplified_zoom_control)
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
 
     write_output(out_dir, html, force=force, has_mermaid=has_mermaid, inline=inline)
