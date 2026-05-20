@@ -36,22 +36,31 @@
       this._groups = groups || [];
       this._fanSpacingFactor = fanSpacingFactor;
 
+      // Bounding box of occupied (col, row) cells. Slide positions stay
+      // absolute everywhere — only the deck-view fit/centre math reads
+      // the bounding box so an off-origin deck (leftmost/topmost slide
+      // not at column 0 / row 0) centres on its occupied region instead
+      // of on [0, maxCol] × [0, maxRow].
       const positions = Object.values(slides);
       if (positions.length === 0) {
-        this._gridDims = { cols: 0, rows: 0 };
+        this._bbox = { minX: 0, minY: 0, maxX: -1, maxY: -1 };
       } else {
-        const maxX = Math.max(...positions.map((p) => p[0]));
-        const maxY = Math.max(...positions.map((p) => p[1]));
-        this._gridDims = { cols: maxX + 1, rows: maxY + 1 };
+        this._bbox = {
+          minX: Math.min(...positions.map((p) => p[0])),
+          minY: Math.min(...positions.map((p) => p[1])),
+          maxX: Math.max(...positions.map((p) => p[0])),
+          maxY: Math.max(...positions.map((p) => p[1])),
+        };
       }
 
       this._colGap = 0;
+      this._labelRows = this._computeLabelRows();
       this._rowGaps = this._computeRowGaps();
       this._dvmaxToRow = 0;
     }
 
-    get cols() { return this._gridDims.cols; }
-    get rows() { return this._gridDims.rows; }
+    get cols() { return Math.max(0, this._bbox.maxX - this._bbox.minX + 1); }
+    get rows() { return Math.max(0, this._bbox.maxY - this._bbox.minY + 1); }
     get vw() { return this._vw; }
     get vh() { return this._vh; }
 
@@ -84,12 +93,16 @@
     }
 
     effectiveGridSize() {
-      const { cols, rows } = this._gridDims;
-      let totalRowGap = 0;
-      for (let i = 0; i < rows; i++) totalRowGap += this._rowGaps[i] * this._dvmaxToRow;
+      const { minX, minY, maxX, maxY } = this._bbox;
+      if (maxX < minX || maxY < minY) return { cols: 0, rows: 0 };
+      const colSpan = maxX - minX + 1;
+      const rowSpan = maxY - minY + 1;
+      let rowGapSum = this._topRowGapDvmax(minY);
+      for (let i = minY + 1; i <= maxY; i++) rowGapSum += this._rowGaps[i];
+      rowGapSum *= this._dvmaxToRow;
       return {
-        cols: cols + Math.max(0, cols - 1) * this._colGap,
-        rows: rows + totalRowGap,
+        cols: colSpan + Math.max(0, colSpan - 1) * this._colGap,
+        rows: rowSpan + rowGapSum,
       };
     }
 
@@ -100,8 +113,16 @@
     }
 
     deckCenter() {
-      const { cols, rows } = this.effectiveGridSize();
-      return { x: cols / 2, y: rows / 2 };
+      const { minX, minY, maxX, maxY } = this._bbox;
+      if (maxX < minX || maxY < minY) return { x: 0, y: 0 };
+      const leftX = minX * (1 + this._colGap);
+      const rightX = maxX * (1 + this._colGap) + 1;
+      // Slide top edge of the topmost occupied row, with the label-tab
+      // extension subtracted to land at the visible top of the deck.
+      const slideTopY = minY + this._cumulativeRowGap(minY) * this._dvmaxToRow;
+      const topY = slideTopY - this._topRowGapDvmax(minY) * this._dvmaxToRow;
+      const bottomY = maxY + this._cumulativeRowGap(maxY) * this._dvmaxToRow + 1;
+      return { x: (leftX + rightX) / 2, y: (topY + bottomY) / 2 };
     }
 
     fanOffset(side, fanIndex, fanSize) {
@@ -147,25 +168,43 @@
       };
     }
 
-    _computeRowGaps() {
-      const { rows } = this._gridDims;
-      if (rows === 0) return [];
-      const labelRows = new Set();
+    _computeLabelRows() {
+      // Set of absolute row indices that carry a group label (the
+      // minimum row of each group). Each labelled row gets extra height
+      // for its tab via _computeRowGaps + _topRowGapDvmax.
+      const set = new Set();
       for (const group of this._groups) {
         const ys = group.slide_ids.map((id) => this._slides[id][1]);
-        labelRows.add(Math.min(...ys));
+        set.add(Math.min(...ys));
       }
+      return set;
+    }
+
+    _computeRowGaps() {
+      // _rowGaps is indexed by absolute row number, so its length must
+      // reach maxY + 1 even when the deck doesn't start at row 0 —
+      // _cumulativeRowGap(r) traverses gaps[0..r] regardless of minY.
+      const { maxY } = this._bbox;
+      if (maxY < 0) return [];
       const gaps = [];
-      for (let i = 0; i < rows; i++) {
+      for (let i = 0; i <= maxY; i++) {
         if (i === 0) {
-          gaps.push(labelRows.has(0) ? CanvasGeometry.LABEL_EXTRA : 0);
+          gaps.push(this._labelRows.has(0) ? CanvasGeometry.LABEL_EXTRA : 0);
         } else {
-          gaps.push(labelRows.has(i)
+          gaps.push(this._labelRows.has(i)
             ? CanvasGeometry.GAP + CanvasGeometry.LABEL_EXTRA
             : CanvasGeometry.GAP);
         }
       }
       return gaps;
+    }
+
+    _topRowGapDvmax(row) {
+      // Effective gap above the TOPMOST occupied row, in dvmax units.
+      // Only the LABEL_EXTRA portion is meaningful — the inter-row GAP
+      // is empty space when the row above is unoccupied, so it doesn't
+      // contribute to the deck's visible bounding box.
+      return this._labelRows.has(row) ? CanvasGeometry.LABEL_EXTRA : 0;
     }
 
     _cumulativeRowGap(row) {

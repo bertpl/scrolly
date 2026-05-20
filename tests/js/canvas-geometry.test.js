@@ -32,6 +32,13 @@ describe("CanvasGeometry", () => {
       expect(g.cols).toBe(3);
       expect(g.rows).toBe(2);
     });
+
+    it("returns the occupied span, not the extent from (0, 0)", () => {
+      // Leftmost slide at col 2, topmost at row 1 — span is 2x1, not 4x3.
+      const g = _geo({ a: [2, 1], b: [3, 1] });
+      expect(g.cols).toBe(2);
+      expect(g.rows).toBe(1);
+    });
   });
 
   // ---- slidePosition ------------------------------------------------------
@@ -253,6 +260,19 @@ describe("CanvasGeometry", () => {
       expect(eff.cols).toBeGreaterThan(2.1);
       expect(eff.rows).toBeCloseTo(2.1);
     });
+
+    it("is shift-invariant — same shape at any origin gives the same size", () => {
+      // A 2x1 deck has the same effective size whether it sits at (0,0)
+      // or (2,1) — the leading empty columns/rows must not be counted.
+      const atOrigin = _geo({ a: [0, 0], b: [1, 0] });
+      atOrigin.refresh(1000, 1000);
+      const shifted = _geo({ a: [2, 1], b: [3, 1] });
+      shifted.refresh(1000, 1000);
+      const effOrigin = atOrigin.effectiveGridSize();
+      const effShifted = shifted.effectiveGridSize();
+      expect(effShifted.cols).toBeCloseTo(effOrigin.cols);
+      expect(effShifted.rows).toBeCloseTo(effOrigin.rows);
+    });
   });
 
   // ---- fitAllScale + deckCenter -------------------------------------------
@@ -269,6 +289,14 @@ describe("CanvasGeometry", () => {
       // eff cols = 2.1, fitAll = 0.85 / 2.1
       expect(g.fitAllScale()).toBeCloseTo(0.85 / 2.1);
     });
+
+    it("is shift-invariant — origin doesn't affect the fit scale", () => {
+      const atOrigin = _geo({ a: [0, 0], b: [1, 0] });
+      atOrigin.refresh(1000, 1000);
+      const shifted = _geo({ a: [3, 2], b: [4, 2] });
+      shifted.refresh(1000, 1000);
+      expect(shifted.fitAllScale()).toBeCloseTo(atOrigin.fitAllScale());
+    });
   });
 
   describe("deckCenter", () => {
@@ -279,6 +307,22 @@ describe("CanvasGeometry", () => {
       // eff cols = 2.1, center = 1.05
       expect(c.x).toBeCloseTo(1.05);
       expect(c.y).toBe(0.5);
+    });
+
+    it("tracks the bounding-box centroid for off-origin decks", () => {
+      // Same shape as above but shifted by (+3, +2). Centre should be
+      // the previous centre shifted by the slide-and-gap offsets, not
+      // ((maxX+1)/2, (maxY+1)/2).
+      const g = _geo({ a: [3, 2], b: [4, 2] });
+      g.refresh(1000, 1000);
+      const c = g.deckCenter();
+      // left = 3 * 1.1 = 3.3; right = 4 * 1.1 + 1 = 5.4; cx = 4.35
+      expect(c.x).toBeCloseTo(4.35);
+      // topY = 2 + cumRowGap(2)*dvmaxToRow; bottomY = 2 + cumRowGap(2)*dvmaxToRow + 1
+      // cy = topY + 0.5
+      // cumRowGap(2) = gaps[0] + gaps[1] + gaps[2] = 0 + 10 + 10 = 20 (no labels)
+      // dvmaxToRow = 1/100 on square; topY = 2.20; cy = 2.70
+      expect(c.y).toBeCloseTo(2.70);
     });
   });
 
