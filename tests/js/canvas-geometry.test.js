@@ -299,6 +299,76 @@ describe("CanvasGeometry", () => {
     });
   });
 
+  // ---- deckBounds ---------------------------------------------------------
+
+  describe("deckBounds", () => {
+    function _geoWithGroup(slides, groups) {
+      return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
+    }
+
+    it("returns all zeros for an empty deck", () => {
+      const g = _geo({});
+      g.refresh(1000, 1000);
+      expect(g.deckBounds()).toEqual({ left: 0, top: 0, right: 0, bottom: 0 });
+    });
+
+    it("returns the visible abstract bounding box for a deck at origin", () => {
+      const g = _geo({ a: [0, 0], b: [1, 0] });
+      g.refresh(1000, 1000);
+      const b = g.deckBounds();
+      // colGap = 0.1 on square; left = 0, right = 1*1.1 + 1 = 2.1
+      expect(b.left).toBeCloseTo(0);
+      expect(b.right).toBeCloseTo(2.1);
+      // No label, no leading rows; top = 0, bottom = 1
+      expect(b.top).toBeCloseTo(0);
+      expect(b.bottom).toBeCloseTo(1);
+    });
+
+    it("shifts left/top/right/bottom with the deck's origin", () => {
+      const g = _geo({ a: [3, 2], b: [4, 2] });
+      g.refresh(1000, 1000);
+      const b = g.deckBounds();
+      // left = 3*1.1 = 3.3; right = 4*1.1 + 1 = 5.4
+      expect(b.left).toBeCloseTo(3.3);
+      expect(b.right).toBeCloseTo(5.4);
+      // topY = 2 + cumRowGap(2)*0.01 - 0 = 2 + 20*0.01 = 2.20
+      // bottomY = 2 + 20*0.01 + 1 = 3.20
+      expect(b.top).toBeCloseTo(2.20);
+      expect(b.bottom).toBeCloseTo(3.20);
+    });
+
+    it("grows the deck by LABEL_EXTRA when the topmost row carries a label", () => {
+      // The labelled version inflates cumulativeRowGap above the topmost
+      // slide; the label-extra subtraction in deckBounds.top compensates
+      // so the visible top stays put, and the visible bottom shifts down
+      // by LABEL_EXTRA — net effect: the deck is taller by that amount.
+      const noLabel = _geoWithGroup({ a: [0, 0], b: [1, 0] }, []);
+      noLabel.refresh(1000, 1000);
+      const labelled = _geoWithGroup(
+        { a: [0, 0], b: [1, 0] },
+        [{ label: "G", slide_ids: ["a", "b"] }],
+      );
+      labelled.refresh(1000, 1000);
+      const nlBounds = noLabel.deckBounds();
+      const lBounds = labelled.deckBounds();
+      expect(lBounds.top).toBeCloseTo(nlBounds.top);
+      // LABEL_EXTRA = 4 dvmax → 0.04 in row units on a square viewport.
+      expect((lBounds.bottom - lBounds.top) - (nlBounds.bottom - nlBounds.top)).toBeCloseTo(0.04);
+    });
+
+    it("effectiveGridSize and deckCenter are derived from deckBounds", () => {
+      const g = _geo({ a: [2, 1], b: [3, 1] });
+      g.refresh(1000, 1000);
+      const b = g.deckBounds();
+      const size = g.effectiveGridSize();
+      const c = g.deckCenter();
+      expect(size.cols).toBeCloseTo(b.right - b.left);
+      expect(size.rows).toBeCloseTo(b.bottom - b.top);
+      expect(c.x).toBeCloseTo((b.left + b.right) / 2);
+      expect(c.y).toBeCloseTo((b.top + b.bottom) / 2);
+    });
+  });
+
   describe("deckCenter", () => {
     it("centers on the effective grid", () => {
       const g = _geo({ a: [0, 0], b: [1, 0] });
