@@ -14,6 +14,7 @@ from pydantic import Field, model_validator
 
 from scrolly.slide.ir import (
     HtmlElement,
+    IframeElement,
     ImageElement,
     ImageSequenceElement,
     MarkdownElement,
@@ -23,7 +24,7 @@ from scrolly.slide.ir import (
     resolve_asset_paths,
 )
 
-AnyElement = ImageElement | ImageSequenceElement | HtmlElement | MarkdownElement | MermaidElement
+AnyElement = ImageElement | ImageSequenceElement | HtmlElement | IframeElement | MarkdownElement | MermaidElement
 
 
 class ScrollimationIR(SlideIR, frozen=True):

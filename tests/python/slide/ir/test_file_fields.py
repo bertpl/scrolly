@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import SlideSourceError
-from scrolly.slide.ir import MermaidElement
+from scrolly.slide.ir import IframeElement, MermaidElement
 from scrolly.slide.ir.scrollimation import ScrollimationIR
 from scrolly.slide.ir.storyboard import StoryboardIR
 
@@ -115,6 +115,45 @@ class TestMermaidFile:
         assert isinstance(ir.scenes[0].elements[0], MermaidElement)
 
 
+# ── iframe_html_file ─────────────────────────────────────────────
+
+
+class TestIframeHtmlFile:
+    def test_scrollimation_iframe_html_file(self, tmp_path: Path) -> None:
+        _write(tmp_path / "demo.html", "<!doctype html><p>iframe content</p>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    { name: "frame", iframe_html_file: "demo.html", position: [10, 10], width: 80, height: 80 },
+  ],
+}
+""",
+        )
+        ir = ScrollimationIR.from_file(src)
+        assert isinstance(ir.elements[0], IframeElement)
+        assert ir.elements[0].iframe_html == "<!doctype html><p>iframe content</p>"
+
+    def test_storyboard_iframe_html_file(self, tmp_path: Path) -> None:
+        _write(tmp_path / "demo.html", "<!doctype html><h1>Scene iframe</h1>")
+        src = _write(
+            tmp_path / "s.storyboard.json",
+            """\
+{
+  title: "T",
+  scene_distance: 100,
+  scenes: [{ elements: [{ iframe_html_file: "demo.html", position: [10, 10], width: 80, height: 80 }] }],
+}
+""",
+        )
+        ir = StoryboardIR.from_file(src)
+        assert isinstance(ir.scenes[0].elements[0], IframeElement)
+        assert ir.scenes[0].elements[0].iframe_html == "<!doctype html><h1>Scene iframe</h1>"
+
+
 # ── Path resolution ──────────────────────────────────────────────
 
 
@@ -202,6 +241,30 @@ class TestErrors:
   scroll_range: 100,
   elements: [
     { name: "h", html: "<p>inline</p>", html_file: "box.html", position: [0, 0], width: 100, height: 100 },
+  ],
+}
+""",
+        )
+        with pytest.raises(SlideSourceError, match="cannot specify both"):
+            ScrollimationIR.from_file(src)
+
+    def test_both_iframe_html_and_iframe_html_file_rejected(self, tmp_path: Path) -> None:
+        _write(tmp_path / "demo.html", "<!doctype html>")
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    {
+      name: "frame",
+      iframe_html: "<!doctype html>inline",
+      iframe_html_file: "demo.html",
+      position: [0, 0],
+      width: 100,
+      height: 100,
+    },
   ],
 }
 """,

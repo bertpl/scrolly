@@ -10,6 +10,7 @@ from scrolly.slide.ir._framework.animated_values import (
 from scrolly.slide.ir._framework.base import SlideIR
 from scrolly.slide.ir._framework.element import (
     HtmlElement,
+    IframeElement,
     ImageElement,
     ImageSequenceElement,
     MarkdownElement,
@@ -23,6 +24,7 @@ __all__ = [
     "AnimatedSizeDim",
     "AnimatedVec2",
     "HtmlElement",
+    "IframeElement",
     "ImageElement",
     "ImageSequenceElement",
     "MarkdownElement",

@@ -11,6 +11,7 @@ from scrolly.slide.ir import (
     AnimatedScalar,
     AnimatedVec2,
     HtmlElement,
+    IframeElement,
     ImageElement,
     ImageSequenceElement,
     MarkdownElement,
@@ -40,6 +41,16 @@ def _md(**overrides) -> dict:
 
 def _mermaid(**overrides) -> dict:
     base = {"mermaid": "graph LR\n  A --> B", "position": [10, 10], "width": 80, "height": "auto"}
+    return {**base, **overrides}
+
+
+def _iframe(**overrides) -> dict:
+    base = {
+        "iframe_html": "<!doctype html><p>hi</p>",
+        "position": [10, 10],
+        "width": 80,
+        "height": 80,
+    }
     return {**base, **overrides}
 
 
@@ -290,6 +301,64 @@ class TestHtmlElement:
         del data["html"]
         with pytest.raises(ValidationError):
             HtmlElement(**data)
+
+
+# ── IframeElement ─────────────────────────────────────────────────
+
+
+class TestIframeElement:
+    def test_valid(self):
+        el = IframeElement(**_iframe())
+        assert el.iframe_html == "<!doctype html><p>hi</p>"
+
+    def test_default_decorations(self):
+        el = IframeElement(**_iframe())
+        assert el.border_width == 0
+        assert el.border_color == "#000000"
+        assert el.shadow_size == 0
+        assert el.shadow_color == "#000000"
+
+    def test_custom_border(self):
+        el = IframeElement(**_iframe(border_width=4, border_color="#333"))
+        assert el.border_width == 4
+        assert el.border_color == "#333"
+
+    def test_custom_shadow(self):
+        el = IframeElement(**_iframe(shadow_size=12, shadow_color="rgba(0,0,0,0.3)"))
+        assert el.shadow_size == 12
+        assert el.shadow_color == "rgba(0,0,0,0.3)"
+
+    def test_negative_border_width_rejected(self):
+        with pytest.raises(ValidationError, match="border_width must be >= 0"):
+            IframeElement(**_iframe(border_width=-1))
+
+    def test_negative_shadow_size_rejected(self):
+        with pytest.raises(ValidationError, match="shadow_size must be >= 0"):
+            IframeElement(**_iframe(shadow_size=-5))
+
+    def test_missing_iframe_html_rejected(self):
+        data = _iframe()
+        del data["iframe_html"]
+        with pytest.raises(ValidationError):
+            IframeElement(**data)
+
+    def test_extra_field_rejected(self):
+        with pytest.raises(ValidationError, match="Extra inputs"):
+            IframeElement(**_iframe(bogus="x"))
+
+    def test_frozen(self):
+        el = IframeElement(**_iframe())
+        with pytest.raises(ValidationError):
+            el.iframe_html = "changed"
+
+    def test_inherits_size_validation(self):
+        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+            IframeElement(**_iframe(width="auto", height="auto"))
+
+    def test_inherits_animated_opacity(self):
+        kfs = {"keyframes": [(0, 0.0), (1000, 1.0)]}
+        el = IframeElement(**_iframe(opacity=kfs))
+        assert el.opacity.is_animated
 
 
 # ── MarkdownElement ───────────────────────────────────────────────

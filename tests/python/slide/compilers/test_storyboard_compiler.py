@@ -7,6 +7,7 @@ from pathlib import Path
 from scrolly.slide.compilers.storyboard import StoryboardCompiler, compile_storyboard
 from scrolly.slide.ir import (
     HtmlElement,
+    IframeElement,
     ImageElement,
     MarkdownElement,
 )
@@ -30,6 +31,16 @@ def _md_element(**overrides) -> MarkdownElement:
 def _image_element(**overrides) -> ImageElement:
     base = {"image": Path("/abs/img.jpg"), "position": (0, 0), "width": 100, "height": 100, "object_fit": "cover"}
     return ImageElement(**{**base, **overrides})
+
+
+def _iframe_element(**overrides) -> IframeElement:
+    base = {
+        "iframe_html": "<!doctype html><p>x</p>",
+        "position": (10, 10),
+        "width": 80,
+        "height": 80,
+    }
+    return IframeElement(**{**base, **overrides})
 
 
 def _storyboard(**overrides) -> StoryboardIR:
@@ -168,6 +179,39 @@ class TestElementTypes:
         assert isinstance(result.elements[0], ImageElement)
         assert result.elements[0].image == Path("/abs/img.jpg")
         assert result.elements[0].object_fit == "cover"
+
+    def test_iframe_item_becomes_iframe_element(self):
+        ir = _storyboard(
+            scenes=[
+                StoryboardScene(elements=[_iframe_element()]),
+                StoryboardScene(elements=[_html_element()]),
+            ]
+        )
+        result = compile_storyboard(ir)
+        assert isinstance(result.elements[0], IframeElement)
+        assert result.elements[0].iframe_html == "<!doctype html><p>x</p>"
+
+    def test_iframe_decorations_preserved(self):
+        ir = _storyboard(
+            scenes=[
+                StoryboardScene(
+                    elements=[
+                        _iframe_element(
+                            border_width=3,
+                            border_color="#abc",
+                            shadow_size=9,
+                            shadow_color="#def",
+                        ),
+                    ],
+                ),
+                StoryboardScene(elements=[_html_element()]),
+            ]
+        )
+        result = compile_storyboard(ir)
+        assert result.elements[0].border_width == 3
+        assert result.elements[0].border_color == "#abc"
+        assert result.elements[0].shadow_size == 9
+        assert result.elements[0].shadow_color == "#def"
 
     def test_markdown_color_preserved(self):
         ir = _storyboard(
