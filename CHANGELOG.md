@@ -5,22 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.11 (2026-05-21)
 
 ### Added
 
 - New `iframe` element embeds a self-contained local HTML file in a sandboxed `<iframe srcdoc>` with its own scrollbar, isolated from slide CSS, optionally framed with a border and outer shadow.
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.1.10 (2026-05-20)
 
 ### Added
