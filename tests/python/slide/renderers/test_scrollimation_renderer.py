@@ -1158,6 +1158,124 @@ class TestImageSequenceCompositingModes:
             assert kfs[:2] == [(-100.0, 0.0), (0.0, 1.0)], mode
 
 
+class TestIframeElement:
+    BASE = """\
+{{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    {{ {name}iframe_html: "<!doctype html><p>iframe</p>", position: [10, 10], width: 80, height: 80{decor} }},
+  ],
+}}
+"""
+
+    def _slide(self, *, name: str = "", decor: str = "") -> str:
+        name_field = f'name: "{name}", ' if name else ""
+        return self.BASE.format(name=name_field, decor=decor)
+
+    def test_iframe_tag_with_srcdoc(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        chunk = _build(src)
+        assert "<iframe " in chunk.html
+        assert "srcdoc=" in chunk.html
+
+    def test_iframe_srcdoc_html_escaped(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        chunk = _build(src)
+        # The raw `<p>iframe</p>` from the source becomes `&lt;p&gt;iframe&lt;/p&gt;` inside srcdoc.
+        assert "&lt;p&gt;iframe&lt;/p&gt;" in chunk.html
+        # And the literal `<p>iframe</p>` doesn't appear (it's only inside srcdoc, escaped).
+        assert "<p>iframe</p>" not in chunk.html
+
+    def test_iframe_sandbox_allow_scripts(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        chunk = _build(src)
+        assert 'sandbox="allow-scripts"' in chunk.html
+
+    def test_iframe_title_from_name(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide(name="demo"))
+        chunk = _build(src)
+        assert 'title="demo"' in chunk.html
+
+    def test_iframe_title_omitted_without_name(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        chunk = _build(src)
+        assert "title=" not in chunk.html
+
+    def test_iframe_fill_css_rule(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        chunk = _build(src)
+        # The wrapper-internal iframe rule sets the iframe to fill its wrapper without a default browser border.
+        assert "] iframe {" in chunk.scoped_css
+        idx = chunk.scoped_css.index("] iframe {")
+        section = chunk.scoped_css[idx : idx + chunk.scoped_css[idx:].index("}")]
+        assert "width: 100%" in section
+        assert "height: 100%" in section
+        assert "border: 0" in section
+        assert "display: block" in section
+
+
+class TestIframeDecorations:
+    def _slide(self, **decor) -> str:
+        decor_lines = "".join(f", {k}: {v!r}" if isinstance(v, str) else f", {k}: {v}" for k, v in decor.items())
+        return f"""\
+{{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    {{ name: "frame", iframe_html: "<!doctype html><p>x</p>", position: [10, 10], width: 80, height: 80{decor_lines} }},
+  ],
+}}
+"""
+
+    def test_no_decoration_by_default(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        chunk = _build(src)
+        # Wrapper rule has no border, no box-shadow, no box-sizing. The iframe
+        # child rule's `border: 0` is in a separate rule and not checked here.
+        idx = chunk.scoped_css.index('data-element-id="0"')
+        wrapper_section = chunk.scoped_css[idx : idx + chunk.scoped_css[idx:].index("}")]
+        assert "border:" not in wrapper_section
+        assert "box-shadow" not in wrapper_section
+        assert "box-sizing" not in wrapper_section
+
+    def test_border_only(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide(border_width=4, border_color="#333"))
+        chunk = _build(src)
+        assert "border: 4px solid #333" in chunk.scoped_css
+        assert "box-sizing: border-box" in chunk.scoped_css
+        assert "box-shadow" not in chunk.scoped_css
+
+    def test_shadow_only(self, tmp_path: Path) -> None:
+        src = _write(tmp_path / "s.scrollimation.json", self._slide(shadow_size=12, shadow_color="rgba(0,0,0,0.3)"))
+        chunk = _build(src)
+        assert "box-shadow: 0 0 12px rgba(0,0,0,0.3)" in chunk.scoped_css
+        assert "box-sizing: border-box" in chunk.scoped_css
+        # The "border: 0" line on the inner iframe is still emitted; the wrapper has no border.
+        idx = chunk.scoped_css.index('data-element-id="0"')
+        wrapper_section = chunk.scoped_css[idx : idx + chunk.scoped_css[idx:].index("}")]
+        assert "border:" not in wrapper_section
+
+    def test_border_and_shadow_together(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            self._slide(border_width=2, border_color="#000", shadow_size=8, shadow_color="#888"),
+        )
+        chunk = _build(src)
+        assert "border: 2px solid #000" in chunk.scoped_css
+        assert "box-shadow: 0 0 8px #888" in chunk.scoped_css
+        assert "box-sizing: border-box" in chunk.scoped_css
+
+    def test_zero_decoration_values_emit_nothing(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            self._slide(border_width=0, shadow_size=0),
+        )
+        chunk = _build(src)
+        # Explicit 0 should behave identically to the default — no box-sizing override.
+        assert "box-sizing" not in chunk.scoped_css
+
+
 class TestImageSequenceInteractions:
     def test_element_level_animated_opacity_on_outer_div(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):

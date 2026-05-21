@@ -2,8 +2,8 @@
 
 ``SlideElement`` is the base for all positioned visual units within a
 slide.  Concrete types (``ImageElement``, ``ImageSequenceElement``,
-``HtmlElement``, ``MarkdownElement``, ``MermaidElement``) carry
-content-specific fields.
+``HtmlElement``, ``IframeElement``, ``MarkdownElement``,
+``MermaidElement``) carry content-specific fields.
 
 Each animatable property accepts either a static value or a keyframe
 animation definition (piecewise linear, held constant beyond extremes).
@@ -241,6 +241,70 @@ class HtmlElement(SlideElement, frozen=True):
     """An element with inline HTML content."""
 
     html: str = Field(description="Raw HTML content, inserted verbatim into the slide.")
+
+
+class IframeElement(SlideElement, frozen=True):
+    """An element backed by a sandboxed iframe rendering a self-contained HTML document.
+
+    The embedded HTML is inlined as the iframe's ``srcdoc`` attribute, giving
+    the content its own browsing context — independent scrollbar, isolated
+    CSS scope, and isolated JavaScript scope. ``sandbox="allow-scripts"`` is
+    set by default, so embedded scripts run in a unique origin and cannot
+    reach the parent slide.
+
+    Because ``srcdoc`` documents have base URL ``about:srcdoc``, relative
+    references inside the embedded HTML do not resolve; authors inline
+    images as ``data:`` URIs and place CSS / JS inline.
+
+    Optional ``border_*`` and ``shadow_*`` fields frame the iframe wrapper.
+    When either decoration is active, the wrapper switches to
+    ``box-sizing: border-box`` so the declared ``width`` / ``height`` remain
+    the outer footprint including the border.
+    """
+
+    iframe_html: str = Field(
+        description=(
+            "Full HTML document inlined as the iframe's `srcdoc` attribute. "
+            'Authored inline or via `iframe_html_file: "path/to/page.html"` '
+            "(the file form reads the file at parse time). Must be self-"
+            "contained — relative references inside the document do not "
+            "resolve under `about:srcdoc`."
+        ),
+    )
+    border_width: int = Field(
+        default=0,
+        description=(
+            "Border width in CSS pixels around the iframe wrapper. "
+            "0 (default) = no border. When non-zero, the wrapper uses "
+            "`box-sizing: border-box` so the declared `width` / `height` "
+            "are the outer footprint including the border."
+        ),
+    )
+    border_color: str = Field(
+        default="#000000",
+        description="CSS color of the border. Only rendered when `border_width > 0`.",
+    )
+    shadow_size: int = Field(
+        default=0,
+        description=(
+            "Soft-glow shadow size in CSS pixels — interpreted as the "
+            "`box-shadow` blur radius with zero offset and zero spread. "
+            "0 (default) = no shadow."
+        ),
+    )
+    shadow_color: str = Field(
+        default="#000000",
+        description="CSS color of the shadow. Only rendered when `shadow_size > 0`.",
+    )
+
+    @model_validator(mode="after")
+    def _validate_decorations(self) -> IframeElement:
+        """Validate non-negative border and shadow sizes."""
+        if self.border_width < 0:
+            raise ValueError(f"border_width must be >= 0, got {self.border_width}")
+        if self.shadow_size < 0:
+            raise ValueError(f"shadow_size must be >= 0, got {self.shadow_size}")
+        return self
 
 
 class MarkdownElement(SlideElement, frozen=True):

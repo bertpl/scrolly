@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `iframe` element embeds a self-contained local HTML file in a sandboxed `<iframe srcdoc>` with its own scrollbar, isolated from slide CSS, optionally framed with a border and outer shadow.
+
 ### Changed
 
 ### Deprecated

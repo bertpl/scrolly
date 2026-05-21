@@ -17,6 +17,7 @@ _FILE_FIELD_MAP: dict[str, str] = {
     "markdown_file": "markdown",
     "html_file": "html",
     "mermaid_file": "mermaid",
+    "iframe_html_file": "iframe_html",
 }
 
 

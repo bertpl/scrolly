@@ -15,6 +15,7 @@ import markdown
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import (
     HtmlElement,
+    IframeElement,
     ImageElement,
     ImageSequenceElement,
     MarkdownElement,
@@ -155,6 +156,12 @@ def _render_element_content(el: AnyElement) -> str:
         return _render_image_sequence_imgs(el)
     if isinstance(el, HtmlElement):
         return el.html
+    if isinstance(el, IframeElement):
+        title_attr = f' title="{html_escape(el.name)}"' if el.name else ""
+        return (
+            f'<iframe srcdoc="{html_escape(el.iframe_html)}" '
+            f'sandbox="allow-scripts"{title_attr}></iframe>'
+        )
     if isinstance(el, MermaidElement):
         return f'<pre class="mermaid">{html_escape(el.mermaid)}</pre>'
     return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS))
@@ -327,6 +334,15 @@ def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> s
             )
         elif isinstance(el, ImageSequenceElement):
             rules.extend(_image_sequence_css(ns, el, eid))
+        elif isinstance(el, IframeElement):
+            rules.append(
+                f'{ns} [data-element-id="{eid}"] iframe {{\n'
+                f"  width: 100%;\n"
+                f"  height: 100%;\n"
+                f"  border: 0;\n"
+                f"  display: block;\n"
+                f"}}"
+            )
         if isinstance(el, MermaidElement):
             has_mermaid = True
 
@@ -394,6 +410,13 @@ def _element_css(ns: str, el: AnyElement, eid: str, index: int) -> str:
         extra_lines += f"  color: {el.color};\n"
         if el.text_align != "left":
             extra_lines += f"  text-align: {el.text_align};\n"
+    if isinstance(el, IframeElement):
+        if el.border_width > 0 or el.shadow_size > 0:
+            extra_lines += "  box-sizing: border-box;\n"
+        if el.border_width > 0:
+            extra_lines += f"  border: {el.border_width}px solid {el.border_color};\n"
+        if el.shadow_size > 0:
+            extra_lines += f"  box-shadow: 0 0 {el.shadow_size}px {el.shadow_color};\n"
 
     return (
         f"{sel} {{\n"

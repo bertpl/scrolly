@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import SlideSourceError
-from scrolly.slide.ir import HtmlElement, ImageElement, MarkdownElement, parse_json5_ir
+from scrolly.slide.ir import HtmlElement, IframeElement, ImageElement, MarkdownElement, parse_json5_ir
 from scrolly.slide.ir.scrollimation import ScrollimationIR
 
 
@@ -66,6 +66,38 @@ class TestParsing:
         assert isinstance(slide.elements[0], ImageElement)
         assert isinstance(slide.elements[1], HtmlElement)
         assert isinstance(slide.elements[2], MarkdownElement)
+
+    def test_iframe_element_parsed(self, tmp_path: Path) -> None:
+        src = _write(
+            tmp_path / "s.scrollimation.json",
+            """\
+{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    {
+      name: "frame",
+      iframe_html: "<!doctype html><p>hi</p>",
+      position: [10, 10],
+      width: 80,
+      height: 80,
+      border_width: 2,
+      border_color: "#333",
+      shadow_size: 12,
+      shadow_color: "rgba(0,0,0,0.3)",
+    },
+  ],
+}
+""",
+        )
+        slide = parse_json5_ir(src, ScrollimationIR, "scrollimation")
+        assert isinstance(slide.elements[0], IframeElement)
+        el = slide.elements[0]
+        assert el.iframe_html == "<!doctype html><p>hi</p>"
+        assert el.border_width == 2
+        assert el.border_color == "#333"
+        assert el.shadow_size == 12
+        assert el.shadow_color == "rgba(0,0,0,0.3)"
 
     def test_animated_opacity_parsed(self, tmp_path: Path) -> None:
         src = _write(
