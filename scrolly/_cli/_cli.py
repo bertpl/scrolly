@@ -36,6 +36,11 @@ def cli() -> None:
     is_flag=True,
     help="Use the legacy single-icon zoom-out control instead of the default deck mini-map.",
 )
+@click.option(
+    "--no-compress",
+    is_flag=True,
+    help="Disable gzip compression of inlined assets.",
+)
 def build(
     deck_path: Path,
     out_dir: Path,
@@ -43,6 +48,7 @@ def build(
     no_inline: bool,
     strict: bool,
     simplified_zoom_control: bool,
+    no_compress: bool,
 ) -> None:
     """Build a deck into a self-contained HTML presentation."""
     try:
@@ -52,6 +58,7 @@ def build(
             force=force,
             inline=not no_inline,
             simplified_zoom_control=simplified_zoom_control,
+            compress=not no_compress,
         )
     except ScrollyError as e:
         _err_console.print(f"[red]error:[/red] {e}")

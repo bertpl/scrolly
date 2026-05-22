@@ -1276,6 +1276,82 @@ class TestIframeDecorations:
         assert "box-sizing" not in chunk.scoped_css
 
 
+class TestIframeCompression:
+    LARGE_HTML = "<!doctype html>" + "<p>compressible content</p>" * 50
+
+    def _slide(self, html_content: str) -> str:
+        import json
+
+        escaped = json.dumps(html_content)
+        return (
+            '{\n  title: "T",\n  scroll_range: 100,\n  elements: [\n'
+            f'    {{ iframe_html: {escaped}, position: [10, 10], width: 80, height: 80 }},\n'
+            "  ],\n}\n"
+        )
+
+    def test_large_iframe_gets_compressed(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        src = _write(tmp_path / "s.scrollimation.json", self._slide(self.LARGE_HTML))
+        ir = ScrollimationIR.from_file(src)
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir, compress=True)
+
+        # --- assert ------------------------------
+        assert "data-scrolly-gz=" in chunk.html
+        assert 'data-scrolly-sink="srcdoc"' in chunk.html
+        assert "srcdoc=" not in chunk.html
+        assert 'sandbox="allow-scripts"' in chunk.html
+
+    def test_small_iframe_stays_uncompressed(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        src = _write(tmp_path / "s.scrollimation.json", self._slide("<!doctype html><p>tiny</p>"))
+        ir = ScrollimationIR.from_file(src)
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir, compress=True)
+
+        # --- assert ------------------------------
+        assert "srcdoc=" in chunk.html
+        assert "data-scrolly-gz" not in chunk.html
+
+    def test_compress_false_skips_iframe_compression(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        src = _write(tmp_path / "s.scrollimation.json", self._slide(self.LARGE_HTML))
+        ir = ScrollimationIR.from_file(src)
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir, compress=False)
+
+        # --- assert ------------------------------
+        assert "srcdoc=" in chunk.html
+        assert "data-scrolly-gz" not in chunk.html
+
+    def test_compressed_iframe_populates_chunk_stats(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        src = _write(tmp_path / "s.scrollimation.json", self._slide(self.LARGE_HTML))
+        ir = ScrollimationIR.from_file(src)
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir, compress=True)
+
+        # --- assert ------------------------------
+        assert chunk.compression_stats.compressed == 1
+        assert chunk.compression_stats.bytes_saved > 0
+
+    def test_uncompressed_iframe_leaves_chunk_stats_empty(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        src = _write(tmp_path / "s.scrollimation.json", self._slide("<!doctype html><p>tiny</p>"))
+        ir = ScrollimationIR.from_file(src)
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir, compress=True)
+
+        # --- assert ------------------------------
+        assert chunk.compression_stats.compressed == 0
+        assert chunk.compression_stats.bytes_saved == 0
+
+
 class TestImageSequenceInteractions:
     def test_element_level_animated_opacity_on_outer_div(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
