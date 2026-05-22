@@ -421,6 +421,9 @@
 
       thumb.style.height = geo.thumbHeight + "px";
       thumb.style.top = offset + "px";
+
+      const readout = thumb.querySelector(".debug-thumb-readout");
+      if (readout) readout.textContent = String(Math.round(position));
     }
 
     syncVisibility(slideId, zoomLevel) {
@@ -764,6 +767,12 @@
         dot.className = "slide-scrollbar-snap";
         const offset = this._scrollManager._positionToOffset(slideId, pos, geo);
         dot.style.top = geo.thumbHeight / 2 + offset + "px";
+        // Debug-mode label showing the snap's numeric scroll position. Hidden
+        // unless `body.debug-mode.view-slide` is active.
+        const label = document.createElement("div");
+        label.className = "debug-snap-label";
+        label.textContent = String(pos);
+        dot.appendChild(label);
         geo.trackEl.appendChild(dot);
       }
     }
@@ -1532,6 +1541,45 @@
   const groupLayout = new GroupLayout(geometry, canvas);
   const bezierOverlay = new BezierOverlay(geometry, canvas.querySelector(".canvas-edges"));
   const debugGrid = new DebugGrid(geometry, canvas.querySelector(".debug-grid"));
+
+  // Build the slide-view debug grid once: 9 vertical + 9 horizontal dashed
+  // lines at every 10% of the viewport. The SVG has no viewBox, so its user
+  // space matches its CSS pixel box; `%` units in line coords refer to that
+  // box (= 100vw × 100vh in CSS). Stroke widths and dash lengths are then
+  // natively in CSS pixels — no `vector-effect: non-scaling-stroke` needed.
+  // Same alternating dashed black + white pattern as the deck-view grid.
+  (function buildSlideDebugGrid() {
+    const svg = document.querySelector(".debug-slide-grid");
+    if (!svg) return;
+    const ns = "http://www.w3.org/2000/svg";
+    const addDashedLine = (x1, y1, x2, y2) => {
+      const black = document.createElementNS(ns, "line");
+      black.setAttribute("x1", x1);
+      black.setAttribute("y1", y1);
+      black.setAttribute("x2", x2);
+      black.setAttribute("y2", y2);
+      black.setAttribute("stroke", "black");
+      black.setAttribute("stroke-width", "1");
+      black.setAttribute("stroke-dasharray", "5 5");
+      svg.appendChild(black);
+
+      const white = document.createElementNS(ns, "line");
+      white.setAttribute("x1", x1);
+      white.setAttribute("y1", y1);
+      white.setAttribute("x2", x2);
+      white.setAttribute("y2", y2);
+      white.setAttribute("stroke", "white");
+      white.setAttribute("stroke-width", "1");
+      white.setAttribute("stroke-dasharray", "5 5");
+      white.setAttribute("stroke-dashoffset", "5");
+      svg.appendChild(white);
+    };
+    for (let i = 1; i <= 9; i++) {
+      const p = i * 10 + "%";
+      addDashedLine(p, "0", p, "100%");
+      addDashedLine("0", p, "100%", p);
+    }
+  })();
 
   // ---- Event handlers -----------------------------------------------------
 
