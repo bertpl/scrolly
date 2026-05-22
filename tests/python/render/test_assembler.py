@@ -322,3 +322,70 @@ def test_no_group_divs_in_template():
     deck, chunks = _single("x", "")
     html = assemble(deck, chunks, inline=False)
     assert "slide-group" not in html
+
+
+# ---- Help screen metadata --------------------------------------------------
+
+
+def _extract_meta(html: str) -> dict:
+    start = html.index('<script type="application/json" id="scrolly-meta">')
+    end = html.index("</script>", start)
+    blob = html[start:end].split(">", 1)[1]
+    return json.loads(blob)
+
+
+def test_meta_json_embedded(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    meta = _extract_meta(html)
+    assert meta["version"]
+    assert meta["author"]
+    assert meta["pypi_url"].startswith("https://")
+
+
+def test_meta_stats_slide_and_edge_counts(inline):
+    deck, chunks = _l_shape()
+    meta = _extract_meta(assemble(deck, chunks, inline=inline))
+    assert meta["stats"]["slides"] == 3
+    assert meta["stats"]["edges"] == 2
+
+
+def test_meta_stats_file_size_is_integer(inline):
+    deck, chunks = _l_shape()
+    html = assemble(deck, chunks, inline=inline)
+    meta = _extract_meta(html)
+    assert isinstance(meta["stats"]["file_size"], int)
+    assert meta["stats"]["file_size"] > 0
+
+
+def test_meta_stats_asset_counts():
+    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.static.md"))
+    deck = Deck(title="t", slides=(slide,), edges=())
+    chunks = {
+        "x": SlideHTML(
+            title="X",
+            html="",
+            assets=(Path("/img/a.svg"), Path("/img/b.png"), Path("/img/c.svg")),
+        )
+    }
+    meta = _extract_meta(assemble(deck, chunks, inline=False))
+    assert meta["stats"]["assets"] == {".svg": 2, ".png": 1}
+
+
+def test_meta_stats_empty_assets(inline):
+    deck, chunks = _single("x", "")
+    meta = _extract_meta(assemble(deck, chunks, inline=inline))
+    assert meta["stats"]["assets"] == {}
+
+
+def test_help_button_in_navigation(inline):
+    deck, chunks = _single("x", "")
+    html = assemble(deck, chunks, inline=inline)
+    assert 'class="help-button"' in html
+
+
+def test_help_modal_in_output(inline):
+    deck, chunks = _single("x", "")
+    html = assemble(deck, chunks, inline=inline)
+    assert 'class="help-modal"' in html
+    assert 'class="help-modal-ok"' in html

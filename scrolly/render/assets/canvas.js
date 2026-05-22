@@ -1396,6 +1396,20 @@
   // ---- Event handlers -----------------------------------------------------
 
   document.addEventListener("keydown", (e) => {
+    if (e.key === "h" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      helpModal.toggle();
+      return;
+    }
+
+    if (e.key === "Escape" && helpModal.isOpen()) {
+      e.preventDefault();
+      helpModal.toggle();
+      return;
+    }
+
+    if (helpModal.isOpen()) return;
+
     if (e.key === "z" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (document.body.classList.contains("view-transitioning")) return;
       e.preventDefault();
@@ -1612,6 +1626,122 @@
       hoverUiTimer.clear();
     }
   };
+
+  // ---- Help modal -----------------------------------------------------------
+
+  const helpModal = (function () {
+    const modal = document.querySelector(".help-modal");
+    if (!modal) return { toggle() {}, isOpen() { return false; } };
+
+    const body = modal.querySelector(".help-modal-body");
+    const okBtn = modal.querySelector(".help-modal-ok");
+    const backdrop = modal.querySelector(".help-modal-backdrop");
+    let populated = false;
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function populate() {
+      if (populated) return;
+      populated = true;
+
+      const metaEl = document.getElementById("scrolly-meta");
+      if (!metaEl) return;
+      const meta = JSON.parse(metaEl.textContent);
+      const s = meta.stats;
+
+      const extLabels = {
+        ".svg": "SVG", ".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG",
+        ".gif": "GIF", ".webp": "WebP", ".avif": "AVIF",
+      };
+      const assetParts = [];
+      for (const [ext, count] of Object.entries(s.assets || {})) {
+        assetParts.push(count + " " + (extLabels[ext] || ext));
+      }
+      const assetSummary = assetParts.length > 0 ? assetParts.join(", ") : "none";
+
+      const compParts = [];
+      if (s.compressed > 0) {
+        compParts.push(s.compressed + " asset" + (s.compressed !== 1 ? "s" : "") + " compressed");
+        if (s.bytes_saved > 0) compParts.push("saved " + formatBytes(s.bytes_saved));
+      }
+      const compSummary = compParts.length > 0 ? compParts.join(", ") : "none";
+
+      const compressedLine = s.compressed > 0
+        ? s.compressed + " asset" + (s.compressed !== 1 ? "s" : "")
+        : "none";
+      const savedLine = s.bytes_saved > 0 ? formatBytes(s.bytes_saved) : "—";
+
+      body.innerHTML =
+        '<h2>About</h2>' +
+        '<div class="help-about">' +
+        '<p class="help-about-title"><strong>scrolly</strong> v' + meta.version + '</p>' +
+        '<p><a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener">MIT License</a></p>' +
+        '<p>' + meta.author + '</p>' +
+        '<p><a href="' + meta.pypi_url + '" target="_blank" rel="noopener">' + meta.pypi_url + '</a></p>' +
+        '</div>' +
+
+        '<h2>Help</h2>' +
+        '<table>' +
+        '<tr><td>← ↑ → ↓</td><td>Navigate between slides</td></tr>' +
+        '<tr><td>Shift+↑ / Shift+↓</td><td>Jump to previous / next snap position</td></tr>' +
+        '<tr><td>scroll / drag</td><td>Advance animation</td></tr>' +
+        '<tr><td>s</td><td>Toggle scroll snapping</td></tr>' +
+        '<tr><td>z</td><td>Toggle slide / deck view</td></tr>' +
+        '<tr><td>Escape</td><td>Return to slide view</td></tr>' +
+        '<tr><td>h</td><td>Toggle this help screen</td></tr>' +
+        '<tr><td>d</td><td>Toggle debug mode</td></tr>' +
+        '</table>' +
+
+        '<h2>Statistics</h2>' +
+        '<table>' +
+        '<tr><td>Slides</td><td>' + s.slides + '</td></tr>' +
+        '<tr><td>Edges</td><td>' + s.edges + '</td></tr>' +
+        '<tr><td>Inlined</td><td></td></tr>' +
+        '<tr class="help-indent"><td>Assets</td><td>' + assetSummary + '</td></tr>' +
+        '<tr class="help-indent"><td>Compressed</td><td>' + compressedLine + '</td></tr>' +
+        '<tr class="help-indent"><td>Space saved</td><td>' + savedLine + '</td></tr>' +
+        '<tr><td>File size</td><td>' + formatBytes(s.file_size) + '</td></tr>' +
+        '</table>';
+    }
+
+    function open() {
+      populate();
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function close() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function isOpen() {
+      return modal.classList.contains("open");
+    }
+
+    function toggle() {
+      if (isOpen()) close(); else open();
+    }
+
+    okBtn.addEventListener("click", close);
+    backdrop.addEventListener("click", close);
+
+    return { toggle, isOpen };
+  })();
+
+  // Wire help button click.
+  const helpBtn = document.querySelector(".help-button");
+  if (helpBtn) {
+    helpBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      helpModal.toggle();
+      helpBtn.blur();
+    });
+  }
 
   // ---- Init ---------------------------------------------------------------
 
