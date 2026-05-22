@@ -13,6 +13,7 @@ from scrolly.deck import (
     validate_raw_deck,
 )
 from scrolly.errors import SlideSourceError
+from scrolly.pipeline._compress import CompressionStats
 from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
@@ -42,6 +43,7 @@ def build_deck(
     force: bool = False,
     inline: bool = True,
     simplified_zoom_control: bool = False,
+    compress: bool = True,
 ) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`."""
     raw_deck = parse_deck(deck_path)
@@ -49,9 +51,18 @@ def build_deck(
     deck = infer_edges(raw_deck)
     validate_deck(deck)
 
-    chunks = _render_slides(deck.slides)
-    chunks = rewrite_asset_refs(chunks, inline=inline)
-    html = assemble(deck, chunks, inline=inline, simplified_zoom_control=simplified_zoom_control)
+    chunks = _render_slides(deck.slides, compress=compress)
+    chunks, asset_stats = rewrite_asset_refs(chunks, inline=inline, compress=compress)
+    renderer_stats = sum(
+        (chunk.compression_stats for chunk in chunks.values()),
+        CompressionStats(),
+    )
+    html = assemble(
+        deck, chunks,
+        inline=inline,
+        simplified_zoom_control=simplified_zoom_control,
+        compression_stats=renderer_stats + asset_stats,
+    )
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
 
     write_output(out_dir, html, force=force, has_mermaid=has_mermaid, inline=inline)
@@ -61,7 +72,7 @@ def build_deck(
     return deck
 
 
-def _render_slides(slides: tuple[Slide, ...]) -> dict[str, SlideHTML]:
+def _render_slides(slides: tuple[Slide, ...], *, compress: bool = True) -> dict[str, SlideHTML]:
     """Render every slide's source into a ``SlideHTML``, keyed by slide id.
 
     Dispatches via ``can_process``: parse the source into an IR, then
@@ -78,7 +89,7 @@ def _render_slides(slides: tuple[Slide, ...]) -> dict[str, SlideHTML]:
         while True:
             renderer = find_renderer(ir)
             if renderer is not None:
-                chunks[slide.id] = renderer.render(ir, css_namespace=slide.id)
+                chunks[slide.id] = renderer.render(ir, css_namespace=slide.id, compress=compress)
                 break
 
             compiler = find_compiler(ir)

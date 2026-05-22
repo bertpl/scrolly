@@ -12,6 +12,7 @@ from pathlib import Path
 
 import markdown
 
+from scrolly.pipeline._compress import CompressionStats, try_compress
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import (
     HtmlElement,
@@ -99,7 +100,7 @@ class ScrollimationRenderer(Renderer):
         """Return True if this renderer handles the given IR type."""
         return isinstance(ir, ScrollimationIR)
 
-    def render(self, ir: SlideIR, css_namespace: str = "") -> SlideHTML:
+    def render(self, ir: SlideIR, css_namespace: str = "", *, compress: bool = True) -> SlideHTML:
         """Render a ScrollimationIR to SlideHTML."""
         assert isinstance(ir, ScrollimationIR)
         element_htmls = []
@@ -107,8 +108,10 @@ class ScrollimationRenderer(Renderer):
         prefix = f"{css_namespace}-" if css_namespace else ""
 
         has_mermaid = False
+        compression_stats = CompressionStats()
         for i, el in enumerate(ir.elements):
-            content_html = _render_element_content(el)
+            content_html, el_stats = _render_element_content(el, compress=compress)
+            compression_stats = compression_stats + el_stats
             attrs = f'class="scrollimation-element" data-element-id="{prefix}{i}"'
             if el.opacity.is_animated:
                 kf_json = json.dumps(el.opacity.keyframes, separators=(",", ":"))
@@ -140,6 +143,7 @@ class ScrollimationRenderer(Renderer):
             snap_positions=ir.snap_positions,
             reverse=ir.reverse,
             has_mermaid=has_mermaid,
+            compression_stats=compression_stats,
         )
 
 
@@ -148,23 +152,53 @@ class ScrollimationRenderer(Renderer):
 # ==================================================================================================
 
 
-def _render_element_content(el: AnyElement) -> str:
-    """Render an element's content to HTML."""
+def _render_element_content(
+    el: AnyElement, *, compress: bool = True,
+) -> tuple[str, CompressionStats]:
+    """Render an element's content to HTML.
+
+    Returns:
+        Tuple of (html, compression stats). Only iframes contribute non-empty
+        stats today; all other element types return ``CompressionStats()``.
+    """
+    no_stats = CompressionStats()
     if isinstance(el, ImageElement):
-        return f'<img src="__asset__/{el.image.name}" alt="">'
+        return f'<img src="__asset__/{el.image.name}" alt="">', no_stats
     if isinstance(el, ImageSequenceElement):
-        return _render_image_sequence_imgs(el)
+        return _render_image_sequence_imgs(el), no_stats
     if isinstance(el, HtmlElement):
-        return el.html
+        return el.html, no_stats
     if isinstance(el, IframeElement):
-        title_attr = f' title="{html_escape(el.name)}"' if el.name else ""
-        return (
-            f'<iframe srcdoc="{html_escape(el.iframe_html)}" '
-            f'sandbox="allow-scripts"{title_attr}></iframe>'
-        )
+        return _render_iframe(el, compress=compress)
     if isinstance(el, MermaidElement):
-        return f'<pre class="mermaid">{html_escape(el.mermaid)}</pre>'
-    return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS))
+        return f'<pre class="mermaid">{html_escape(el.mermaid)}</pre>', no_stats
+    return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS)), no_stats
+
+
+def _render_iframe(
+    el: IframeElement, *, compress: bool,
+) -> tuple[str, CompressionStats]:
+    """Render an iframe element, optionally compressing the srcdoc payload.
+
+    Returns:
+        Tuple of (html, compression stats). Stats are non-empty when the
+        srcdoc content passed the 5% gate and was emitted in compressed form.
+    """
+    title_attr = f' title="{html_escape(el.name)}"' if el.name else ""
+    escaped = html_escape(el.iframe_html)
+    if compress:
+        result = try_compress(el.iframe_html.encode("utf-8"), len(escaped))
+        if result.packed is not None:
+            html = (
+                f'<iframe data-scrolly-gz="{result.packed}" data-scrolly-sink="srcdoc" '
+                f'sandbox="allow-scripts"{title_attr}></iframe>'
+            )
+            return html, CompressionStats(compressed=1, bytes_saved=result.bytes_saved)
+    html = (
+        f'<iframe srcdoc="{escaped}" '
+        f'sandbox="allow-scripts"{title_attr}></iframe>'
+    )
+    return html, CompressionStats()
 
 
 # --------------------------------------------------------------------------

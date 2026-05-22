@@ -1542,6 +1542,7 @@
   document.addEventListener(
     "wheel",
     (e) => {
+      if (e.target.closest(".help-modal")) return;
       if (viewState.zoomLevel !== 1) return;
       if (document.body.classList.contains("view-transitioning")) return;
       const slideId = viewState.selectedSlide;
@@ -1742,6 +1743,40 @@
       helpBtn.blur();
     });
   }
+
+  // ---- Compressed payload hydration -----------------------------------------
+
+  async function _gunzipB64(b64) {
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    return new Response(
+      new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))
+    );
+  }
+
+  async function hydrateCompressedPayloads() {
+    if (!("DecompressionStream" in window)) {
+      console.warn("scrolly: DecompressionStream unavailable; compressed payloads will not load.");
+      return;
+    }
+    const nodes = document.querySelectorAll("[data-scrolly-gz]");
+    await Promise.all([...nodes].map(async (el) => {
+      const b64 = el.getAttribute("data-scrolly-gz");
+      const sink = el.getAttribute("data-scrolly-sink");
+      const resp = await _gunzipB64(b64);
+      el.removeAttribute("data-scrolly-gz");
+      if (sink === "srcdoc") {
+        el.srcdoc = await resp.text();
+      } else {
+        const mime = el.getAttribute("data-scrolly-mime") || "application/octet-stream";
+        const blob = new Blob([await resp.arrayBuffer()], { type: mime });
+        const url = URL.createObjectURL(blob);
+        el.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+        el.src = url;
+      }
+    }));
+  }
+
+  hydrateCompressedPayloads();
 
   // ---- Init ---------------------------------------------------------------
 

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Help screen (`?` icon or `h` key) with About, keyboard shortcuts, and deck statistics (slide/edge/asset counts, file size).
+- Inlined assets and iframe content are gzip-compressed when the compressed form is at least 10% smaller, decompressed client-side via `DecompressionStream`. Pass `--no-compress` to disable.
 
 ### Changed
 

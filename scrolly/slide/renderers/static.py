@@ -53,7 +53,7 @@ class StaticRenderer(Renderer):
     def can_process(cls, ir: SlideIR) -> bool:
         return isinstance(ir, StaticIR)
 
-    def render(self, ir: SlideIR, css_namespace: str = "") -> SlideHTML:
+    def render(self, ir: SlideIR, css_namespace: str = "", *, compress: bool = True) -> SlideHTML:
         assert isinstance(ir, StaticIR)
         title = ir.title or self._extract_first_h1(ir.body)
         if title is None:

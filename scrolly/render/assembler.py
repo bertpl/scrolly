@@ -15,6 +15,7 @@ from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescap
 
 from scrolly import __version__
 from scrolly.deck import Deck
+from scrolly.pipeline._compress import CompressionStats
 from scrolly.render.bundled_assets import bundled_css, bundled_js, mermaid_js
 from scrolly.render.nav_data import build_nav_data
 from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
@@ -27,6 +28,7 @@ def assemble(
     *,
     inline: bool = True,
     simplified_zoom_control: bool = False,
+    compression_stats: CompressionStats | None = None,
 ) -> str:
     """Render the deck and its chunks into a single HTML string.
 
@@ -36,6 +38,7 @@ def assemble(
         inline: Inline CSS/JS into the page (vs. emitting separate files).
         simplified_zoom_control: Use the legacy single-icon zoom-out
             control instead of the default deck mini-map.
+        compression_stats: Aggregate stats from inlined-asset compression.
 
     Returns:
         The rendered HTML page as a single string.
@@ -45,7 +48,7 @@ def assemble(
     scoped_css_blocks = _collect_scoped_css(deck, chunks)
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
     minimap: MinimapGeometry | None = None if simplified_zoom_control else compute_minimap_geometry(deck)
-    meta = _build_meta(deck, chunks)
+    meta = _build_meta(deck, chunks, compression_stats=compression_stats)
 
     inline_vars = {}
     if inline:
@@ -71,13 +74,19 @@ def assemble(
     return html.replace('"__FILE_SIZE_PLACEHOLDER__"', str(meta["stats"]["file_size"]))
 
 
-def _build_meta(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
+def _build_meta(
+    deck: Deck,
+    chunks: dict[str, SlideHTML],
+    *,
+    compression_stats: CompressionStats | None = None,
+) -> dict[str, Any]:
     """Build the metadata dict injected into the HTML for the help screen."""
     asset_counts: Counter[str] = Counter()
     for chunk in chunks.values():
         for path in chunk.assets:
             asset_counts[path.suffix.lower()] += 1
 
+    cs = compression_stats or CompressionStats()
     return {
         "version": __version__,
         "author": "Bert Pluymers",
@@ -86,8 +95,8 @@ def _build_meta(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
             "slides": len(deck.slides),
             "edges": len(deck.edges),
             "assets": dict(asset_counts),
-            "compressed": 0,
-            "bytes_saved": 0,
+            "compressed": cs.compressed,
+            "bytes_saved": cs.bytes_saved,
             "file_size": "__FILE_SIZE_PLACEHOLDER__",
         },
     }

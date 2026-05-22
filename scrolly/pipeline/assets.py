@@ -17,11 +17,13 @@ them around the output-directory setup:
 from __future__ import annotations
 
 import base64
+import re
 import shutil
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from scrolly.errors import SlideSourceError
+from scrolly.pipeline._compress import CompressionStats, try_compress
 from scrolly.slide import SlideHTML
 
 ASSET_REF_PREFIX = "__asset__/"
@@ -37,24 +39,40 @@ _MIME_TYPES: dict[str, str] = {
 }
 
 
-def rewrite_asset_refs(chunks: dict[str, SlideHTML], *, inline: bool = True) -> dict[str, SlideHTML]:
+def rewrite_asset_refs(
+    chunks: dict[str, SlideHTML],
+    *,
+    inline: bool = True,
+    compress: bool = True,
+) -> tuple[dict[str, SlideHTML], CompressionStats]:
     """Validate asset sources and rewrite ``__asset__/`` refs in chunks.
 
-    When ``inline=True``, references are replaced with ``data:`` URIs.
+    When ``inline=True``, references are replaced with ``data:`` URIs
+    (optionally compressed when ``compress=True``).
     When ``inline=False``, references are rewritten to ``_assets/<slide_id>/``.
-    Returns a new dict with rewritten chunks (unchanged chunks are reused).
+
+    Args:
+        chunks: Per-slide rendered HTML chunks, keyed by slide id.
+        inline: Inline assets as data URIs (vs. separate files).
+        compress: Enable gzip compression for inlined image assets.
+
+    Returns:
+        Tuple of (rewritten chunks dict, aggregate compression stats).
     """
     result: dict[str, SlideHTML] = {}
+    total = CompressionStats()
     for slide_id, chunk in chunks.items():
         if not chunk.assets:
             result[slide_id] = chunk
             continue
         _validate_assets(slide_id, chunk.assets)
         if inline:
-            result[slide_id] = _inline_refs(slide_id, chunk)
+            rewritten, stats = _inline_refs(slide_id, chunk, compress=compress)
+            result[slide_id] = rewritten
+            total = total + stats
         else:
             result[slide_id] = _rewrite_refs(slide_id, chunk)
-    return result
+    return result, total
 
 
 def copy_assets(chunks: dict[str, SlideHTML], output_dir: Path) -> None:
@@ -90,23 +108,106 @@ def _rewrite_refs(slide_id: str, chunk: SlideHTML) -> SlideHTML:
     )
 
 
-def _inline_refs(slide_id: str, chunk: SlideHTML) -> SlideHTML:
-    data_uris = _build_data_uris(slide_id, chunk.assets)
+def _inline_refs(
+    slide_id: str, chunk: SlideHTML, *, compress: bool = True,
+) -> tuple[SlideHTML, CompressionStats]:
+    """Inline asset references, optionally compressing image payloads.
+
+    Args:
+        slide_id: Owning slide id (for error messages).
+        chunk: The rendered slide chunk.
+        compress: Enable gzip compression for image payloads.
+
+    Returns:
+        Tuple of (rewritten chunk, compression stats for this chunk).
+    """
+    asset_info = _build_asset_info(slide_id, chunk.assets, compress=compress)
     html = chunk.html
     css = chunk.scoped_css
-    for filename, data_uri in data_uris.items():
+    stats = CompressionStats()
+
+    for filename, info in asset_info.items():
         ref = f"{ASSET_REF_PREFIX}{filename}"
-        html = html.replace(ref, data_uri)
-        css = css.replace(ref, data_uri)
-    return replace(chunk, html=html, scoped_css=css)
+        css = css.replace(ref, info.data_uri)
+        html, asset_stats = _apply_to_html(html, ref, info)
+        stats = stats + asset_stats
+
+    return replace(chunk, html=html, scoped_css=css), stats
 
 
-def _build_data_uris(slide_id: str, assets: tuple[Path, ...]) -> dict[str, str]:
-    result: dict[str, str] = {}
+def _apply_to_html(
+    html: str, ref: str, info: _AssetInfo,
+) -> tuple[str, CompressionStats]:
+    """Substitute one asset reference in HTML.
+
+    When ``info.packed`` is set, attempt to rewrite the ``<img>`` tag carrying
+    ``src="<ref>"`` with the compressed-payload attributes. If no matching
+    ``<img>`` is found (e.g. the asset is referenced only from CSS), fall back
+    to the plain data URI substitution.
+
+    Args:
+        html: The HTML to substitute into.
+        ref: The asset reference token to match.
+        info: Per-asset inlining info.
+
+    Returns:
+        Tuple of (rewritten html, compression stats for this asset).
+    """
+    if info.packed is None:
+        return html.replace(ref, info.data_uri), CompressionStats()
+
+    pat = re.compile(
+        r'(<img\b[^>]*?)\ssrc="' + re.escape(ref) + r'"([^>]*>)'
+    )
+    repl = (
+        r'\1 data-scrolly-gz="' + info.packed + r'" '
+        r'data-scrolly-sink="img" data-scrolly-mime="' + info.mime + r'"\2'
+    )
+    new_html = pat.sub(repl, html)
+    if new_html != html:
+        return new_html, CompressionStats(compressed=1, bytes_saved=info.bytes_saved)
+    return html.replace(ref, info.data_uri), CompressionStats()
+
+
+@dataclass(frozen=True)
+class _AssetInfo:
+    """Per-asset inlining info."""
+
+    data_uri: str
+    mime: str
+    packed: str | None
+    bytes_saved: int
+
+
+def _build_asset_info(
+    slide_id: str, assets: tuple[Path, ...], *, compress: bool,
+) -> dict[str, _AssetInfo]:
+    """Build per-asset inlining info including optional compression candidates.
+
+    Args:
+        slide_id: Owning slide id (for error messages).
+        assets: Asset file paths.
+        compress: Whether to compute compressed candidates.
+
+    Returns:
+        Dict mapping filename to its inlining info.
+    """
+    result: dict[str, _AssetInfo] = {}
     for path in assets:
         mime = _mime_type(path, slide_id)
-        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
-        result[path.name] = f"data:{mime};base64,{encoded}"
+        raw = path.read_bytes()
+        encoded = base64.b64encode(raw).decode("ascii")
+        data_uri = f"data:{mime};base64,{encoded}"
+        packed: str | None = None
+        bytes_saved = 0
+        if compress:
+            cresult = try_compress(raw, len(encoded))
+            if cresult.packed is not None:
+                packed = cresult.packed
+                bytes_saved = cresult.bytes_saved
+        result[path.name] = _AssetInfo(
+            data_uri=data_uri, mime=mime, packed=packed, bytes_saved=bytes_saved,
+        )
     return result
 
 
