@@ -824,3 +824,192 @@ body.pan-transitioning .canvas {
   vector-effect: non-scaling-stroke;
   stroke-linecap: round;
 }
+
+/* ---- Help button -------------------------------------------------------- */
+
+/* Styled like the simplified zoom control: same size, background, colour,
+ * border-radius, box-shadow, idle-fade pipeline. Positioned top-right. */
+.help-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0.15;
+  transition: opacity 150ms ease-out;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 1);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.help-button:hover,
+.help-button:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+.navigation.hover-ui-idle .help-button {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease-out;
+}
+
+/* ---- Help modal --------------------------------------------------------- */
+
+.help-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-modal.open {
+  display: flex;
+}
+
+.help-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.help-modal-content {
+  --modal-unit: min(75vw, 75vh);
+  position: relative;
+  width: calc(var(--modal-unit) * 0.6);
+  max-height: calc(var(--modal-unit) * 0.75);
+  background: rgba(15, 15, 15, 0.95);
+  color: #e0e0e0;
+  border-radius: 12px;
+  padding: calc(var(--modal-unit) * 0.03);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: calc(var(--modal-unit) * 0.018);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.help-modal-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.help-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.help-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.help-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+}
+
+.help-modal-body h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #fff;
+  margin: 1.2em 0 0.5em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 0.3em;
+}
+
+.help-modal-body h2:first-child {
+  margin-top: 0;
+}
+
+.help-modal-body p {
+  margin: 0.4em 0;
+}
+
+.help-modal-body a {
+  color: #7cb3ff;
+  text-decoration: none;
+}
+
+.help-modal-body a:hover {
+  text-decoration: underline;
+}
+
+.help-about {
+  text-align: center;
+}
+
+.help-about-title {
+  font-size: 1.6em;
+  font-weight: 400;
+  color: #fff;
+}
+
+.help-about-title strong {
+  font-weight: 700;
+}
+
+.help-modal-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+
+.help-modal-body td {
+  padding: 0.2em 0.6em;
+  vertical-align: top;
+}
+
+.help-modal-body td:first-child {
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  color: #fff;
+  width: 40%;
+}
+
+.help-modal-body td:last-child {
+  color: #b8b8b8;
+}
+
+.help-modal-body tr.help-indent td:first-child {
+  padding-left: 2em;
+}
+
+.help-modal-ok {
+  align-self: center;
+  margin-top: calc(var(--modal-unit) * 0.015);
+  padding: 0.4em 2em;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 150ms ease-out;
+}
+
+.help-modal-ok:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

@@ -8,9 +8,12 @@ deck's navigation graph as a JSON blob the client-side JS consumes.
 from __future__ import annotations
 
 import json
+from collections import Counter
+from typing import Any
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescape
 
+from scrolly import __version__
 from scrolly.deck import Deck
 from scrolly.render.bundled_assets import bundled_css, bundled_js, mermaid_js
 from scrolly.render.nav_data import build_nav_data
@@ -42,6 +45,7 @@ def assemble(
     scoped_css_blocks = _collect_scoped_css(deck, chunks)
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
     minimap: MinimapGeometry | None = None if simplified_zoom_control else compute_minimap_geometry(deck)
+    meta = _build_meta(deck, chunks)
 
     inline_vars = {}
     if inline:
@@ -50,17 +54,43 @@ def assemble(
         if has_mermaid:
             inline_vars["mermaid_js_content"] = mermaid_js()
 
-    return template.render(
+    html = template.render(
         title=deck.title or "scrolly",
         slides=deck.slides,
         chunks=chunks,
         nav_data_json=json.dumps(nav_data),
+        meta_json=json.dumps(meta),
         scoped_css_blocks=scoped_css_blocks,
         has_mermaid=has_mermaid,
         inline=inline,
         minimap=minimap,
         **inline_vars,
     )
+
+    meta["stats"]["file_size"] = len(html.encode("utf-8"))
+    return html.replace('"__FILE_SIZE_PLACEHOLDER__"', str(meta["stats"]["file_size"]))
+
+
+def _build_meta(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
+    """Build the metadata dict injected into the HTML for the help screen."""
+    asset_counts: Counter[str] = Counter()
+    for chunk in chunks.values():
+        for path in chunk.assets:
+            asset_counts[path.suffix.lower()] += 1
+
+    return {
+        "version": __version__,
+        "author": "Bert Pluymers",
+        "pypi_url": "https://pypi.org/project/scrolly/",
+        "stats": {
+            "slides": len(deck.slides),
+            "edges": len(deck.edges),
+            "assets": dict(asset_counts),
+            "compressed": 0,
+            "bytes_saved": 0,
+            "file_size": "__FILE_SIZE_PLACEHOLDER__",
+        },
+    }
 
 
 def _collect_scoped_css(deck: Deck, chunks: dict[str, SlideHTML]) -> list[str]:

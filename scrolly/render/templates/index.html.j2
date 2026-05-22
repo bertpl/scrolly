@@ -58,6 +58,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4V4zM20 14v6h-6v-2h4v-4h2zM10 20H4v-6h2v4h4v2z" fill="currentColor"/></svg>
     </button>
     {%- endif %}
+    <button type="button" class="help-button" aria-label="Help">?</button>
+
     {#- edge arrows are rebuilt by canvas.js on selected_slide change -#}
 
     {#- Scroll UI: scrollbar + snap control, wrapped for unified idle-fade.
@@ -80,7 +82,16 @@
     </div>
   </div>
 
+  <div class="help-modal" aria-hidden="true">
+    <div class="help-modal-backdrop"></div>
+    <div class="help-modal-content">
+      <div class="help-modal-body"></div>
+      <button type="button" class="help-modal-ok">Ok</button>
+    </div>
+  </div>
+
   <script type="application/json" id="scrolly-deck">{{ nav_data_json | safe }}</script>
+  <script type="application/json" id="scrolly-meta">{{ meta_json | safe }}</script>
   {%- if has_mermaid %}
   {%- if inline %}
   <script>{{ mermaid_js_content | safe }}</script>
