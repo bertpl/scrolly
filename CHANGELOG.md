@@ -5,24 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.1.12 (2026-05-22)
 
 ### Added
 
 - Help screen (`?` icon or `h` key) with About, keyboard shortcuts, and deck statistics (slide/edge/asset counts, file size).
 - Inlined assets and iframe content are gzip-compressed when the compressed form is at least 10% smaller, decompressed client-side via `DecompressionStream`. Pass `--no-compress` to disable.
 - Debug mode (`d` key) shows slide-grid boundaries and cell coordinates in deck view; 10% grid lines, snap-position values, and a live scroll-position readout in slide view.
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.1.11 (2026-05-21)
 
 ### Added
