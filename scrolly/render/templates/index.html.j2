@@ -15,6 +15,7 @@
 </head>
 <body>
   <div class="canvas">
+    <svg class="debug-grid" preserveAspectRatio="none"></svg>
     <svg class="canvas-edges" preserveAspectRatio="none">
       <defs>
         <marker id="edge-dot"
@@ -40,6 +41,7 @@
           {{ chunks[slide.id].html | safe }}
         </div>
       </div>
+      <div class="debug-coord-pill">{{ slide.position.x }}, {{ slide.position.y }}</div>
     </div>
     {%- endfor %}
   </div>
@@ -59,6 +61,7 @@
     </button>
     {%- endif %}
     <button type="button" class="help-button" aria-label="Help">?</button>
+    <button type="button" class="debug-button" aria-label="Debug mode">D</button>
 
     {#- edge arrows are rebuilt by canvas.js on selected_slide change -#}
 

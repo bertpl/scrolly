@@ -96,6 +96,7 @@
     get rows() { return Math.max(0, this._bbox.maxY - this._bbox.minY + 1); }
     get vw() { return this._vw; }
     get vh() { return this._vh; }
+    bbox() { return { ...this._bbox }; }
 
     slidePosition(slideId) {
       const p = this._slides[slideId];
@@ -1203,6 +1204,136 @@
     }
   }
 
+  // ---- DebugGrid ------------------------------------------------------------
+  //
+  // Renders the deck-view debug-mode grid as 1px lines at every cell boundary
+  // across the bbox (occupied + empty cells). Mirrors the BezierOverlay
+  // pattern: viewBox in abstract grid units, width/height in `dvw`/`dvh`, so
+  // the SVG resizes with the viewport without per-resize JS updates.
+  // `vector-effect="non-scaling-stroke"` keeps the 1px stroke constant in
+  // viewport coords despite the canvas's deck-view scale; mix-blend-mode:
+  // difference (on the SVG, via CSS) keeps lines visible against any
+  // background.
+
+  class DebugGrid {
+    constructor(geo, svgEl) {
+      this._geo = geo;
+      this._svg = svgEl;
+    }
+
+    rebuild() {
+      while (this._svg.firstChild) this._svg.removeChild(this._svg.firstChild);
+
+      if (this._geo.cols === 0 || this._geo.rows === 0) return;
+      if (this._geo.vw === undefined || this._geo.vh === undefined) return;
+
+      const bbox = this._geo.bbox();
+      const { cols, rows } = this._geo.effectiveGridSize();
+      this._svg.setAttribute("viewBox", "0 0 " + cols + " " + rows);
+      this._svg.style.width = (cols * 100) + "dvw";
+      this._svg.style.height = (rows * 100) + "dvh";
+
+      const padding = { top: 0, side: 0, bottom: 0 };
+      const vw = this._geo.vw;
+      const vh = this._geo.vh;
+
+      // One column rect per column (any row works since cols share x-extents).
+      const colRects = [];
+      for (let c = bbox.minX; c <= bbox.maxX; c++) {
+        const rect = this._geo.cellBounds(c, bbox.minY, c, bbox.minY, padding);
+        colRects.push(rect);
+      }
+
+      // One row rect per row (any col works since rows share y-extents).
+      const rowRects = [];
+      for (let r = bbox.minY; r <= bbox.maxY; r++) {
+        const rect = this._geo.cellBounds(bbox.minX, r, bbox.minX, r, padding);
+        rowRects.push(rect);
+      }
+
+      // Inter-cell gap, derived from the actual cell spacing. The outer
+      // lines sit a full gap outside the leftmost/topmost/rightmost/bottom-
+      // most cell, giving the outer edge of the grid extra breathing room.
+      const fallbackGap = (10 / 100) * Math.max(vw, vh);
+      const colGap = colRects.length > 1
+        ? (colRects[1].left - (colRects[0].left + colRects[0].width))
+        : fallbackGap;
+      const rowGap = rowRects.length > 1
+        ? (rowRects[1].top - (rowRects[0].top + rowRects[0].height))
+        : fallbackGap;
+
+      // Vertical lines: outer-left, gap midpoints between consecutive cols,
+      // outer-right. (N+1 lines for N cols, one per boundary.)
+      const xs = [colRects[0].left - colGap];
+      for (let i = 0; i < colRects.length - 1; i++) {
+        const rightOfCurrent = colRects[i].left + colRects[i].width;
+        const leftOfNext = colRects[i + 1].left;
+        xs.push((rightOfCurrent + leftOfNext) / 2);
+      }
+      xs.push(colRects[colRects.length - 1].left + colRects[colRects.length - 1].width + colGap);
+
+      // Horizontal lines: same pattern for rows.
+      const ys = [rowRects[0].top - rowGap];
+      for (let i = 0; i < rowRects.length - 1; i++) {
+        const bottomOfCurrent = rowRects[i].top + rowRects[i].height;
+        const topOfNext = rowRects[i + 1].top;
+        ys.push((bottomOfCurrent + topOfNext) / 2);
+      }
+      ys.push(rowRects[rowRects.length - 1].top + rowRects[rowRects.length - 1].height + rowGap);
+
+      const ns = "http://www.w3.org/2000/svg";
+
+      // Extend lines well beyond the deck bounding box so they reach the
+      // viewport edges in deck view regardless of the canvas's translate +
+      // scale. The SVG has `overflow: visible` so the extension is not
+      // clipped to the viewBox.
+      const yExt = rows * 10;
+      const xExt = cols * 10;
+
+      // Per boundary we add two overlapping lines, dashed black and dashed
+      // white with the white offset by one dash length, so the visible line
+      // alternates 50px black / 50px white in true screen pixels. With
+      // `vector-effect: non-scaling-stroke` the dash lengths and stroke
+      // width stay constant in viewport coords regardless of the canvas's
+      // deck-view scale, and the alternation keeps the line visible against
+      // backgrounds of any colour.
+      const addDashedLine = (x1, y1, x2, y2) => {
+        const black = document.createElementNS(ns, "line");
+        black.setAttribute("x1", x1);
+        black.setAttribute("y1", y1);
+        black.setAttribute("x2", x2);
+        black.setAttribute("y2", y2);
+        black.setAttribute("stroke", "black");
+        black.setAttribute("stroke-width", "5");
+        black.setAttribute("stroke-dasharray", "50 50");
+        black.setAttribute("vector-effect", "non-scaling-stroke");
+        this._svg.appendChild(black);
+
+        const white = document.createElementNS(ns, "line");
+        white.setAttribute("x1", x1);
+        white.setAttribute("y1", y1);
+        white.setAttribute("x2", x2);
+        white.setAttribute("y2", y2);
+        white.setAttribute("stroke", "white");
+        white.setAttribute("stroke-width", "5");
+        white.setAttribute("stroke-dasharray", "50 50");
+        white.setAttribute("stroke-dashoffset", "50");
+        white.setAttribute("vector-effect", "non-scaling-stroke");
+        this._svg.appendChild(white);
+      };
+
+      xs.forEach((xPx) => {
+        const x = xPx / vw;
+        addDashedLine(x, -yExt, x, rows + yExt);
+      });
+
+      ys.forEach((yPx) => {
+        const y = yPx / vh;
+        addDashedLine(-xExt, y, cols + xExt, y);
+      });
+    }
+  }
+
   // ---- ElementVisibility ----------------------------------------------------
 
   const VISIBILITY_THRESHOLD = 0.001;
@@ -1368,6 +1499,14 @@
   });
   geometry.refresh(window.innerWidth, window.innerHeight);
 
+  // Publish the deck-view fit-all scale as a CSS custom property on body so
+  // descendants inside the canvas can counter-scale their viewport-relative
+  // sizing in deck view (debug coord pills today).
+  function updateDeckFitScale() {
+    document.body.style.setProperty("--deck-fit-scale", geometry.fitAllScale());
+  }
+  updateDeckFitScale();
+
   const canvas = document.querySelector(".canvas");
   if (!canvas) {
     console.error("scrolly: missing .canvas element");
@@ -1392,6 +1531,7 @@
 
   const groupLayout = new GroupLayout(geometry, canvas);
   const bezierOverlay = new BezierOverlay(geometry, canvas.querySelector(".canvas-edges"));
+  const debugGrid = new DebugGrid(geometry, canvas.querySelector(".debug-grid"));
 
   // ---- Event handlers -----------------------------------------------------
 
@@ -1409,6 +1549,12 @@
     }
 
     if (helpModal.isOpen()) return;
+
+    if (e.key === "d" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      document.body.classList.toggle("debug-mode");
+      return;
+    }
 
     if (e.key === "z" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (document.body.classList.contains("view-transitioning")) return;
@@ -1497,8 +1643,10 @@
   // the window with edge-arrows already on screen.
   window.addEventListener("resize", () => {
     geometry.refresh(window.innerWidth, window.innerHeight);
+    updateDeckFitScale();
     viewState.syncView();
     bezierOverlay.rebuild();
+    debugGrid.rebuild();
     edgeArrows.refreshFanOffsets();
     groupLayout.refresh();
     snapManager.syncDots(viewState.selectedSlide);
@@ -1792,6 +1940,7 @@
     viewState.syncView();
     groupLayout.init();
     bezierOverlay.rebuild();
+    debugGrid.rebuild();
     groupLayout.refresh();
     scrollManager.init(canvas);
     snapManager.syncControl(viewState.selectedSlide, viewState.zoomLevel);

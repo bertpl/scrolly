@@ -1018,3 +1018,88 @@ body.pan-transitioning .canvas {
 .help-modal-ok:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ---- Debug button ------------------------------------------------------- */
+
+/* Bottom-right counterpart to the help button. Fully invisible by default;
+ * becomes visible at 80% opacity when debug mode is on. Does not participate
+ * in the idle-fade pipeline — its visibility is purely a debug-state
+ * indicator, driven by body.debug-mode. */
+.debug-button {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 1);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+body.debug-mode .debug-button {
+  opacity: 0.8;
+  pointer-events: auto;
+}
+
+/* ---- Debug overlay (deck view) ----------------------------------------- */
+
+/* JS-driven SVG covering the deck's bounding box. Vertical and horizontal
+ * lines sit at every cell boundary across the bbox (including empty cells)
+ * with `vector-effect: non-scaling-stroke`, so they stay 1px in viewport
+ * coords regardless of the canvas's deck-view scale. `mix-blend-mode:
+ * difference` on the SVG inverts whatever's behind each pixel of the
+ * stroke, so the lines stay visible against any background. */
+.debug-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+  overflow: visible;
+}
+
+body.debug-mode.view-deck .debug-grid {
+  opacity: 1;
+}
+
+/* Pill is rendered inside the slide-container (which scales with the canvas
+ * in deck view). Counter-scaling by the published `--deck-fit-scale` makes
+ * the visible pill size proportional to the viewport instead of to one
+ * slide — readable regardless of how many slides the deck has. */
+.debug-coord-pill {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 15, 15, 0.85);
+  color: #fff;
+  border: calc(1px / var(--deck-fit-scale, 1)) solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  padding: calc(0.3dvmin / var(--deck-fit-scale, 1)) calc(0.8dvmin / var(--deck-fit-scale, 1));
+  font-size: calc(1.6dvmin / var(--deck-fit-scale, 1));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+  z-index: 60;
+}
+
+body.debug-mode.view-deck .debug-coord-pill {
+  display: block;
+}
