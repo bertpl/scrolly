@@ -1103,3 +1103,71 @@ body.debug-mode.view-deck .debug-grid {
 body.debug-mode.view-deck .debug-coord-pill {
   display: block;
 }
+
+/* ---- Debug overlay (slide view) ----------------------------------------- */
+
+/* Viewport-fixed SVG with lines at every 10% of width/height (i.e. 10%-grid
+ * across the subcanvas, which in slide view fills the viewport). Same
+ * dashed black + white visibility approach as the deck-view grid. */
+.debug-slide-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 19;
+  opacity: 0;
+  overflow: visible;
+}
+
+body.debug-mode.view-slide .debug-slide-grid {
+  opacity: 1;
+}
+
+/* Snap-position numeric label, rendered as a child of each snap dot in
+ * slide-view debug mode. Positioned to the right of the scrollbar track. */
+.debug-snap-label {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+  z-index: 1;
+}
+
+body.debug-mode.view-slide .debug-snap-label {
+  display: block;
+}
+
+/* Live scroll-position readout pinned to the thumb. Higher z-index than the
+ * snap labels and a stronger background so it stays readable when it
+ * overlaps. */
+.debug-thumb-readout {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.92);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  display: none;
+  z-index: 2;
+}
+
+body.debug-mode.view-slide .debug-thumb-readout {
+  display: block;
+}

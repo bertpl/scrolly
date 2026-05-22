@@ -46,6 +46,8 @@
     {%- endfor %}
   </div>
 
+  <svg class="debug-slide-grid"></svg>
+
   <div class="navigation">
     {%- if minimap %}
     <button type="button" class="zoom-out-control zoom-out-control-minimap" aria-label="Go to deck"
@@ -69,7 +71,9 @@
         Visibility managed by canvas.js based on selected slide state. -#}
     <div class="scroll-ui">
       <div class="slide-scrollbar" aria-hidden="true">
-        <div class="slide-scrollbar-thumb"></div>
+        <div class="slide-scrollbar-thumb">
+          <div class="debug-thumb-readout"></div>
+        </div>
       </div>
       <div class="snap-control" aria-label="Snap position controls" style="display: none;">
         <button type="button" class="snap-control-prev" aria-label="Previous snap position">
