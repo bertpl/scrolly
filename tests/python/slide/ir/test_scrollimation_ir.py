@@ -360,3 +360,96 @@ class TestFromFile:
 
         with pytest.raises(SlideSourceError, match="not found"):
             ScrollimationIR.from_file(Path("/no/such/file.scrollimation.json"))
+
+
+class TestSubstrateDefaults:
+    """Substrate-level defaults landed in v0.2.0 (item C / D)."""
+
+    def test_scroll_range_defaults_to_auto(self) -> None:
+        # --- arrange / act ----------------------
+        ir = ScrollimationIR(title="T", elements=[_html_element()])
+
+        # --- assert -----------------------------
+        assert ir.scroll_range == "auto"
+
+    def test_scroll_range_accepts_explicit_auto(self) -> None:
+        # --- arrange / act ----------------------
+        ir = ScrollimationIR(title="T", scroll_range="auto", elements=[_html_element()])
+
+        # --- assert -----------------------------
+        assert ir.scroll_range == "auto"
+
+    def test_scroll_range_accepts_numeric(self) -> None:
+        # --- arrange / act ----------------------
+        ir = ScrollimationIR(title="T", scroll_range=500, elements=[_html_element()])
+
+        # --- assert -----------------------------
+        assert ir.scroll_range == 500.0
+
+    def test_scroll_range_rejects_negative_number(self) -> None:
+        # --- arrange / act / assert -------------
+        with pytest.raises(ValidationError, match=r"scroll_range must be >= 0 or 'auto'"):
+            ScrollimationIR(title="T", scroll_range=-1, elements=[_html_element()])
+
+    def test_scroll_range_rejects_unknown_string(self) -> None:
+        # --- arrange / act / assert -------------
+        with pytest.raises(ValidationError):
+            ScrollimationIR(title="T", scroll_range="huge", elements=[_html_element()])
+
+    def test_auto_skips_initial_scroll_position_upper_bound(self) -> None:
+        # --- arrange / act ----------------------
+        # With scroll_range="auto" the upper bound isn't statically known,
+        # so an initial_scroll_position that would exceed any reasonable
+        # numeric range is still accepted.
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range="auto",
+            initial_scroll_position=99999,
+            elements=[_html_element()],
+        )
+
+        # --- assert -----------------------------
+        assert ir.initial_scroll_position == 99999
+
+    def test_auto_skips_snap_position_upper_bound(self) -> None:
+        # --- arrange / act ----------------------
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range="auto",
+            snap_positions=(0, 5000, 99999),
+            elements=[_html_element()],
+        )
+
+        # --- assert -----------------------------
+        assert ir.snap_positions == (0, 5000, 99999)
+
+    def test_auto_still_rejects_negative_snap_positions(self) -> None:
+        # --- arrange / act / assert -------------
+        with pytest.raises(ValidationError, match=r"snap_positions value -1 must be >= 0"):
+            ScrollimationIR(
+                title="T",
+                scroll_range="auto",
+                snap_positions=(-1,),
+                elements=[_html_element()],
+            )
+
+    def test_font_scale_defaults_to_one(self) -> None:
+        # --- arrange / act ----------------------
+        ir = ScrollimationIR(title="T", scroll_range=100, elements=[_html_element()])
+
+        # --- assert -----------------------------
+        assert ir.font_scale == 1.0
+
+    def test_font_scale_accepts_positive_values(self) -> None:
+        # --- arrange / act ----------------------
+        ir = ScrollimationIR(title="T", scroll_range=100, font_scale=1.5, elements=[_html_element()])
+
+        # --- assert -----------------------------
+        assert ir.font_scale == 1.5
+
+    def test_font_scale_rejects_zero_and_negative(self) -> None:
+        # --- arrange / act / assert -------------
+        with pytest.raises(ValidationError, match=r"font_scale must be > 0"):
+            ScrollimationIR(title="T", scroll_range=100, font_scale=0, elements=[_html_element()])
+        with pytest.raises(ValidationError, match=r"font_scale must be > 0"):
+            ScrollimationIR(title="T", scroll_range=100, font_scale=-1, elements=[_html_element()])

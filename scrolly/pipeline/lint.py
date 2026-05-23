@@ -38,12 +38,21 @@ def lint_deck(deck: Deck) -> list[Diagnostic]:
 #  Lint rules
 # --------------------------------------------------------------------------
 def _check_out_of_range_keyframes(deck: Deck) -> list[Diagnostic]:
-    """Warn on keyframe positions outside [0, scroll_range]."""
+    """Warn on keyframe positions outside [0, scroll_range].
+
+    Slides with ``scroll_range="auto"`` (content-driven height) are
+    skipped: the upper bound is not statically known until the slide is
+    rendered, so out-of-range checks against it can't be evaluated at
+    lint time.
+    """
     diagnostics: list[Diagnostic] = []
 
     for slide in deck.slides:
         ir = _parse_slide_ir(slide.source)
         if not isinstance(ir, ScrollimationIR):
+            continue
+
+        if not isinstance(ir.scroll_range, (int, float)):
             continue
 
         scroll_range = ir.scroll_range

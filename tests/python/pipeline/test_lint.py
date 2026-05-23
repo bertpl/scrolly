@@ -298,3 +298,29 @@ class TestDiagnosticDataclass:
         d1 = Diagnostic(level="warning", message="x", location="y")
         d2 = Diagnostic(level="warning", message="x", location="y")
         assert d1 == d2
+
+
+class TestAutoScrollRangeSkipsRangeChecks:
+    """`scroll_range="auto"` slides skip the out-of-range keyframe lint."""
+
+    def test_no_warnings_for_keyframes_on_auto_slide(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
+        # The keyframes below would warn against any numeric scroll_range
+        # they exceed, but auto skips the check entirely.
+        deck = _make_deck(
+            tmp_path,
+            """{
+  title: "T",
+  scroll_range: "auto",
+  elements: [
+    { html: "<p>hi</p>", position: [0, 0], width: 100, height: 100,
+      opacity: { keyframes: [[0, 1], [99999, 0]] } },
+  ],
+}""",
+        )
+
+        # --- act --------------------------
+        diagnostics = lint_deck(deck)
+
+        # --- assert -----------------------
+        assert diagnostics == []

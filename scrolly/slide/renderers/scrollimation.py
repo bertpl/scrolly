@@ -109,13 +109,21 @@ class ScrollimationRenderer(Renderer):
         scoped_css = "\n\n".join(css_rules)
         unique_assets = list(dict.fromkeys(asset_paths))
 
+        if isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0:
+            slide_html_scroll_range: int | None = int(ir.scroll_range)
+        else:
+            # ``"auto"`` (the substrate default) and ``0`` both signal
+            # content-driven height to the canvas runtime.
+            slide_html_scroll_range = None
+
         return SlideHTML(
             title=ir.title,
             html=html,
             scoped_css=scoped_css,
-            scroll_range=int(ir.scroll_range) if ir.scroll_range > 0 else None,
+            scroll_range=slide_html_scroll_range,
             initial_scroll_position=int(ir.initial_scroll_position),
             scroll_speed=ir.scroll_speed,
+            font_scale=ir.font_scale,
             assets=tuple(unique_assets),
             snap_positions=ir.snap_positions,
             reverse=ir.reverse,
