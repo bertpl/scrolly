@@ -9,11 +9,10 @@ import pytest
 
 from scrolly.slide.ir import SlideIR
 
+
 # ---------------------------------------------------------------------------
 # Concrete test helper
 # ---------------------------------------------------------------------------
-
-
 class _DummyIR(SlideIR, frozen=True):
     SUFFIX: ClassVar[str] = ".dummy.md"
     value: str
@@ -26,8 +25,6 @@ class _DummyIR(SlideIR, frozen=True):
 # ---------------------------------------------------------------------------
 # Cannot instantiate base directly
 # ---------------------------------------------------------------------------
-
-
 class TestABCInstantiation:
     def test_slide_ir_not_instantiable(self):
         with pytest.raises(TypeError):
@@ -37,8 +34,6 @@ class TestABCInstantiation:
 # ---------------------------------------------------------------------------
 # Concrete subclass works
 # ---------------------------------------------------------------------------
-
-
 class TestConcreteIR:
     def test_from_file(self):
         ir = _DummyIR.from_file(Path("/foo/test.dummy.md"))
@@ -54,8 +49,6 @@ class TestConcreteIR:
 # ---------------------------------------------------------------------------
 # slide_type property
 # ---------------------------------------------------------------------------
-
-
 class TestSlideTypeProperty:
     def test_single_dot_suffix(self):
         class _SingleDot(SlideIR, frozen=True):

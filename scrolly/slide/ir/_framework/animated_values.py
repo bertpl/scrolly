@@ -12,11 +12,10 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, RootModel, model_validator
 
+
 # ==================================================================================================
 #  Keyframe container models
 # ==================================================================================================
-
-
 class ScalarKeyframes(BaseModel, frozen=True):
     """Piecewise linear animation curve for a scalar property."""
 
@@ -70,8 +69,6 @@ class Vec2Keyframes(BaseModel, frozen=True):
 # ==================================================================================================
 #  RootModel wrappers — the "potentially animated" types
 # ==================================================================================================
-
-
 class AnimatedScalar(RootModel[float | ScalarKeyframes], frozen=True):
     """A scalar property: either a static float or a keyframe animation."""
 

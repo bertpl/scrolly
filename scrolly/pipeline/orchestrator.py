@@ -58,7 +58,8 @@ def build_deck(
         CompressionStats(),
     )
     html = assemble(
-        deck, chunks,
+        deck,
+        chunks,
         inline=inline,
         simplified_zoom_control=simplified_zoom_control,
         compression_stats=renderer_stats + asset_stats,

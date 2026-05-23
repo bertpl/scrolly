@@ -1,12 +1,12 @@
-.PHONY: help dev-setup build test format lint update-deps install release
+.PHONY: help dev-setup build test lint lint-check update-deps install release
 
 help:
 	@echo 'Commands:'
 	@echo '  dev-setup   One-time: sync dev deps, install npm packages, install pre-commit hooks'
 	@echo '  build       Build package'
 	@echo '  test        Run pytest + vitest'
-	@echo '  format      Format and fix with ruff'
-	@echo '  lint        Ruff check'
+	@echo '  lint        Format + lint, with auto-fixes'
+	@echo '  lint-check  Format + lint check only, no fixes (gate used by CI)'
 	@echo '  update-deps Re-resolve uv.lock to latest versions'
 	@echo '  install     Re-install scrolly stand-alone tool'
 	@echo '  release     Bump version, validate, tag, push (VERSION=X.Y.Z)'
@@ -23,11 +23,12 @@ test:
 	uv run pytest
 	npx vitest run
 
-format:
+lint:
 	uv run ruff format scrolly tests/python scripts
 	uv run ruff check --fix scrolly tests/python scripts
 
-lint:
+lint-check:
+	uv run ruff format --check scrolly tests/python scripts
 	uv run ruff check scrolly tests/python scripts
 
 update-deps:

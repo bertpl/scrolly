@@ -37,8 +37,6 @@ def _make_deck(tmp_path: Path, slide_content: str, slide_name: str = "s.scrollim
 # --------------------------------------------------------------------------
 #  Tests
 # --------------------------------------------------------------------------
-
-
 class TestOutOfRangeKeyframes:
     """Tests for the out-of-range keyframe lint rule."""
 

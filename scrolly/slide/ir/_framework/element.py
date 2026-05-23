@@ -22,11 +22,10 @@ from scrolly.slide.ir._framework.animated_values import (
     AnimatedVec2,
 )
 
+
 # ==================================================================================================
 #  SlideElement base
 # ==================================================================================================
-
-
 class SlideElement(BaseModel, frozen=True):
     """Base for all positioned visual units within a slide."""
 
@@ -93,8 +92,6 @@ class SlideElement(BaseModel, frozen=True):
 # ==================================================================================================
 #  Concrete element types
 # ==================================================================================================
-
-
 class ImageElement(SlideElement, frozen=True):
     """An element backed by an external image file (PNG, JPEG, SVG, etc.)."""
 
@@ -139,7 +136,7 @@ class ImageSequenceElement(SlideElement, frozen=True):
     image_sequence: list[Path | None] = Field(
         description=(
             "Ordered image paths, relative to the slide source file. Min 2 entries. "
-            "An empty string (\"\") reserves a blank slot in the timeline — neighbouring frames "
+            'An empty string ("") reserves a blank slot in the timeline — neighbouring frames '
             "crossfade out before and in after it. "
             "Repeating the same path consecutively extends its visible duration by one slot per repeat."
         ),
@@ -152,6 +149,7 @@ class ImageSequenceElement(SlideElement, frozen=True):
         if isinstance(value, list):
             return [None if item == "" else item for item in value]
         return value
+
     frame_distance: float = Field(
         description=(
             "Scroll distance between the start of consecutive frames' hold periods. "

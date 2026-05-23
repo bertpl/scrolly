@@ -12,11 +12,10 @@ from scrolly.slide.ir import SlideIR
 from scrolly.slide.ir.static import StaticIR
 from scrolly.slide.renderers.static import StaticRenderer
 
+
 # ---------------------------------------------------------------------------
 # StaticIR model
 # ---------------------------------------------------------------------------
-
-
 class TestStaticIR:
     def test_is_slide_ir(self):
         assert issubclass(StaticIR, SlideIR)
@@ -60,8 +59,6 @@ class TestStaticIR:
 # ---------------------------------------------------------------------------
 # parse() independently
 # ---------------------------------------------------------------------------
-
-
 def _write(tmp_path: Path, name: str, content: str) -> Path:
     p = tmp_path / name
     p.write_text(content)
@@ -102,8 +99,6 @@ class TestFromFile:
 # ---------------------------------------------------------------------------
 # render() independently
 # ---------------------------------------------------------------------------
-
-
 class TestRender:
     def test_produces_chunk_from_ir(self):
         ir = StaticIR(title="Hello", body="Paragraph.", initial_scroll_position=0, font_scale=1.0)

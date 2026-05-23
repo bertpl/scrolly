@@ -44,8 +44,6 @@ _STEP_RAMP_WIDTH = 1.0
 # ==================================================================================================
 #  CSS ramp expression generation
 # ==================================================================================================
-
-
 def ramp_expr(kfs: list[tuple[float, float]]) -> str | None:
     """Generate a CSS calc()-compatible sum-of-ramps expression.
 
@@ -91,8 +89,6 @@ def _num(v: float) -> str:
 # ==================================================================================================
 #  ScrollimationRenderer
 # ==================================================================================================
-
-
 class ScrollimationRenderer(Renderer):
     """Renderer for the `scrollimation` slide type."""
 
@@ -151,10 +147,10 @@ class ScrollimationRenderer(Renderer):
 # ==================================================================================================
 #  Content rendering
 # ==================================================================================================
-
-
 def _render_element_content(
-    el: AnyElement, *, compress: bool = True,
+    el: AnyElement,
+    *,
+    compress: bool = True,
 ) -> tuple[str, CompressionStats]:
     """Render an element's content to HTML.
 
@@ -179,8 +175,6 @@ def _render_element_content(
 # --------------------------------------------------------------------------
 #  Iframe helpers
 # --------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class _IframeSrc:
     """Resolved source-attribute fragment for an iframe element.
@@ -222,7 +216,9 @@ def _resolve_iframe_src(srcdoc: str, *, compress: bool) -> _IframeSrc:
 
 
 def _render_iframe(
-    el: IframeElement, *, compress: bool,
+    el: IframeElement,
+    *,
+    compress: bool,
 ) -> tuple[str, CompressionStats]:
     """Render an iframe element to its ``<iframe …>`` HTML.
 
@@ -245,8 +241,6 @@ def _render_iframe(
 # --------------------------------------------------------------------------
 #  Image sequence helpers
 # --------------------------------------------------------------------------
-
-
 def _render_image_sequence_imgs(el: ImageSequenceElement) -> str:
     """Render image-sequence content: one <img> per non-empty consecutive-run, each with its own opacity ramp.
 
@@ -373,8 +367,6 @@ def _image_sequence_run_keyframes(
 # ==================================================================================================
 #  CSS generation
 # ==================================================================================================
-
-
 def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> str:
     """Build all scoped CSS rules for a scrollimation slide."""
     ns = f".slide-type-{slide_type}"
@@ -438,12 +430,7 @@ def _image_sequence_css(ns: str, el: ImageSequenceElement, eid: str) -> list[str
     obj_fit_line = f"  object-fit: {el.object_fit};\n" if el.object_fit else ""
 
     rules = [
-        f"{sel} img {{\n"
-        f"  width: 100%;\n"
-        f"  height: 100%;\n"
-        f"{obj_fit_line}"
-        f"  display: block;\n"
-        f"}}",
+        f"{sel} img {{\n  width: 100%;\n  height: 100%;\n{obj_fit_line}  display: block;\n}}",
         f"{sel} img:not(:first-of-type) {{\n  position: absolute;\n  top: 0;\n  left: 0;\n}}",
     ]
 
@@ -511,8 +498,6 @@ def _element_css(ns: str, el: AnyElement, eid: str, index: int) -> str:
 # --------------------------------------------------------------------------
 #  Expression helpers
 # --------------------------------------------------------------------------
-
-
 def _scalar_expr(field: AnimatedScalar, unit: str = "") -> str:
     """Generate CSS value for a scalar animated field."""
     if not field.is_animated:

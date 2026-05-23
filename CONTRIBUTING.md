@@ -16,9 +16,9 @@ pre-commit hooks.
 ## Common commands
 
 ```bash
-make test       # Run the test suite (pytest + vitest)
-make format     # Format and auto-fix with ruff
-make lint       # Lint with ruff
+make test        # Run the test suite (pytest + vitest)
+make lint        # Format + lint with ruff (applies auto-fixes)
+make lint-check  # Format + lint check only, no fixes (gate used by CI)
 ```
 
 ## Branching

@@ -11,11 +11,10 @@ from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
 from scrolly.slide.processor import Compiler, IRProcessor, Renderer
 
+
 # ---------------------------------------------------------------------------
 # Concrete test helpers
 # ---------------------------------------------------------------------------
-
-
 class _FakeIR(SlideIR, frozen=True):
     SUFFIX: ClassVar[str] = ".fake.md"
     value: str = "fake"
@@ -57,8 +56,6 @@ class _FakeCompiler(Compiler):
 # ---------------------------------------------------------------------------
 # Cannot instantiate ABCs directly
 # ---------------------------------------------------------------------------
-
-
 class TestABCInstantiation:
     def test_ir_processor_not_instantiable(self):
         with pytest.raises(TypeError):
@@ -76,8 +73,6 @@ class TestABCInstantiation:
 # ---------------------------------------------------------------------------
 # Partial implementations are rejected
 # ---------------------------------------------------------------------------
-
-
 class TestPartialImplementation:
     def test_renderer_missing_can_process(self):
         with pytest.raises(TypeError):
@@ -121,8 +116,6 @@ class TestPartialImplementation:
 # ---------------------------------------------------------------------------
 # can_process is a classmethod
 # ---------------------------------------------------------------------------
-
-
 class TestCanProcess:
     def test_renderer_can_process_is_classmethod(self):
         assert _FakeRenderer.can_process(_FakeIR()) is True
@@ -136,8 +129,6 @@ class TestCanProcess:
 # ---------------------------------------------------------------------------
 # Concrete implementations work end-to-end
 # ---------------------------------------------------------------------------
-
-
 class TestConcreteRenderer:
     def test_render(self):
         renderer = _FakeRenderer()
@@ -157,8 +148,6 @@ class TestConcreteCompiler:
 # ---------------------------------------------------------------------------
 # Inheritance hierarchy
 # ---------------------------------------------------------------------------
-
-
 class TestInheritance:
     def test_renderer_is_ir_processor(self):
         assert issubclass(_FakeRenderer, IRProcessor)
