@@ -5,6 +5,7 @@ Importing this package registers all built-in slide types with the registry.
 
 # ---- Built-in type registration (side effect on import) -------------------
 from scrolly.slide.compilers.storyboard import StoryboardCompiler  # noqa: E402
+from scrolly.slide.element_ir import renderers as _element_renderers  # noqa: E402, F401 — register element renderers
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
 from scrolly.slide.ir.scrollimation import ScrollimationIR  # noqa: E402

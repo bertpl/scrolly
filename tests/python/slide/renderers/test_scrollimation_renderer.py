@@ -846,11 +846,11 @@ class TestImageSequenceTimeline:
     def test_run_keyframes_basic(self) -> None:
         from pathlib import Path
 
-        from scrolly.slide.ir import ImageSequenceElement
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
+        from scrolly.slide.ir import ImageSequenceElement
 
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg"), Path("c.svg"), Path("d.svg")],
@@ -875,7 +875,7 @@ class TestImageSequenceTimeline:
     def test_runs_group_consecutive_empty_slots(self) -> None:
         from pathlib import Path
 
-        from scrolly.slide.renderers.scrollimation import _image_sequence_runs
+        from scrolly.slide.element_ir.renderers.image_sequence import _image_sequence_runs
 
         runs = _image_sequence_runs([Path("a.svg"), None, None, Path("b.svg")])
         # Two consecutive Nones collapse to a single run, just like two identical paths would.
@@ -884,11 +884,11 @@ class TestImageSequenceTimeline:
     def test_real_frame_keyframes_unchanged_by_empty_slot(self) -> None:
         from pathlib import Path
 
-        from scrolly.slide.ir import ImageSequenceElement
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
+        from scrolly.slide.ir import ImageSequenceElement
 
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), None, Path("b.svg")],
@@ -909,11 +909,11 @@ class TestImageSequenceTimeline:
     def test_run_keyframes_with_repeats(self) -> None:
         from pathlib import Path
 
-        from scrolly.slide.ir import ImageSequenceElement
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
+        from scrolly.slide.ir import ImageSequenceElement
 
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg"), Path("b.svg"), Path("c.svg")],
@@ -933,11 +933,11 @@ class TestImageSequenceTimeline:
     def test_run_keyframes_with_fade_in_out(self) -> None:
         from pathlib import Path
 
-        from scrolly.slide.ir import ImageSequenceElement
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
+        from scrolly.slide.ir import ImageSequenceElement
 
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg")],
@@ -1006,7 +1006,7 @@ class TestImageSequenceCompositingModes:
 
     def test_blend_mode_matches_legacy_shape(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
@@ -1025,7 +1025,7 @@ class TestImageSequenceCompositingModes:
 
     def test_overlay_extends_hold_and_drops_to_zero(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _STEP_RAMP_WIDTH,
             _image_sequence_run_keyframes,
             _image_sequence_runs,
@@ -1052,7 +1052,7 @@ class TestImageSequenceCompositingModes:
 
     def test_overlay_last_run_behaves_like_blend(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
@@ -1071,7 +1071,7 @@ class TestImageSequenceCompositingModes:
 
     def test_incremental_holds_until_sequence_end(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
@@ -1102,7 +1102,7 @@ class TestImageSequenceCompositingModes:
 
     def test_incremental_fade_out_applies_to_every_run(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )
@@ -1119,7 +1119,7 @@ class TestImageSequenceCompositingModes:
 
     def test_overlay_fade_out_only_on_last_run(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _STEP_RAMP_WIDTH,
             _image_sequence_run_keyframes,
             _image_sequence_runs,
@@ -1144,7 +1144,7 @@ class TestImageSequenceCompositingModes:
 
     def test_fade_in_unchanged_across_modes(self) -> None:
         # --- arrange ----------------------
-        from scrolly.slide.renderers.scrollimation import (
+        from scrolly.slide.element_ir.renderers.image_sequence import (
             _image_sequence_run_keyframes,
             _image_sequence_runs,
         )

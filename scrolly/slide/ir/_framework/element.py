@@ -14,8 +14,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
+from scrolly.slide.element_ir import ElementIR, PrimitiveElement
 from scrolly.slide.ir._framework.animated_values import (
     AnimatedScalar,
     AnimatedSizeDim,
@@ -26,10 +27,8 @@ from scrolly.slide.ir._framework.animated_values import (
 # ==================================================================================================
 #  SlideElement base
 # ==================================================================================================
-class SlideElement(BaseModel, frozen=True):
+class SlideElement(ElementIR, frozen=True):
     """Base for all positioned visual units within a slide."""
-
-    model_config = ConfigDict(extra="forbid")
 
     name: str | None = Field(
         default=None,
@@ -92,7 +91,7 @@ class SlideElement(BaseModel, frozen=True):
 # ==================================================================================================
 #  Concrete element types
 # ==================================================================================================
-class ImageElement(SlideElement, frozen=True):
+class ImageElement(SlideElement, PrimitiveElement, frozen=True):
     """An element backed by an external image file (PNG, JPEG, SVG, etc.)."""
 
     image: Path = Field(
@@ -121,7 +120,7 @@ class ImageElement(SlideElement, frozen=True):
         return self
 
 
-class ImageSequenceElement(SlideElement, frozen=True):
+class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     """A scroll-driven filmstrip: an ordered sequence of images that crossfade as the user scrolls.
 
     Each image is shown in turn on an equidistant scroll grid. Repeating the same
@@ -235,13 +234,13 @@ class ImageSequenceElement(SlideElement, frozen=True):
         return self
 
 
-class HtmlElement(SlideElement, frozen=True):
+class HtmlElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with inline HTML content."""
 
     html: str = Field(description="Raw HTML content, inserted verbatim into the slide.")
 
 
-class IframeElement(SlideElement, frozen=True):
+class IframeElement(SlideElement, PrimitiveElement, frozen=True):
     """An element backed by a sandboxed iframe rendering a self-contained HTML document.
 
     The embedded HTML is inlined as the iframe's ``srcdoc`` attribute, giving
@@ -305,7 +304,7 @@ class IframeElement(SlideElement, frozen=True):
         return self
 
 
-class MarkdownElement(SlideElement, frozen=True):
+class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with markdown content, rendered to HTML at build time."""
 
     markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
@@ -319,7 +318,7 @@ class MarkdownElement(SlideElement, frozen=True):
     )
 
 
-class MermaidElement(SlideElement, frozen=True):
+class MermaidElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with mermaid diagram source, rendered client-side."""
 
     mermaid: str = Field(description="Mermaid diagram source code, rendered client-side by mermaid.js.")
