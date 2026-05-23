@@ -1882,28 +1882,26 @@
       if (!metaEl) return;
       const meta = JSON.parse(metaEl.textContent);
       const s = meta.stats;
+      const p = s.payloads || { total: {}, unique: {}, compressed: false, bytes_saved: 0 };
 
       const extLabels = {
         ".svg": "SVG", ".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG",
-        ".gif": "GIF", ".webp": "WebP", ".avif": "AVIF",
+        ".gif": "GIF", ".webp": "WebP", ".avif": "AVIF", ".html": "HTML",
       };
-      const assetParts = [];
-      for (const [ext, count] of Object.entries(s.assets || {})) {
-        assetParts.push(count + " " + (extLabels[ext] || ext));
-      }
-      const assetSummary = assetParts.length > 0 ? assetParts.join(", ") : "none";
 
-      const compParts = [];
-      if (s.compressed > 0) {
-        compParts.push(s.compressed + " asset" + (s.compressed !== 1 ? "s" : "") + " compressed");
-        if (s.bytes_saved > 0) compParts.push("saved " + formatBytes(s.bytes_saved));
+      function formatCounts(counts) {
+        const parts = Object.entries(counts || {})
+          .map(([ext, count]) => ({ label: extLabels[ext] || ext, count }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        return parts.length > 0
+          ? parts.map((part) => part.count + " " + part.label).join(", ")
+          : "none";
       }
-      const compSummary = compParts.length > 0 ? compParts.join(", ") : "none";
 
-      const compressedLine = s.compressed > 0
-        ? s.compressed + " asset" + (s.compressed !== 1 ? "s" : "")
-        : "none";
-      const savedLine = s.bytes_saved > 0 ? formatBytes(s.bytes_saved) : "—";
+      const totalLine = formatCounts(p.total);
+      const uniqueLine = formatCounts(p.unique);
+      const compressedLine = p.compressed ? "yes" : "no";
+      const savedLine = p.bytes_saved > 0 ? formatBytes(p.bytes_saved) : "0 B";
 
       body.innerHTML =
         '<h2>About</h2>' +
@@ -1930,8 +1928,9 @@
         '<table>' +
         '<tr><td>Slides</td><td>' + s.slides + '</td></tr>' +
         '<tr><td>Edges</td><td>' + s.edges + '</td></tr>' +
-        '<tr><td>Inlined</td><td></td></tr>' +
-        '<tr class="help-indent"><td>Assets</td><td>' + assetSummary + '</td></tr>' +
+        '<tr><td>Inlined payloads</td><td></td></tr>' +
+        '<tr class="help-indent"><td>Total</td><td>' + totalLine + '</td></tr>' +
+        '<tr class="help-indent"><td>Unique</td><td>' + uniqueLine + '</td></tr>' +
         '<tr class="help-indent"><td>Compressed</td><td>' + compressedLine + '</td></tr>' +
         '<tr class="help-indent"><td>Space saved</td><td>' + savedLine + '</td></tr>' +
         '<tr><td>File size</td><td>' + formatBytes(s.file_size) + '</td></tr>' +

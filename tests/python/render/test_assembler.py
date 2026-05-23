@@ -367,32 +367,72 @@ def test_meta_stats_file_size_is_integer(inline):
     assert meta["stats"]["file_size"] > 0
 
 
-def test_meta_stats_asset_counts():
+def test_meta_stats_payloads_shape_from_bundle():
     # --- arrange ----------------------------
-    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.static.md"))
-    deck = Deck(title="t", slides=(slide,), edges=())
-    chunks = {
-        "x": SlideHTML(
-            title="X",
-            html="",
-            assets=(Path("/img/a.svg"), Path("/img/b.png"), Path("/img/c.svg")),
-        )
-    }
+    from scrolly.pipeline._bundler import BundleStats
+
+    deck, chunks = _single("x", "")
+    bundle_stats = BundleStats(
+        text_targets=2,
+        text_payloads=1,
+        blob_targets_by_mime={"image/svg+xml": 3, "image/png": 1},
+        blob_payloads_by_mime={"image/svg+xml": 2, "image/png": 1},
+        baseline_bytes=10_000,
+        compressed_bytes=7_500,
+        compressed=True,
+    )
 
     # --- act --------------------------------
-    meta = _extract_meta(assemble(deck, chunks, inline=False))
+    meta = _extract_meta(assemble(deck, chunks, bundle_stats=bundle_stats))
 
     # --- assert ------------------------------
-    assert meta["stats"]["assets"] == {".svg": 2, ".png": 1}
+    payloads = meta["stats"]["payloads"]
+    # Per-extension counts, mime → extension mapping applied.
+    assert payloads["total"] == {".html": 2, ".svg": 3, ".png": 1}
+    assert payloads["unique"] == {".html": 1, ".svg": 2, ".png": 1}
+    assert payloads["compressed"] is True
+    assert payloads["bytes_saved"] == 2_500
 
 
-def test_meta_stats_empty_assets(inline):
+def test_meta_stats_payloads_when_compressed_false():
+    # --- arrange ----------------------------
+    from scrolly.pipeline._bundler import BundleStats
+
+    deck, chunks = _single("x", "")
+    bundle_stats = BundleStats(
+        text_targets=1,
+        text_payloads=1,
+        blob_targets_by_mime={},
+        blob_payloads_by_mime={},
+        baseline_bytes=2_000,
+        compressed_bytes=0,
+        compressed=False,
+    )
+
+    # --- act --------------------------------
+    meta = _extract_meta(assemble(deck, chunks, bundle_stats=bundle_stats))
+
+    # --- assert ------------------------------
+    payloads = meta["stats"]["payloads"]
+    # Total + unique still populated (deck has 1 iframe) even though the
+    # bundle wasn't emitted.
+    assert payloads["total"] == {".html": 1}
+    assert payloads["unique"] == {".html": 1}
+    assert payloads["compressed"] is False
+    # Space saved is zero when nothing was compressed.
+    assert payloads["bytes_saved"] == 0
+
+
+def test_meta_stats_payloads_empty_when_no_bundler(inline):
     # --- arrange / act ----------------------
+    # `bundle_stats=None` is the inline=False case (orchestrator skips the
+    # bundler entirely) — meta payloads must still be present and well-formed.
     deck, chunks = _single("x", "")
     meta = _extract_meta(assemble(deck, chunks, inline=inline))
 
     # --- assert ------------------------------
-    assert meta["stats"]["assets"] == {}
+    payloads = meta["stats"]["payloads"]
+    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
 
 
 def test_help_button_in_navigation(inline):

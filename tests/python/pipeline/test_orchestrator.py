@@ -289,3 +289,65 @@ def test_static_only_deck_emits_no_bundle_script(tmp_path):
 
     html = (out / "index.html").read_text()
     assert _BUNDLE_TAG not in html
+
+
+def _extract_meta_payloads(out: Path) -> dict:
+    """Pull stats.payloads from the help-screen meta JSON in the rendered HTML."""
+    import json as _json
+    import re
+
+    html = (out / "index.html").read_text()
+    match = re.search(
+        r'<script type="application/json" id="scrolly-meta">(.*?)</script>',
+        html,
+        flags=re.DOTALL,
+    )
+    assert match is not None
+    return _json.loads(match.group(1))["stats"]["payloads"]
+
+
+def test_meta_payloads_with_compression(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)  # compress=True (default)
+
+    payloads = _extract_meta_payloads(out)
+    assert payloads["total"] == {".html": 1}
+    assert payloads["unique"] == {".html": 1}
+    assert payloads["compressed"] is True
+    assert payloads["bytes_saved"] > 0
+
+
+def test_meta_payloads_no_compress_still_counts_iframes(tmp_path):
+    # Always-on bundler means iframe counts surface in the help screen
+    # even when no compression is emitted.
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, compress=False)
+
+    payloads = _extract_meta_payloads(out)
+    assert payloads["total"] == {".html": 1}
+    assert payloads["unique"] == {".html": 1}
+    assert payloads["compressed"] is False
+    assert payloads["bytes_saved"] == 0
+
+
+def test_meta_payloads_inline_false_has_empty_counts(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, inline=False)
+
+    payloads = _extract_meta_payloads(out)
+    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+
+
+def test_meta_payloads_static_only_deck(tmp_path):
+    slide = tmp_path / "only.static.md"
+    slide.write_text("---\ninitial_scroll_position: 0\n---\n# A\n\nbody")
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    payloads = _extract_meta_payloads(out)
+    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
