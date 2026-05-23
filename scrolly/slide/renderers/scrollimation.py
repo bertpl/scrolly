@@ -154,7 +154,9 @@ class ScrollimationRenderer(Renderer):
 
 
 def _render_element_content(
-    el: AnyElement, *, compress: bool = True,
+    el: AnyElement,
+    *,
+    compress: bool = True,
 ) -> tuple[str, CompressionStats]:
     """Render an element's content to HTML.
 
@@ -179,8 +181,6 @@ def _render_element_content(
 # --------------------------------------------------------------------------
 #  Iframe helpers
 # --------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class _IframeSrc:
     """Resolved source-attribute fragment for an iframe element.
@@ -222,7 +222,9 @@ def _resolve_iframe_src(srcdoc: str, *, compress: bool) -> _IframeSrc:
 
 
 def _render_iframe(
-    el: IframeElement, *, compress: bool,
+    el: IframeElement,
+    *,
+    compress: bool,
 ) -> tuple[str, CompressionStats]:
     """Render an iframe element to its ``<iframe …>`` HTML.
 
@@ -438,12 +440,7 @@ def _image_sequence_css(ns: str, el: ImageSequenceElement, eid: str) -> list[str
     obj_fit_line = f"  object-fit: {el.object_fit};\n" if el.object_fit else ""
 
     rules = [
-        f"{sel} img {{\n"
-        f"  width: 100%;\n"
-        f"  height: 100%;\n"
-        f"{obj_fit_line}"
-        f"  display: block;\n"
-        f"}}",
+        f"{sel} img {{\n  width: 100%;\n  height: 100%;\n{obj_fit_line}  display: block;\n}}",
         f"{sel} img:not(:first-of-type) {{\n  position: absolute;\n  top: 0;\n  left: 0;\n}}",
     ]
 

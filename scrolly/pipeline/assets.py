@@ -109,7 +109,10 @@ def _rewrite_refs(slide_id: str, chunk: SlideHTML) -> SlideHTML:
 
 
 def _inline_refs(
-    slide_id: str, chunk: SlideHTML, *, compress: bool = True,
+    slide_id: str,
+    chunk: SlideHTML,
+    *,
+    compress: bool = True,
 ) -> tuple[SlideHTML, CompressionStats]:
     """Inline asset references, optionally compressing image payloads.
 
@@ -136,7 +139,9 @@ def _inline_refs(
 
 
 def _apply_to_html(
-    html: str, ref: str, info: _AssetInfo,
+    html: str,
+    ref: str,
+    info: _AssetInfo,
 ) -> tuple[str, CompressionStats]:
     """Substitute one asset reference in HTML.
 
@@ -156,9 +161,7 @@ def _apply_to_html(
     if info.packed is None:
         return html.replace(ref, info.data_uri), CompressionStats()
 
-    pat = re.compile(
-        r'(<img\b[^>]*?)\ssrc="' + re.escape(ref) + r'"([^>]*>)'
-    )
+    pat = re.compile(r'(<img\b[^>]*?)\ssrc="' + re.escape(ref) + r'"([^>]*>)')
     repl = (
         r'\1 data-scrolly-gz="' + info.packed + r'" '
         r'data-scrolly-sink="img" data-scrolly-mime="' + info.mime + r'"\2'
@@ -180,7 +183,10 @@ class _AssetInfo:
 
 
 def _build_asset_info(
-    slide_id: str, assets: tuple[Path, ...], *, compress: bool,
+    slide_id: str,
+    assets: tuple[Path, ...],
+    *,
+    compress: bool,
 ) -> dict[str, _AssetInfo]:
     """Build per-asset inlining info including optional compression candidates.
 
@@ -206,7 +212,10 @@ def _build_asset_info(
                 packed = cresult.packed
                 bytes_saved = cresult.bytes_saved
         result[path.name] = _AssetInfo(
-            data_uri=data_uri, mime=mime, packed=packed, bytes_saved=bytes_saved,
+            data_uri=data_uri,
+            mime=mime,
+            packed=packed,
+            bytes_saved=bytes_saved,
         )
     return result
 

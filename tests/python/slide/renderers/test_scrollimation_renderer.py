@@ -1285,7 +1285,7 @@ class TestIframeCompression:
         escaped = json.dumps(html_content)
         return (
             '{\n  title: "T",\n  scroll_range: 100,\n  elements: [\n'
-            f'    {{ iframe_html: {escaped}, position: [10, 10], width: 80, height: 80 }},\n'
+            f"    {{ iframe_html: {escaped}, position: [10, 10], width: 80, height: 80 }},\n"
             "  ],\n}\n"
         )
 
