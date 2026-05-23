@@ -1469,6 +1469,38 @@
     };
   }
 
+  // ---- decompressBundle (pure — no DOM access) -----------------------------
+  //
+  // Parses the embedded compressed-payload JSON, base64-decodes the blob,
+  // runs DecompressionStream("gzip"), walks payloads[]/targets[] and returns
+  // a flat array of Assignment records. Pure; testable under Vitest with
+  // synthetic input. The DOM applicator lives in the DOM section below.
+  async function decompressBundle(scriptText) {
+    const data = JSON.parse(scriptText);
+    const gz = Uint8Array.from(atob(data.blob), c => c.charCodeAt(0));
+    const buf = new Uint8Array(
+      await new Response(
+        new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))
+      ).arrayBuffer()
+    );
+
+    const payloadBytes = [];
+    let off = 0;
+    for (const p of data.payloads) {
+      payloadBytes.push(buf.subarray(off, off + p.length));
+      off += p.length;
+    }
+
+    const td = new TextDecoder();
+    return data.targets.map((t) => {
+      const p = data.payloads[t.payload];
+      const bytes = payloadBytes[t.payload];
+      return p.mode === "text"
+        ? { target_id: t.id, attr: t.attr, mode: "text", text: td.decode(bytes) }
+        : { target_id: t.id, attr: t.attr, mode: "blob", bytes, mime: p.mime };
+    });
+  }
+
   // ---- Exports (for Node.js / Vitest testing) -------------------------------
 
   if (typeof exports !== "undefined") {
@@ -1483,6 +1515,7 @@
     exports.GroupLayout = GroupLayout;
     exports.ViewState = ViewState;
     exports.resolveTarget = resolveTarget;
+    exports.decompressBundle = decompressBundle;
   }
 
   // ---- DOM code (skipped in Node.js) ----------------------------------------
@@ -1940,39 +1973,45 @@
     });
   }
 
-  // ---- Compressed payload hydration -----------------------------------------
+  // ---- Populate DOM targets from compressed bundle -------------------------
+  //
+  // decompressBundle is the pure parse step (defined near other pure helpers,
+  // before the DOM-code guard, so Vitest can import and test it directly).
+  // populateTarget and populateFromBundle live here in the DOM section.
 
-  async function _gunzipB64(b64) {
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    return new Response(
-      new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))
-    );
+  // Thin DOM applicator. Apply one Assignment to its target element.
+  function populateTarget(a) {
+    const el = document.querySelector(`[data-scrolly-target="${a.target_id}"]`);
+    if (!el) return;
+    if (a.mode === "text") {
+      el[a.attr] = a.text;
+    } else {
+      const url = URL.createObjectURL(new Blob([a.bytes], { type: a.mime }));
+      el.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+      el[a.attr] = url;
+    }
+    el.removeAttribute("data-scrolly-target");
   }
 
-  async function hydrateCompressedPayloads() {
+  // Outer: read the embedded bundle, decompress, populate every target.
+  // Fire-and-forget; off-screen slides don't need populated content until
+  // they're scrolled into view.
+  async function populateFromBundle() {
+    const script = document.getElementById("scrolly-compressed-payload");
+    if (!script) return;
     if (!("DecompressionStream" in window)) {
       console.warn("scrolly: DecompressionStream unavailable; compressed payloads will not load.");
       return;
     }
-    const nodes = document.querySelectorAll("[data-scrolly-gz]");
-    await Promise.all([...nodes].map(async (el) => {
-      const b64 = el.getAttribute("data-scrolly-gz");
-      const sink = el.getAttribute("data-scrolly-sink");
-      const resp = await _gunzipB64(b64);
-      el.removeAttribute("data-scrolly-gz");
-      if (sink === "srcdoc") {
-        el.srcdoc = await resp.text();
-      } else {
-        const mime = el.getAttribute("data-scrolly-mime") || "application/octet-stream";
-        const blob = new Blob([await resp.arrayBuffer()], { type: mime });
-        const url = URL.createObjectURL(blob);
-        el.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
-        el.src = url;
-      }
-    }));
+    try {
+      const assignments = await decompressBundle(script.textContent);
+      for (const a of assignments) populateTarget(a);
+    } catch (err) {
+      console.error("scrolly: failed to populate from compressed bundle", err);
+    }
   }
 
-  hydrateCompressedPayloads();
+  populateFromBundle();
 
   // ---- Init ---------------------------------------------------------------
 

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import pytest
 
 from scrolly.errors import SlideSourceError
+from scrolly.pipeline._bundler import PayloadBundler
 from scrolly.pipeline.assets import _MIME_TYPES, copy_assets, rewrite_asset_refs
 from scrolly.slide.html import SlideHTML
 
@@ -28,7 +30,7 @@ def _write_file(path: Path, content: str = "data") -> Path:
 class TestRewriteAssetRefsNoInline:
     def test_no_assets_returns_chunk_unchanged(self) -> None:
         chunk = _chunk()
-        result, _ = rewrite_asset_refs({"s": chunk}, inline=False)
+        result = rewrite_asset_refs({"s": chunk}, inline=False)
         assert result["s"] is chunk
 
     def test_rewrites_html_references(self, tmp_path: Path) -> None:
@@ -37,7 +39,7 @@ class TestRewriteAssetRefsNoInline:
             html='<img src="__asset__/bg.png">',
             assets=(src,),
         )
-        result, _ = rewrite_asset_refs({"s1": chunk}, inline=False)
+        result = rewrite_asset_refs({"s1": chunk}, inline=False)
         assert "__asset__/" not in result["s1"].html
         assert "_assets/s1/bg.png" in result["s1"].html
 
@@ -47,7 +49,7 @@ class TestRewriteAssetRefsNoInline:
             scoped_css="background: url(__asset__/bg.png);",
             assets=(src,),
         )
-        result, _ = rewrite_asset_refs({"s1": chunk}, inline=False)
+        result = rewrite_asset_refs({"s1": chunk}, inline=False)
         assert "__asset__/" not in result["s1"].scoped_css
         assert "_assets/s1/bg.png" in result["s1"].scoped_css
 
@@ -58,7 +60,7 @@ class TestRewriteAssetRefsNoInline:
             "s1": _chunk(html='<img src="__asset__/bg.png">', assets=(f1,)),
             "s2": _chunk(html='<img src="__asset__/bg.png">', assets=(f2,)),
         }
-        result, _ = rewrite_asset_refs(chunks, inline=False)
+        result = rewrite_asset_refs(chunks, inline=False)
         assert "_assets/s1/bg.png" in result["s1"].html
         assert "_assets/s2/bg.png" in result["s2"].html
 
@@ -66,14 +68,14 @@ class TestRewriteAssetRefsNoInline:
 class TestRewriteAssetRefsInline:
     def test_no_assets_returns_chunk_unchanged(self) -> None:
         chunk = _chunk()
-        result, _ = rewrite_asset_refs({"s": chunk})
+        result = rewrite_asset_refs({"s": chunk})
         assert result["s"] is chunk
 
     def test_inlines_html_references_as_data_uri(self, tmp_path: Path) -> None:
         src = tmp_path / "bg.png"
         src.write_bytes(b"\x89PNG fake")
         chunk = _chunk(html='<img src="__asset__/bg.png">', assets=(src,))
-        result, _ = rewrite_asset_refs({"s1": chunk}, compress=False)
+        result = rewrite_asset_refs({"s1": chunk})
         assert "__asset__/" not in result["s1"].html
         assert "data:image/png;base64," in result["s1"].html
 
@@ -81,14 +83,14 @@ class TestRewriteAssetRefsInline:
         src = tmp_path / "bg.jpg"
         src.write_bytes(b"\xff\xd8\xff fake jpeg")
         chunk = _chunk(scoped_css="background: url(__asset__/bg.jpg);", assets=(src,))
-        result, _ = rewrite_asset_refs({"s1": chunk})
+        result = rewrite_asset_refs({"s1": chunk})
         assert "data:image/jpeg;base64," in result["s1"].scoped_css
 
     def test_inlines_svg(self, tmp_path: Path) -> None:
         src = tmp_path / "icon.svg"
         src.write_text("<svg></svg>")
         chunk = _chunk(html='<img src="__asset__/icon.svg">', assets=(src,))
-        result, _ = rewrite_asset_refs({"s1": chunk}, compress=False)
+        result = rewrite_asset_refs({"s1": chunk})
         assert "data:image/svg+xml;base64," in result["s1"].html
 
     def test_data_uri_decodes_to_original_content(self, tmp_path: Path) -> None:
@@ -96,7 +98,7 @@ class TestRewriteAssetRefsInline:
         src = tmp_path / "img.png"
         src.write_bytes(content)
         chunk = _chunk(html='<img src="__asset__/img.png">', assets=(src,))
-        result, _ = rewrite_asset_refs({"s1": chunk}, compress=False)
+        result = rewrite_asset_refs({"s1": chunk})
         import base64
 
         uri = result["s1"].html.split('"')[1]
@@ -191,7 +193,7 @@ class TestMimeTypeCoverage:
         chunk = _chunk(html=f'<img src="__asset__/asset{ext}">', assets=(src,))
 
         # --- act --------------------------
-        result, _ = rewrite_asset_refs({"s1": chunk}, compress=False)
+        result = rewrite_asset_refs({"s1": chunk})
 
         # --- assert -----------------------
         assert f"data:{expected_mime};base64," in result["s1"].html
@@ -203,7 +205,7 @@ class TestMimeTypeCoverage:
         chunk = _chunk(html=f'<img src="__asset__/asset{ext}">', assets=(src,))
 
         # --- act --------------------------
-        result, _ = rewrite_asset_refs({"s1": chunk}, inline=False)
+        result = rewrite_asset_refs({"s1": chunk}, inline=False)
 
         # --- assert -----------------------
         assert "__asset__/" not in result["s1"].html
@@ -227,42 +229,95 @@ class TestMimeTypeCoverage:
         assert (out / "_assets" / "s" / f"asset{ext}").read_bytes() == content
 
 
-class TestCompression:
-    def test_compressible_svg_gets_data_scrolly_gz(self, tmp_path: Path) -> None:
+class TestBundlerWiring:
+    def test_img_ref_with_bundler_emits_data_scrolly_target(self, tmp_path: Path) -> None:
         # --- arrange ----------------------------
-        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg">' + b"<rect/>" * 100 + b"</svg>"
-        src = tmp_path / "big.svg"
+        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'
+        src = tmp_path / "icon.svg"
         src.write_bytes(svg_content)
-        chunk = _chunk(html='<img src="__asset__/big.svg" alt="">', assets=(src,))
+        chunk = _chunk(html='<img src="__asset__/icon.svg" alt="">', assets=(src,))
+        bundler = PayloadBundler()
 
         # --- act --------------------------------
-        result, stats = rewrite_asset_refs({"s1": chunk}, compress=True)
+        result = rewrite_asset_refs({"s1": chunk}, bundler=bundler)
 
         # --- assert ------------------------------
-        assert "data-scrolly-gz=" in result["s1"].html
-        assert 'data-scrolly-sink="img"' in result["s1"].html
-        assert 'data-scrolly-mime="image/svg+xml"' in result["s1"].html
+        assert 'data-scrolly-target="0"' in result["s1"].html
         assert 'src="' not in result["s1"].html
-        assert stats.compressed == 1
-        assert stats.bytes_saved > 0
+        assert "__asset__/" not in result["s1"].html
 
-    def test_incompressible_asset_keeps_data_uri(self, tmp_path: Path) -> None:
+    def test_bundler_registers_blob_payload_with_correct_mime(self, tmp_path: Path) -> None:
         # --- arrange ----------------------------
-        src = tmp_path / "tiny.avif"
-        src.write_bytes(b"\x00\x00\x00\x1c" + b"x" * 10)
-        chunk = _chunk(html='<img src="__asset__/tiny.avif" alt="">', assets=(src,))
+        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'
+        src = tmp_path / "icon.svg"
+        src.write_bytes(svg_content)
+        chunk = _chunk(html='<img src="__asset__/icon.svg" alt="">', assets=(src,))
+        bundler = PayloadBundler()
 
         # --- act --------------------------------
-        result, stats = rewrite_asset_refs({"s1": chunk}, compress=True)
+        rewrite_asset_refs({"s1": chunk}, bundler=bundler)
 
         # --- assert ------------------------------
-        assert "data:image/avif;base64," in result["s1"].html
-        assert "data-scrolly-gz" not in result["s1"].html
-        assert stats.compressed == 0
+        # The payload is stored on the bundler — visible via inline_fallback,
+        # which reproduces the equivalent inline form.
+        fallback = bundler.inline_fallback()
+        assert fallback == {"0": f'src="data:image/svg+xml;base64,{base64.b64encode(svg_content).decode("ascii")}"'}
 
-    def test_css_refs_always_use_data_uri(self, tmp_path: Path) -> None:
+    def test_raster_asset_also_registered_with_bundler(self, tmp_path: Path) -> None:
+        # No mime-based pre-filter: raster goes through the bundler too,
+        # so that duplicate raster assets can dedup.
         # --- arrange ----------------------------
-        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg">' + b"<rect/>" * 100 + b"</svg>"
+        src = tmp_path / "photo.png"
+        src.write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 100)
+        chunk = _chunk(html='<img src="__asset__/photo.png" alt="">', assets=(src,))
+        bundler = PayloadBundler()
+
+        # --- act --------------------------------
+        result = rewrite_asset_refs({"s1": chunk}, bundler=bundler)
+
+        # --- assert ------------------------------
+        assert 'data-scrolly-target="0"' in result["s1"].html
+        assert bundler.inline_fallback()["0"].startswith('src="data:image/png;base64,')
+
+    def test_duplicate_img_dedups_to_one_payload(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        # Payload large enough that a single bundled copy clears the 5% gate.
+        svg_content = (
+            b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+            + b'<rect x="0" y="0" width="100" height="100" fill="red"/>' * 30
+            + b"</svg>"
+        )
+        src1 = tmp_path / "a" / "icon.svg"
+        src2 = tmp_path / "b" / "icon.svg"
+        src1.parent.mkdir(parents=True)
+        src2.parent.mkdir(parents=True)
+        src1.write_bytes(svg_content)
+        src2.write_bytes(svg_content)
+        chunks = {
+            "s1": _chunk(html='<img src="__asset__/icon.svg">', assets=(src1,)),
+            "s2": _chunk(html='<img src="__asset__/icon.svg">', assets=(src2,)),
+        }
+        bundler = PayloadBundler()
+
+        # --- act --------------------------------
+        result = rewrite_asset_refs(chunks, bundler=bundler)
+        built = bundler.build()
+        assert built is not None
+        import json as _json
+
+        manifest = _json.loads(built[0])
+
+        # --- assert ------------------------------
+        # Two distinct targets (one per <img>), but a single payload entry
+        # — the bundler dedups identical bytes.
+        assert len(manifest["targets"]) == 2
+        assert len(manifest["payloads"]) == 1
+        assert 'data-scrolly-target="0"' in result["s1"].html
+        assert 'data-scrolly-target="1"' in result["s2"].html
+
+    def test_css_refs_always_use_data_uri_even_with_bundler(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------------
+        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'
         src = tmp_path / "bg.svg"
         src.write_bytes(svg_content)
         chunk = _chunk(
@@ -270,58 +325,61 @@ class TestCompression:
             scoped_css="background: url(__asset__/bg.svg);",
             assets=(src,),
         )
+        bundler = PayloadBundler()
 
         # --- act --------------------------------
-        result, _ = rewrite_asset_refs({"s1": chunk}, compress=True)
+        result = rewrite_asset_refs({"s1": chunk}, bundler=bundler)
 
         # --- assert ------------------------------
         assert "data:image/svg+xml;base64," in result["s1"].scoped_css
-        assert "data-scrolly-gz" not in result["s1"].scoped_css
+        assert "data-scrolly-target" not in result["s1"].scoped_css
 
-    def test_compress_false_skips_compression(self, tmp_path: Path) -> None:
+    def test_no_bundler_emits_plain_data_uri(self, tmp_path: Path) -> None:
         # --- arrange ----------------------------
-        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg">' + b"<rect/>" * 100 + b"</svg>"
-        src = tmp_path / "big.svg"
-        src.write_bytes(svg_content)
-        chunk = _chunk(html='<img src="__asset__/big.svg" alt="">', assets=(src,))
+        src = tmp_path / "icon.svg"
+        src.write_bytes(b"<svg></svg>")
+        chunk = _chunk(html='<img src="__asset__/icon.svg" alt="">', assets=(src,))
 
         # --- act --------------------------------
-        result, stats = rewrite_asset_refs({"s1": chunk}, compress=False)
+        result = rewrite_asset_refs({"s1": chunk})
 
         # --- assert ------------------------------
         assert "data:image/svg+xml;base64," in result["s1"].html
-        assert "data-scrolly-gz" not in result["s1"].html
-        assert stats.compressed == 0
+        assert "data-scrolly-target" not in result["s1"].html
 
-    def test_compressed_img_preserves_other_attributes(self, tmp_path: Path) -> None:
+    def test_bundled_img_preserves_other_attributes(self, tmp_path: Path) -> None:
         # --- arrange ----------------------------
-        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg">' + b"<rect/>" * 100 + b"</svg>"
-        src = tmp_path / "big.svg"
+        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'
+        src = tmp_path / "frame.svg"
         src.write_bytes(svg_content)
         chunk = _chunk(
-            html='<img data-frame-index="0" src="__asset__/big.svg" alt="">',
+            html='<img data-frame-index="0" src="__asset__/frame.svg" alt="">',
             assets=(src,),
         )
+        bundler = PayloadBundler()
 
         # --- act --------------------------------
-        result, _ = rewrite_asset_refs({"s1": chunk}, compress=True)
+        result = rewrite_asset_refs({"s1": chunk}, bundler=bundler)
 
         # --- assert ------------------------------
         assert 'data-frame-index="0"' in result["s1"].html
         assert 'alt=""' in result["s1"].html
+        assert 'data-scrolly-target="0"' in result["s1"].html
 
-    def test_no_inline_mode_unaffected_by_compress(self, tmp_path: Path) -> None:
+    def test_inline_false_ignores_bundler(self, tmp_path: Path) -> None:
         # --- arrange ----------------------------
         src = _write_file(tmp_path / "src" / "bg.svg")
         chunk = _chunk(html='<img src="__asset__/bg.svg">', assets=(src,))
+        bundler = PayloadBundler()
 
         # --- act --------------------------------
-        result, stats = rewrite_asset_refs({"s1": chunk}, inline=False, compress=True)
+        result = rewrite_asset_refs({"s1": chunk}, inline=False, bundler=bundler)
 
         # --- assert ------------------------------
-        assert "data-scrolly-gz" not in result["s1"].html
+        assert "data-scrolly-target" not in result["s1"].html
         assert "_assets/s1/bg.svg" in result["s1"].html
-        assert stats.compressed == 0
+        # Bundler is unused when inline=False.
+        assert bundler.inline_fallback() == {}
 
 
 class TestValidation:

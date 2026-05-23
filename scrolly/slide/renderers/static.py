@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import markdown
 
@@ -12,6 +12,9 @@ from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
 from scrolly.slide.ir.static import StaticIR
 from scrolly.slide.processor import Renderer
+
+if TYPE_CHECKING:
+    from scrolly.pipeline._bundler import PayloadBundler
 
 
 class StaticRenderer(Renderer):
@@ -53,8 +56,15 @@ class StaticRenderer(Renderer):
     def can_process(cls, ir: SlideIR) -> bool:
         return isinstance(ir, StaticIR)
 
-    def render(self, ir: SlideIR, css_namespace: str = "", *, compress: bool = True) -> SlideHTML:
+    def render(
+        self,
+        ir: SlideIR,
+        css_namespace: str = "",
+        *,
+        bundler: PayloadBundler | None = None,
+    ) -> SlideHTML:
         assert isinstance(ir, StaticIR)
+        del bundler  # static slides have no compressible payloads
         title = ir.title or self._extract_first_h1(ir.body)
         if title is None:
             raise SlideSourceError("could not determine title — provide a frontmatter 'title' field or a top-level H1")

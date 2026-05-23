@@ -7,13 +7,12 @@ properties.  Static properties emit plain CSS values.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from html import escape as html_escape
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import markdown
 
-from scrolly.pipeline._compress import CompressionStats, try_compress
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import (
     HtmlElement,
@@ -27,6 +26,9 @@ from scrolly.slide.ir import (
 from scrolly.slide.ir._framework.animated_values import AnimatedScalar, AnimatedVec2
 from scrolly.slide.ir.scrollimation import AnyElement, ScrollimationIR
 from scrolly.slide.processor import Renderer
+
+if TYPE_CHECKING:
+    from scrolly.pipeline._bundler import PayloadBundler
 
 _MD_EXTENSIONS: tuple[str, ...] = ("fenced_code", "tables", "sane_lists")
 _SCROLL_VAR = "var(--scroll-position, 0)"
@@ -97,18 +99,35 @@ class ScrollimationRenderer(Renderer):
         """Return True if this renderer handles the given IR type."""
         return isinstance(ir, ScrollimationIR)
 
-    def render(self, ir: SlideIR, css_namespace: str = "", *, compress: bool = True) -> SlideHTML:
-        """Render a ScrollimationIR to SlideHTML."""
+    def render(
+        self,
+        ir: SlideIR,
+        css_namespace: str = "",
+        *,
+        bundler: PayloadBundler | None = None,
+    ) -> SlideHTML:
+        """Render a ScrollimationIR to SlideHTML.
+
+        Args:
+            ir: The IR to render. Must be a ``ScrollimationIR``.
+            css_namespace: Slide id used to scope element CSS rules.
+            bundler: Optional payload bundler. When provided, iframe
+                ``srcdoc`` payloads are registered with the bundler and
+                emitted as slotted ``data-scrolly-target`` markers
+                instead of inline ``srcdoc="…"``. When ``None``, the
+                renderer emits the uncompressed inline form.
+
+        Returns:
+            The rendered ``SlideHTML``.
+        """
         assert isinstance(ir, ScrollimationIR)
         element_htmls = []
         asset_paths: list[Path] = []
         prefix = f"{css_namespace}-" if css_namespace else ""
 
         has_mermaid = False
-        compression_stats = CompressionStats()
         for i, el in enumerate(ir.elements):
-            content_html, el_stats = _render_element_content(el, compress=compress)
-            compression_stats = compression_stats + el_stats
+            content_html = _render_element_content(el, bundler=bundler)
             attrs = f'class="scrollimation-element" data-element-id="{prefix}{i}"'
             if el.opacity.is_animated:
                 kf_json = json.dumps(el.opacity.keyframes, separators=(",", ":"))
@@ -140,7 +159,6 @@ class ScrollimationRenderer(Renderer):
             snap_positions=ir.snap_positions,
             reverse=ir.reverse,
             has_mermaid=has_mermaid,
-            compression_stats=compression_stats,
         )
 
 
@@ -150,92 +168,67 @@ class ScrollimationRenderer(Renderer):
 def _render_element_content(
     el: AnyElement,
     *,
-    compress: bool = True,
-) -> tuple[str, CompressionStats]:
+    bundler: PayloadBundler | None = None,
+) -> str:
     """Render an element's content to HTML.
 
+    Args:
+        el: The element to render.
+        bundler: Optional payload bundler; only consulted for
+            ``IframeElement`` to register the ``srcdoc`` payload.
+
     Returns:
-        Tuple of (html, compression stats). Only iframes contribute non-empty
-        stats today; all other element types return ``CompressionStats()``.
+        The element's inner HTML fragment.
     """
-    no_stats = CompressionStats()
     if isinstance(el, ImageElement):
-        return f'<img src="__asset__/{el.image.name}" alt="">', no_stats
+        return f'<img src="__asset__/{el.image.name}" alt="">'
     if isinstance(el, ImageSequenceElement):
-        return _render_image_sequence_imgs(el), no_stats
+        return _render_image_sequence_imgs(el)
     if isinstance(el, HtmlElement):
-        return el.html, no_stats
+        return el.html
     if isinstance(el, IframeElement):
-        return _render_iframe(el, compress=compress)
+        return _render_iframe(el, bundler=bundler)
     if isinstance(el, MermaidElement):
-        return f'<pre class="mermaid">{html_escape(el.mermaid)}</pre>', no_stats
-    return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS)), no_stats
+        return f'<pre class="mermaid">{html_escape(el.mermaid)}</pre>'
+    return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS))
 
 
 # --------------------------------------------------------------------------
 #  Iframe helpers
 # --------------------------------------------------------------------------
-@dataclass(frozen=True)
-class _IframeSrc:
-    """Resolved source-attribute fragment for an iframe element.
-
-    Encapsulates the choice between plain ``srcdoc="…"`` and the
-    compressed ``data-scrolly-gz="…" data-scrolly-sink="srcdoc"`` form
-    so the renderer doesn't carry the compression branch itself.
-    """
-
-    attrs: str
-    stats: CompressionStats
-
-
-def _resolve_iframe_src(srcdoc: str, *, compress: bool) -> _IframeSrc:
-    """Resolve the source-attribute fragment for an iframe element.
-
-    Args:
-        srcdoc: The raw iframe HTML payload (un-escaped).
-        compress: Whether to attempt gzip+base64 compression and prefer
-            the compressed form when it clears the 5% gate.
-
-    Returns:
-        An ``_IframeSrc`` with the attribute fragment to embed in the
-        ``<iframe>`` tag and the compression stats for the payload
-        (zero when the payload was emitted uncompressed).
-    """
-    escaped = html_escape(srcdoc)
-    if compress:
-        result = try_compress(srcdoc.encode("utf-8"), len(escaped))
-        if result.packed is not None:
-            return _IframeSrc(
-                attrs=f'data-scrolly-gz="{result.packed}" data-scrolly-sink="srcdoc"',
-                stats=CompressionStats(compressed=1, bytes_saved=result.bytes_saved),
-            )
-    return _IframeSrc(
-        attrs=f'srcdoc="{escaped}"',
-        stats=CompressionStats(),
-    )
-
-
-def _render_iframe(
-    el: IframeElement,
-    *,
-    compress: bool,
-) -> tuple[str, CompressionStats]:
+def _render_iframe(el: IframeElement, *, bundler: PayloadBundler | None) -> str:
     """Render an iframe element to its ``<iframe …>`` HTML.
 
+    When a bundler is provided, the iframe ``srcdoc`` payload is
+    registered with it and the iframe emits a slotted
+    ``data-scrolly-target`` marker (the JS populates the ``srcdoc``
+    after decompressing the bundle). Otherwise, the uncompressed
+    ``srcdoc="…"`` form is emitted directly.
+
     Args:
-        el: The iframe element to render.
-        compress: Whether to attempt gzip+base64 compression of the
-            ``srcdoc`` payload.
+        el: The iframe element.
+        bundler: Optional payload bundler. When ``None``, no compression
+            is attempted; when provided, the payload is bundled and the
+            iframe carries a ``data-scrolly-target`` marker instead of
+            ``srcdoc``.
 
     Returns:
-        Tuple of (rendered HTML, compression stats). Stats are non-empty
-        only when the srcdoc cleared the 5% gate and was emitted in
-        compressed form.
+        The rendered ``<iframe …>`` HTML fragment. ``sandbox="allow-scripts"``
+        is preserved verbatim in both branches.
     """
-    src = _resolve_iframe_src(el.iframe_html, compress=compress)
     title_attr = f' title="{html_escape(el.name)}"' if el.name else ""
-    html = f'<iframe {src.attrs} sandbox="allow-scripts"{title_attr}></iframe>'
-    return html, src.stats
+    if bundler is not None:
+        srcdoc_bytes = el.iframe_html.encode("utf-8")
+        target_id = bundler.add(
+            payload=srcdoc_bytes,
+            mode="text",
+            attr="srcdoc",
+            baseline_len=len(html_escape(el.iframe_html)),
+        )
+        src_attrs = f'data-scrolly-target="{target_id}"'
+    else:
+        src_attrs = f'srcdoc="{html_escape(el.iframe_html)}"'
+    return f'<iframe {src_attrs} sandbox="allow-scripts"{title_attr}></iframe>'
 
 
 # --------------------------------------------------------------------------

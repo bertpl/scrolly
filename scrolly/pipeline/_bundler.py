@@ -136,9 +136,10 @@ class PayloadBundler:
             payload: Raw bytes to bundle. For ``mode="text"`` payloads,
                 UTF-8 encoded source text; for ``mode="blob"`` payloads,
                 the raw asset bytes.
-            mode: How the JS will hydrate the payload — ``"text"``
-                (decoded UTF-8 string assigned to ``el[attr]``) or
-                ``"blob"`` (Blob URL assigned to ``el[attr]``).
+            mode: How the JS will populate the DOM target from this
+                payload — ``"text"`` (decoded UTF-8 string assigned to
+                ``el[attr]``) or ``"blob"`` (Blob URL assigned to
+                ``el[attr]``).
             attr: DOM attribute the JS will assign the decoded value to
                 (e.g. ``"srcdoc"`` for iframes, ``"src"`` for images).
             baseline_len: Length of the inline form this binding would

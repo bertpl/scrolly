@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from scrolly.deck import (
@@ -13,7 +14,7 @@ from scrolly.deck import (
     validate_raw_deck,
 )
 from scrolly.errors import SlideSourceError
-from scrolly.pipeline._compress import CompressionStats
+from scrolly.pipeline._bundler import BundleStats, PayloadBundler
 from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
@@ -51,18 +52,35 @@ def build_deck(
     deck = infer_edges(raw_deck)
     validate_deck(deck)
 
-    chunks = _render_slides(deck.slides, compress=compress)
-    chunks, asset_stats = rewrite_asset_refs(chunks, inline=inline, compress=compress)
-    renderer_stats = sum(
-        (chunk.compression_stats for chunk in chunks.values()),
-        CompressionStats(),
-    )
+    # Bundler is used only when both compression and inlining are requested.
+    # In every other case (`--no-compress`, separate-files build), payloads
+    # flow through their original inline / asset-file paths unchanged.
+    bundler: PayloadBundler | None = PayloadBundler() if (compress and inline) else None
+
+    chunks = _render_slides(deck.slides, bundler=bundler)
+    chunks = rewrite_asset_refs(chunks, inline=inline, bundler=bundler)
+
+    compressed_payload_json: str | None = None
+    bundle_stats: BundleStats | None = None
+    if bundler is not None:
+        result = bundler.build()
+        if result is not None:
+            compressed_payload_json, bundle_stats = result
+        else:
+            # Gate failed (or no payloads registered). Substitute the inline
+            # fallback back into each chunk so the output is byte-equivalent
+            # to a `--no-compress` build for the same deck.
+            fallback = bundler.inline_fallback()
+            if fallback:
+                chunks = _substitute_fallback(chunks, fallback)
+
     html = assemble(
         deck,
         chunks,
         inline=inline,
         simplified_zoom_control=simplified_zoom_control,
-        compression_stats=renderer_stats + asset_stats,
+        compressed_payload_json=compressed_payload_json,
+        bundle_stats=bundle_stats,
     )
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
 
@@ -73,7 +91,11 @@ def build_deck(
     return deck
 
 
-def _render_slides(slides: tuple[Slide, ...], *, compress: bool = True) -> dict[str, SlideHTML]:
+def _render_slides(
+    slides: tuple[Slide, ...],
+    *,
+    bundler: PayloadBundler | None = None,
+) -> dict[str, SlideHTML]:
     """Render every slide's source into a ``SlideHTML``, keyed by slide id.
 
     Dispatches via ``can_process``: parse the source into an IR, then
@@ -90,7 +112,7 @@ def _render_slides(slides: tuple[Slide, ...], *, compress: bool = True) -> dict[
         while True:
             renderer = find_renderer(ir)
             if renderer is not None:
-                chunks[slide.id] = renderer.render(ir, css_namespace=slide.id, compress=compress)
+                chunks[slide.id] = renderer.render(ir, css_namespace=slide.id, bundler=bundler)
                 break
 
             compiler = find_compiler(ir)
@@ -107,3 +129,32 @@ def _render_slides(slides: tuple[Slide, ...], *, compress: bool = True) -> dict[
             visited.add(ir_cls)
 
     return chunks
+
+
+def _substitute_fallback(
+    chunks: dict[str, SlideHTML],
+    fallback: dict[str, str],
+) -> dict[str, SlideHTML]:
+    """Replace every ``data-scrolly-target="<id>"`` marker with its inline form.
+
+    Used when the bundler's gate fails: each registered target is rewritten
+    back to the equivalent inline attribute fragment (``srcdoc="…"`` for
+    text payloads, ``src="data:…"`` for blob payloads), so the rendered
+    HTML is byte-equivalent to a ``--no-compress`` build.
+
+    Args:
+        chunks: Per-slide rendered chunks containing ``data-scrolly-target``
+            markers.
+        fallback: Map from target id to its inline attribute fragment
+            (as returned by :meth:`PayloadBundler.inline_fallback`).
+
+    Returns:
+        Rewritten chunks dict.
+    """
+    result: dict[str, SlideHTML] = {}
+    for slide_id, chunk in chunks.items():
+        html = chunk.html
+        for target_id, attr_fragment in fallback.items():
+            html = html.replace(f'data-scrolly-target="{target_id}"', attr_fragment)
+        result[slide_id] = replace(chunk, html=html)
+    return result
