@@ -15,11 +15,10 @@ from scrolly.pipeline._bundler import (
     _gate_passes,
 )
 
+
 # ==================================================================================================
 #  Gate
 # ==================================================================================================
-
-
 def test_min_saving_is_five_percent() -> None:
     assert MIN_SAVING == 0.05
 
@@ -58,8 +57,6 @@ def test_gate_passes_boundary(
 # ==================================================================================================
 #  add() — slot ids and dedup
 # ==================================================================================================
-
-
 def test_add_returns_sequential_string_ids() -> None:
     # --- arrange ----------------------------
     b = PayloadBundler()
@@ -145,8 +142,6 @@ def test_add_text_rejects_mime() -> None:
 # ==================================================================================================
 #  build() — output shape and round-trip
 # ==================================================================================================
-
-
 def test_build_returns_none_when_empty() -> None:
     # --- arrange / act ----------------------
     result = PayloadBundler().build()
@@ -259,8 +254,6 @@ def test_build_roundtrips_payloads() -> None:
 # ==================================================================================================
 #  inline_fallback()
 # ==================================================================================================
-
-
 def test_inline_fallback_text_payload_html_escapes() -> None:
     # --- arrange ----------------------------
     b = PayloadBundler()
@@ -306,8 +299,6 @@ def test_inline_fallback_dedup_produces_one_entry_per_target() -> None:
 # ==================================================================================================
 #  BundleStats
 # ==================================================================================================
-
-
 def test_bundle_stats_counts_and_partition() -> None:
     # --- arrange ----------------------------
     b = PayloadBundler()

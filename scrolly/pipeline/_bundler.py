@@ -27,8 +27,6 @@ MIN_SAVING = 0.05
 # ==================================================================================================
 #  Value types
 # ==================================================================================================
-
-
 @dataclass(frozen=True)
 class BundleStats:
     """Summary stats for a single ``PayloadBundler.build()`` result.
@@ -73,8 +71,6 @@ class _Target:
 # ==================================================================================================
 #  Gate
 # ==================================================================================================
-
-
 def _gate_passes(compressed_len: int, baseline_len: int) -> bool:
     """Check whether the bundle clears the 5% holistic savings gate.
 
@@ -98,8 +94,6 @@ def _gate_passes(compressed_len: int, baseline_len: int) -> bool:
 # ==================================================================================================
 #  PayloadBundler
 # ==================================================================================================
-
-
 class PayloadBundler:
     """Collects compressible inline payloads into a single gzipped bundle.
 
@@ -116,7 +110,6 @@ class PayloadBundler:
     # --------------------------------------------------------
     #  Constructor
     # --------------------------------------------------------
-
     def __init__(self) -> None:
         """Initialise an empty bundler."""
         self._payloads: list[_Payload] = []
@@ -128,7 +121,6 @@ class PayloadBundler:
     # --------------------------------------------------------
     #  Public API — sink
     # --------------------------------------------------------
-
     def add(
         self,
         *,
@@ -191,7 +183,6 @@ class PayloadBundler:
     # --------------------------------------------------------
     #  Public API — source
     # --------------------------------------------------------
-
     def build(self) -> tuple[str, BundleStats] | None:
         """Build the combined JSON payload and evaluate the gate.
 
@@ -268,8 +259,6 @@ class PayloadBundler:
 # ==================================================================================================
 #  Helpers
 # ==================================================================================================
-
-
 def _payload_entry(p: _Payload) -> dict:
     """Build the manifest entry for a payload with stable field order."""
     if p.mime is not None:
