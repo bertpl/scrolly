@@ -7,6 +7,7 @@ properties.  Static properties emit plain CSS values.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from html import escape as html_escape
 from pathlib import Path
 
@@ -175,30 +176,70 @@ def _render_element_content(
     return markdown.markdown(el.markdown, extensions=list(_MD_EXTENSIONS)), no_stats
 
 
+# --------------------------------------------------------------------------
+#  Iframe helpers
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class _IframeSrc:
+    """Resolved source-attribute fragment for an iframe element.
+
+    Encapsulates the choice between plain ``srcdoc="…"`` and the
+    compressed ``data-scrolly-gz="…" data-scrolly-sink="srcdoc"`` form
+    so the renderer doesn't carry the compression branch itself.
+    """
+
+    attrs: str
+    stats: CompressionStats
+
+
+def _resolve_iframe_src(srcdoc: str, *, compress: bool) -> _IframeSrc:
+    """Resolve the source-attribute fragment for an iframe element.
+
+    Args:
+        srcdoc: The raw iframe HTML payload (un-escaped).
+        compress: Whether to attempt gzip+base64 compression and prefer
+            the compressed form when it clears the 5% gate.
+
+    Returns:
+        An ``_IframeSrc`` with the attribute fragment to embed in the
+        ``<iframe>`` tag and the compression stats for the payload
+        (zero when the payload was emitted uncompressed).
+    """
+    escaped = html_escape(srcdoc)
+    if compress:
+        result = try_compress(srcdoc.encode("utf-8"), len(escaped))
+        if result.packed is not None:
+            return _IframeSrc(
+                attrs=f'data-scrolly-gz="{result.packed}" data-scrolly-sink="srcdoc"',
+                stats=CompressionStats(compressed=1, bytes_saved=result.bytes_saved),
+            )
+    return _IframeSrc(
+        attrs=f'srcdoc="{escaped}"',
+        stats=CompressionStats(),
+    )
+
+
 def _render_iframe(
     el: IframeElement, *, compress: bool,
 ) -> tuple[str, CompressionStats]:
-    """Render an iframe element, optionally compressing the srcdoc payload.
+    """Render an iframe element to its ``<iframe …>`` HTML.
+
+    Args:
+        el: The iframe element to render.
+        compress: Whether to attempt gzip+base64 compression of the
+            ``srcdoc`` payload.
 
     Returns:
-        Tuple of (html, compression stats). Stats are non-empty when the
-        srcdoc content passed the 5% gate and was emitted in compressed form.
+        Tuple of (rendered HTML, compression stats). Stats are non-empty
+        only when the srcdoc cleared the 5% gate and was emitted in
+        compressed form.
     """
+    src = _resolve_iframe_src(el.iframe_html, compress=compress)
     title_attr = f' title="{html_escape(el.name)}"' if el.name else ""
-    escaped = html_escape(el.iframe_html)
-    if compress:
-        result = try_compress(el.iframe_html.encode("utf-8"), len(escaped))
-        if result.packed is not None:
-            html = (
-                f'<iframe data-scrolly-gz="{result.packed}" data-scrolly-sink="srcdoc" '
-                f'sandbox="allow-scripts"{title_attr}></iframe>'
-            )
-            return html, CompressionStats(compressed=1, bytes_saved=result.bytes_saved)
-    html = (
-        f'<iframe srcdoc="{escaped}" '
-        f'sandbox="allow-scripts"{title_attr}></iframe>'
-    )
-    return html, CompressionStats()
+    html = f'<iframe {src.attrs} sandbox="allow-scripts"{title_attr}></iframe>'
+    return html, src.stats
 
 
 # --------------------------------------------------------------------------
