@@ -6,9 +6,12 @@ JSON payload combining the manifest and the base64-encoded blob. The
 result is consumed by the orchestrator and injected into the page as a
 single ``<script type="application/json">`` block.
 
-Dormant on first land: nothing imports this module yet. The wiring
-into the orchestrator, the iframe renderer, and the asset pipeline
-happens separately.
+The bundler is instantiated whenever the build is producing an inlined
+output (``inline=True``), regardless of whether compression was
+requested — its :meth:`PayloadBundler.stats` snapshot drives the
+help-screen statistics in every mode. Whether the bundle is actually
+emitted into the page is a separate decision made by the orchestrator
+based on the ``compress`` flag and the holistic 5% gate.
 """
 
 from __future__ import annotations
@@ -29,25 +32,50 @@ MIN_SAVING = 0.05
 # ==================================================================================================
 @dataclass(frozen=True)
 class BundleStats:
-    """Summary stats for a single ``PayloadBundler.build()`` result.
+    """Snapshot of what the bundler holds, with per-mime breakdowns.
 
-    All counts and byte totals reflect the bundle that was actually
-    emitted (after dedup). ``compressed_bytes`` is the length of the
-    final JSON payload that goes into the ``<script>`` block — manifest
-    overhead included.
+    Always available via :meth:`PayloadBundler.stats` (independent of
+    whether the bundle was emitted) and as the second element of
+    :meth:`PayloadBundler.build`'s return tuple (when the gate passes).
+
+    Counts are split into:
+
+    - **target** counts (per ``add()`` call — pre-dedup, equals the number
+      of DOM markers in the chunks);
+    - **payload** counts (unique entries after dedup — what ends up in
+      the bundle stream).
+
+    Text-mode payloads (iframe srcdoc HTML) have no mime; they're
+    counted separately as scalars. Blob-mode payloads are broken down
+    per mime so the help screen can label them as SVG / PNG / etc.
+
+    ``compressed`` is ``True`` only when the bundle was actually emitted
+    (gate passed and the caller opted in to compression). When ``False``,
+    ``compressed_bytes`` is ``0`` and so is ``bytes_saved``.
     """
 
-    payloads_count: int
-    targets_count: int
+    text_targets: int
     text_payloads: int
-    blob_payloads: int
+    blob_targets_by_mime: dict[str, int]
+    blob_payloads_by_mime: dict[str, int]
     baseline_bytes: int
     compressed_bytes: int
+    compressed: bool
+
+    @property
+    def total_targets(self) -> int:
+        """Total target bindings across text and blob modes (pre-dedup)."""
+        return self.text_targets + sum(self.blob_targets_by_mime.values())
+
+    @property
+    def total_payloads(self) -> int:
+        """Total unique payloads across text and blob modes (post-dedup)."""
+        return self.text_payloads + sum(self.blob_payloads_by_mime.values())
 
     @property
     def bytes_saved(self) -> int:
-        """Number of bytes the bundle saves vs. plain inlining."""
-        return self.baseline_bytes - self.compressed_bytes
+        """Bytes saved vs. plain inlining; zero when no bundle was emitted."""
+        return self.baseline_bytes - self.compressed_bytes if self.compressed else 0
 
 
 @dataclass(frozen=True)
@@ -184,6 +212,21 @@ class PayloadBundler:
     # --------------------------------------------------------
     #  Public API — source
     # --------------------------------------------------------
+    def stats(self) -> BundleStats:
+        """Snapshot the bundler's counts without building the bundle.
+
+        Useful when the caller wants to populate stats UI without
+        emitting (e.g. ``--no-compress`` builds, or a build whose gate
+        fails). The returned ``BundleStats`` has ``compressed=False``
+        and ``compressed_bytes=0``.
+
+        Returns:
+            A ``BundleStats`` reflecting the current ``add()``-call
+            history. ``baseline_bytes`` is the running total. Per-mime
+            breakdowns are populated.
+        """
+        return self._make_stats(compressed_bytes=0, compressed=False)
+
     def build(self) -> tuple[str, BundleStats] | None:
         """Build the combined JSON payload and evaluate the gate.
 
@@ -196,10 +239,10 @@ class PayloadBundler:
 
         Returns:
             Tuple of ``(compressed_payload_json, BundleStats)`` when
-            the gate passes, or ``None`` when it doesn't (no payloads
-            registered, or insufficient savings). When ``None``, the
-            caller should fall back to inline forms via
-            :meth:`inline_fallback`.
+            the gate passes (``stats.compressed`` is ``True``), or
+            ``None`` when it doesn't (no payloads registered, or
+            insufficient savings). When ``None``, the caller should
+            fall back to inline forms via :meth:`inline_fallback`.
         """
         if not self._payloads:
             return None
@@ -218,18 +261,43 @@ class PayloadBundler:
         if not _gate_passes(len(compressed_json), self._baseline_total):
             return None
 
-        text_count = sum(1 for p in self._payloads if p.mode == "text")
-        blob_count = sum(1 for p in self._payloads if p.mode == "blob")
-        stats = BundleStats(
-            payloads_count=len(self._payloads),
-            targets_count=len(self._targets),
-            text_payloads=text_count,
-            blob_payloads=blob_count,
-            baseline_bytes=self._baseline_total,
+        return compressed_json, self._make_stats(
             compressed_bytes=len(compressed_json),
+            compressed=True,
         )
 
-        return compressed_json, stats
+    # --------------------------------------------------------
+    #  Internal — stats construction
+    # --------------------------------------------------------
+    def _make_stats(self, *, compressed_bytes: int, compressed: bool) -> BundleStats:
+        """Assemble a ``BundleStats`` from current internal state."""
+        text_targets = 0
+        text_payloads = 0
+        blob_targets_by_mime: dict[str, int] = {}
+        blob_payloads_by_mime: dict[str, int] = {}
+
+        for payload in self._payloads:
+            if payload.mode == "text":
+                text_payloads += 1
+            else:
+                blob_payloads_by_mime[payload.mime] = blob_payloads_by_mime.get(payload.mime, 0) + 1
+
+        for target in self._targets:
+            payload = self._payloads[target.payload_index]
+            if payload.mode == "text":
+                text_targets += 1
+            else:
+                blob_targets_by_mime[payload.mime] = blob_targets_by_mime.get(payload.mime, 0) + 1
+
+        return BundleStats(
+            text_targets=text_targets,
+            text_payloads=text_payloads,
+            blob_targets_by_mime=blob_targets_by_mime,
+            blob_payloads_by_mime=blob_payloads_by_mime,
+            baseline_bytes=self._baseline_total,
+            compressed_bytes=compressed_bytes,
+            compressed=compressed,
+        )
 
     def inline_fallback(self) -> dict[str, str]:
         """Return per-target inline-attribute substitutes.

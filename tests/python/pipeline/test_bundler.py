@@ -299,7 +299,7 @@ def test_inline_fallback_dedup_produces_one_entry_per_target() -> None:
 # ==================================================================================================
 #  BundleStats
 # ==================================================================================================
-def test_bundle_stats_counts_and_partition() -> None:
+def test_bundle_stats_counts_split_by_mode_and_mime() -> None:
     # --- arrange ----------------------------
     b = PayloadBundler()
     text = b"<p>compressible html content</p>" * 30
@@ -314,26 +314,45 @@ def test_bundle_stats_counts_and_partition() -> None:
     _, stats = result
 
     # --- assert ------------------------------
-    assert stats.payloads_count == 2
-    assert stats.targets_count == 3
+    assert stats.compressed is True
     assert stats.text_payloads == 1
-    assert stats.blob_payloads == 1
-    assert stats.text_payloads + stats.blob_payloads == stats.payloads_count
+    assert stats.text_targets == 2  # two srcdoc refs sharing one payload
+    assert stats.blob_payloads_by_mime == {"image/svg+xml": 1}
+    assert stats.blob_targets_by_mime == {"image/svg+xml": 1}
+    assert stats.total_payloads == 2
+    assert stats.total_targets == 3
 
 
 def test_bundle_stats_bytes_saved_property() -> None:
     # --- arrange ----------------------------
     stats = BundleStats(
-        payloads_count=1,
-        targets_count=1,
+        text_targets=1,
         text_payloads=1,
-        blob_payloads=0,
+        blob_targets_by_mime={},
+        blob_payloads_by_mime={},
         baseline_bytes=1000,
         compressed_bytes=600,
+        compressed=True,
     )
 
     # --- act / assert ------------------------
     assert stats.bytes_saved == 400
+
+
+def test_bundle_stats_bytes_saved_zero_when_not_compressed() -> None:
+    # --- arrange ----------------------------
+    stats = BundleStats(
+        text_targets=1,
+        text_payloads=1,
+        blob_targets_by_mime={},
+        blob_payloads_by_mime={},
+        baseline_bytes=1000,
+        compressed_bytes=0,
+        compressed=False,
+    )
+
+    # --- act / assert ------------------------
+    assert stats.bytes_saved == 0
 
 
 def test_bundle_stats_baseline_sums_across_adds_including_duplicates() -> None:
@@ -352,5 +371,75 @@ def test_bundle_stats_baseline_sums_across_adds_including_duplicates() -> None:
 
     # --- assert ------------------------------
     assert stats.baseline_bytes == 3 * len(text)
-    assert stats.payloads_count == 1
-    assert stats.targets_count == 3
+    assert stats.total_payloads == 1
+    assert stats.total_targets == 3
+
+
+def test_bundle_stats_blob_breakdown_includes_every_mime() -> None:
+    # --- arrange ----------------------------
+    b = PayloadBundler()
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>' * 5
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 200
+    avif = b"\x00\x00\x00\x1cftypavif" + b"\x00" * 200
+    b.add(payload=svg, mode="blob", attr="src", mime="image/svg+xml", baseline_len=len(svg))
+    b.add(payload=svg, mode="blob", attr="src", mime="image/svg+xml", baseline_len=len(svg))
+    b.add(payload=png, mode="blob", attr="src", mime="image/png", baseline_len=len(png))
+    b.add(payload=avif, mode="blob", attr="src", mime="image/avif", baseline_len=len(avif))
+
+    # --- act --------------------------------
+    stats = b.stats()
+
+    # --- assert ------------------------------
+    assert stats.blob_payloads_by_mime == {
+        "image/svg+xml": 1,
+        "image/png": 1,
+        "image/avif": 1,
+    }
+    assert stats.blob_targets_by_mime == {
+        "image/svg+xml": 2,
+        "image/png": 1,
+        "image/avif": 1,
+    }
+
+
+# ==================================================================================================
+#  stats() — read-only snapshot
+# ==================================================================================================
+def test_stats_on_empty_bundler() -> None:
+    # --- arrange / act ----------------------
+    stats = PayloadBundler().stats()
+
+    # --- assert ------------------------------
+    assert stats.compressed is False
+    assert stats.compressed_bytes == 0
+    assert stats.bytes_saved == 0
+    assert stats.text_targets == 0
+    assert stats.text_payloads == 0
+    assert stats.blob_targets_by_mime == {}
+    assert stats.blob_payloads_by_mime == {}
+    assert stats.total_targets == 0
+    assert stats.total_payloads == 0
+
+
+def test_stats_reflects_adds_without_building() -> None:
+    # --- arrange ----------------------------
+    b = PayloadBundler()
+    text = b"<p>some iframe html</p>" * 5
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg"/>'
+    b.add(payload=text, mode="text", attr="srcdoc", baseline_len=len(text))
+    b.add(payload=svg, mode="blob", attr="src", mime="image/svg+xml", baseline_len=len(svg))
+    b.add(payload=svg, mode="blob", attr="src", mime="image/svg+xml", baseline_len=len(svg))
+
+    # --- act --------------------------------
+    stats = b.stats()
+
+    # --- assert ------------------------------
+    # stats() never marks compressed; it's a read-only snapshot.
+    assert stats.compressed is False
+    assert stats.compressed_bytes == 0
+    assert stats.text_payloads == 1
+    assert stats.text_targets == 1
+    assert stats.blob_payloads_by_mime == {"image/svg+xml": 1}
+    assert stats.blob_targets_by_mime == {"image/svg+xml": 2}
+    # Baseline still reflects every add() call (no dedup).
+    assert stats.baseline_bytes == len(text) + 2 * len(svg)

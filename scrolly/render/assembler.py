@@ -8,7 +8,6 @@ deck's navigation graph as a JSON blob the client-side JS consumes.
 from __future__ import annotations
 
 import json
-from collections import Counter
 from typing import Any
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescape
@@ -20,6 +19,20 @@ from scrolly.render.bundled_assets import bundled_css, bundled_js, mermaid_js
 from scrolly.render.nav_data import build_nav_data
 from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
 from scrolly.slide import SlideHTML
+
+# Reverse of `_MIME_TYPES` in `scrolly/pipeline/assets.py`, plus a sentinel
+# for text-mode payloads. Used for help-screen labelling — the canvas.js
+# `extLabels` map maps these extension keys to friendly display names
+# ("SVG", "PNG", "HTML", etc.).
+_MIME_TO_EXT: dict[str, str] = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/svg+xml": ".svg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/avif": ".avif",
+}
+_TEXT_EXT = ".html"
 
 
 def assemble(
@@ -89,18 +102,6 @@ def _build_meta(
     bundle_stats: BundleStats | None = None,
 ) -> dict[str, Any]:
     """Build the metadata dict injected into the HTML for the help screen."""
-    asset_counts: Counter[str] = Counter()
-    for chunk in chunks.values():
-        for path in chunk.assets:
-            asset_counts[path.suffix.lower()] += 1
-
-    if bundle_stats is not None:
-        compressed = bundle_stats.payloads_count
-        bytes_saved = bundle_stats.bytes_saved
-    else:
-        compressed = 0
-        bytes_saved = 0
-
     return {
         "version": __version__,
         "author": "Bert Pluymers",
@@ -108,11 +109,54 @@ def _build_meta(
         "stats": {
             "slides": len(deck.slides),
             "edges": len(deck.edges),
-            "assets": dict(asset_counts),
-            "compressed": compressed,
-            "bytes_saved": bytes_saved,
+            "payloads": _payload_stats(bundle_stats),
             "file_size": "__FILE_SIZE_PLACEHOLDER__",
         },
+    }
+
+
+def _payload_stats(bundle_stats: BundleStats | None) -> dict[str, Any]:
+    """Convert ``BundleStats`` into the help-screen-friendly shape.
+
+    Returns a dict with four keys:
+
+    - ``total``: per-extension counts of every payload binding (pre-dedup),
+      e.g. ``{".svg": 5, ".html": 1, ".png": 1}``.
+    - ``unique``: per-extension counts of unique payloads (post-dedup).
+      Identical to ``total`` when no dedup happened.
+    - ``compressed``: ``True`` only when a bundle was emitted into the
+      page; ``False`` when bundling was skipped or the gate failed.
+    - ``bytes_saved``: ``0`` when ``compressed`` is ``False``.
+
+    Args:
+        bundle_stats: Bundler snapshot, or ``None`` when no bundler ran
+            (``inline=False`` builds).
+
+    Returns:
+        Help-screen payload stats dict.
+    """
+    if bundle_stats is None:
+        return {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+
+    total: dict[str, int] = {}
+    if bundle_stats.text_targets > 0:
+        total[_TEXT_EXT] = bundle_stats.text_targets
+    for mime, count in bundle_stats.blob_targets_by_mime.items():
+        ext = _MIME_TO_EXT.get(mime, mime)
+        total[ext] = total.get(ext, 0) + count
+
+    unique: dict[str, int] = {}
+    if bundle_stats.text_payloads > 0:
+        unique[_TEXT_EXT] = bundle_stats.text_payloads
+    for mime, count in bundle_stats.blob_payloads_by_mime.items():
+        ext = _MIME_TO_EXT.get(mime, mime)
+        unique[ext] = unique.get(ext, 0) + count
+
+    return {
+        "total": total,
+        "unique": unique,
+        "compressed": bundle_stats.compressed,
+        "bytes_saved": bundle_stats.bytes_saved,
     }
 
 

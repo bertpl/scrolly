@@ -52,10 +52,13 @@ def build_deck(
     deck = infer_edges(raw_deck)
     validate_deck(deck)
 
-    # Bundler is used only when both compression and inlining are requested.
-    # In every other case (`--no-compress`, separate-files build), payloads
-    # flow through their original inline / asset-file paths unchanged.
-    bundler: PayloadBundler | None = PayloadBundler() if (compress and inline) else None
+    # Bundler is the canonical "compressible payload tracker" whenever
+    # we're emitting an inlined build. It's instantiated regardless of the
+    # `compress` flag so its stats (counts, baseline bytes, dedup info)
+    # are always available for the help screen. Whether we actually emit
+    # the bundle `<script>` block is a separate decision: only when
+    # `compress=True` and the gate passes.
+    bundler: PayloadBundler | None = PayloadBundler() if inline else None
 
     chunks = _render_slides(deck.slides, bundler=bundler)
     chunks = rewrite_asset_refs(chunks, inline=inline, bundler=bundler)
@@ -63,13 +66,15 @@ def build_deck(
     compressed_payload_json: str | None = None
     bundle_stats: BundleStats | None = None
     if bundler is not None:
-        result = bundler.build()
-        if result is not None:
-            compressed_payload_json, bundle_stats = result
-        else:
-            # Gate failed (or no payloads registered). Substitute the inline
-            # fallback back into each chunk so the output is byte-equivalent
-            # to a `--no-compress` build for the same deck.
+        if compress:
+            result = bundler.build()
+            if result is not None:
+                compressed_payload_json, bundle_stats = result
+        if compressed_payload_json is None:
+            # Either compression disabled, or the gate failed. Snapshot stats
+            # (with `compressed=False`) and substitute the inline fallback so
+            # chunk HTML matches a `--no-compress` build byte-for-byte.
+            bundle_stats = bundler.stats()
             fallback = bundler.inline_fallback()
             if fallback:
                 chunks = _substitute_fallback(chunks, fallback)
