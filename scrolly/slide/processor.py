@@ -8,9 +8,13 @@ dispatch classmethod via ``IRProcessor``.
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
+
+if TYPE_CHECKING:
+    from scrolly.pipeline._bundler import PayloadBundler
 
 
 class IRProcessor(abc.ABC):
@@ -25,7 +29,13 @@ class Renderer(IRProcessor, abc.ABC):
     """Converts an IR into a SlideHTML."""
 
     @abc.abstractmethod
-    def render(self, ir: SlideIR, css_namespace: str = "", *, compress: bool = True) -> SlideHTML: ...
+    def render(
+        self,
+        ir: SlideIR,
+        css_namespace: str = "",
+        *,
+        bundler: PayloadBundler | None = None,
+    ) -> SlideHTML: ...
 
 
 class Compiler(IRProcessor, abc.ABC):

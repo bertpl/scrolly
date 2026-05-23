@@ -189,3 +189,103 @@ def test_build_force_overwrites_non_empty_out_dir(tmp_path):
 
     build_deck(deck_file, out, force=True)
     assert (out / "index.html").exists()
+
+
+# ==================================================================================================
+#  Compressed payload bundle (end-to-end)
+# ==================================================================================================
+def _deck_with_iframe(tmp_path: Path) -> Path:
+    """Write a one-slide deck whose only element is a sizable iframe payload."""
+    slide_src = tmp_path / "only.scrollimation.json"
+    iframe_html = "<!doctype html><p>some compressible iframe content</p>" * 30
+    import json as _json
+
+    slide_src.write_text(
+        '{\n  title: "T", scroll_range: 100,\n  elements: [\n'
+        f"    {{ iframe_html: {_json.dumps(iframe_html)}, position: [10, 10], width: 80, height: 80 }},\n"
+        "  ],\n}\n"
+    )
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.scrollimation.json" }], edges: [] }')
+    return deck_file
+
+
+def test_compressed_bundle_emits_single_script_tag(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    html = (out / "index.html").read_text()
+    assert html.count('id="scrolly-compressed-payload"') == 1
+    # The compressed iframe carries a target marker, no inline srcdoc.
+    assert "data-scrolly-target=" in html
+    assert "srcdoc=" not in html
+
+
+def test_compressed_bundle_roundtrips_byte_for_byte(tmp_path):
+    import base64
+    import gzip
+    import json as _json
+    import re
+
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    html = (out / "index.html").read_text()
+    match = re.search(
+        r'<script type="application/json" id="scrolly-compressed-payload">(.*?)</script>',
+        html,
+        flags=re.DOTALL,
+    )
+    assert match is not None
+    bundle = _json.loads(match.group(1))
+
+    raw = gzip.decompress(base64.b64decode(bundle["blob"]))
+    offset = 0
+    for entry in bundle["payloads"]:
+        chunk = raw[offset : offset + entry["length"]]
+        offset += entry["length"]
+        if entry["mode"] == "text":
+            # Text payload should decode to the source iframe HTML.
+            assert chunk.decode("utf-8").startswith("<!doctype html>")
+    assert offset == len(raw)
+
+
+_BUNDLE_TAG = '<script type="application/json" id="scrolly-compressed-payload">'
+
+
+def test_no_compress_skips_bundle_script(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, compress=False)
+
+    html = (out / "index.html").read_text()
+    assert _BUNDLE_TAG not in html
+    assert "<iframe srcdoc=" in html
+    assert "<iframe data-scrolly-target" not in html
+
+
+def test_inline_false_skips_bundle_script(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, inline=False)
+
+    html = (out / "index.html").read_text()
+    assert _BUNDLE_TAG not in html
+    assert "<iframe data-scrolly-target" not in html
+
+
+def test_static_only_deck_emits_no_bundle_script(tmp_path):
+    # A static-only deck has no compressible payloads, so the bundler has
+    # nothing to register and the script tag is not emitted.
+    slide = tmp_path / "only.static.md"
+    slide.write_text("---\ninitial_scroll_position: 0\n---\n# A\n\nsome body text")
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    html = (out / "index.html").read_text()
+    assert _BUNDLE_TAG not in html

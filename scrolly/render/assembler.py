@@ -15,7 +15,7 @@ from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescap
 
 from scrolly import __version__
 from scrolly.deck import Deck
-from scrolly.pipeline._compress import CompressionStats
+from scrolly.pipeline._bundler import BundleStats
 from scrolly.render.bundled_assets import bundled_css, bundled_js, mermaid_js
 from scrolly.render.nav_data import build_nav_data
 from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
@@ -28,7 +28,8 @@ def assemble(
     *,
     inline: bool = True,
     simplified_zoom_control: bool = False,
-    compression_stats: CompressionStats | None = None,
+    compressed_payload_json: str | None = None,
+    bundle_stats: BundleStats | None = None,
 ) -> str:
     """Render the deck and its chunks into a single HTML string.
 
@@ -38,7 +39,13 @@ def assemble(
         inline: Inline CSS/JS into the page (vs. emitting separate files).
         simplified_zoom_control: Use the legacy single-icon zoom-out
             control instead of the default deck mini-map.
-        compression_stats: Aggregate stats from inlined-asset compression.
+        compressed_payload_json: JSON payload from the bundler's
+            ``build()`` (manifest + base64 blob), to be injected as a
+            single ``<script>`` block. ``None`` when the gate failed or
+            no compressible payloads were registered.
+        bundle_stats: Stats from the bundler's ``build()``, used to
+            populate the help-screen statistics. ``None`` when no bundle
+            was emitted.
 
     Returns:
         The rendered HTML page as a single string.
@@ -48,7 +55,7 @@ def assemble(
     scoped_css_blocks = _collect_scoped_css(deck, chunks)
     has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
     minimap: MinimapGeometry | None = None if simplified_zoom_control else compute_minimap_geometry(deck)
-    meta = _build_meta(deck, chunks, compression_stats=compression_stats)
+    meta = _build_meta(deck, chunks, bundle_stats=bundle_stats)
 
     inline_vars = {}
     if inline:
@@ -67,6 +74,7 @@ def assemble(
         has_mermaid=has_mermaid,
         inline=inline,
         minimap=minimap,
+        compressed_payload_json=compressed_payload_json,
         **inline_vars,
     )
 
@@ -78,7 +86,7 @@ def _build_meta(
     deck: Deck,
     chunks: dict[str, SlideHTML],
     *,
-    compression_stats: CompressionStats | None = None,
+    bundle_stats: BundleStats | None = None,
 ) -> dict[str, Any]:
     """Build the metadata dict injected into the HTML for the help screen."""
     asset_counts: Counter[str] = Counter()
@@ -86,7 +94,13 @@ def _build_meta(
         for path in chunk.assets:
             asset_counts[path.suffix.lower()] += 1
 
-    cs = compression_stats or CompressionStats()
+    if bundle_stats is not None:
+        compressed = bundle_stats.payloads_count
+        bytes_saved = bundle_stats.bytes_saved
+    else:
+        compressed = 0
+        bytes_saved = 0
+
     return {
         "version": __version__,
         "author": "Bert Pluymers",
@@ -95,8 +109,8 @@ def _build_meta(
             "slides": len(deck.slides),
             "edges": len(deck.edges),
             "assets": dict(asset_counts),
-            "compressed": cs.compressed,
-            "bytes_saved": cs.bytes_saved,
+            "compressed": compressed,
+            "bytes_saved": bytes_saved,
             "file_size": "__FILE_SIZE_PLACEHOLDER__",
         },
     }

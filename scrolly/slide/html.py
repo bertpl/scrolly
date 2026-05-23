@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-
-from scrolly.pipeline._compress import CompressionStats
 
 
 @dataclass(frozen=True)
@@ -27,7 +25,6 @@ class SlideHTML:
     snap_positions: tuple[int, ...] = ()
     reverse: bool = False
     has_mermaid: bool = False
-    compression_stats: CompressionStats = field(default_factory=CompressionStats)
 
     def __post_init__(self) -> None:
         if not self.title or not self.title.strip():

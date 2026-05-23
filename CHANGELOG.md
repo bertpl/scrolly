@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Inlined assets and iframe HTML are now compressed together, shrinking HTML output for decks with shared or repeated assets.
+
 ### Deprecated
 
 ### Removed
