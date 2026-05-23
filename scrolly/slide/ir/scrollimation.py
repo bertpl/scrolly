@@ -34,16 +34,22 @@ class ScrollimationIR(SlideIR, frozen=True):
     DESCRIPTION: ClassVar[str] = "Scroll-driven animation"
 
     title: str = Field(description="Human-readable slide title, shown in navigation UI.")
-    scroll_range: float = Field(
+    scroll_range: float | Literal["auto"] = Field(
+        default="auto",
         description=(
-            "Total scrollable distance in abstract scroll units. "
-            "Keyframe 'at' values and snap positions reference this range. "
-            "A slide with scroll_range=0 has no scroll behavior."
+            "Total scrollable distance in abstract scroll units, or 'auto' (default) "
+            "for content-driven height where the slide grows to fit its rendered "
+            "content. Keyframe 'at' values and snap positions reference this range "
+            "(when numeric). A slide with scroll_range=0 has no scroll behavior."
         ),
     )
     initial_scroll_position: float = Field(
         default=0,
         description="Scroll position the slide starts at on first visit. Must be within [0, scroll_range].",
+    )
+    font_scale: float = Field(
+        default=1.0,
+        description="Font size multiplier for the slide. 1.0 = inherit. Must be > 0.",
     )
     scroll_speed: float = Field(
         default=1.0,
@@ -98,17 +104,33 @@ class ScrollimationIR(SlideIR, frozen=True):
     @model_validator(mode="after")
     def _validate_slide(self) -> ScrollimationIR:
         """Validate slide-level constraints."""
-        if self.scroll_range < 0:
-            raise ValueError(f"scroll_range must be >= 0, got {self.scroll_range}")
+        if self.font_scale <= 0:
+            raise ValueError(f"font_scale must be > 0, got {self.font_scale}")
         if self.initial_scroll_position < 0:
             raise ValueError(f"initial_scroll_position must be >= 0, got {self.initial_scroll_position}")
-        if self.initial_scroll_position > self.scroll_range:
-            raise ValueError(
-                f"initial_scroll_position ({self.initial_scroll_position}) "
-                f"must be <= scroll_range ({self.scroll_range})"
-            )
         if not self.elements:
             raise ValueError("at least one element is required")
+
+        if isinstance(self.scroll_range, (int, float)):
+            if self.scroll_range < 0:
+                raise ValueError(f"scroll_range must be >= 0 or 'auto', got {self.scroll_range}")
+            if self.initial_scroll_position > self.scroll_range:
+                raise ValueError(
+                    f"initial_scroll_position ({self.initial_scroll_position}) "
+                    f"must be <= scroll_range ({self.scroll_range})"
+                )
+            for pos in self.snap_positions:
+                if pos < 0 or pos > self.scroll_range:
+                    raise ValueError(f"snap_positions value {pos} is outside [0, {self.scroll_range}]")
+        else:
+            # scroll_range == "auto" — content-driven height. The range isn't
+            # statically known, so snap-positions / initial_scroll_position
+            # range checks against it are skipped here. Non-negativity of
+            # initial_scroll_position is still enforced above. Snap positions
+            # are validated for non-negativity below regardless of mode.
+            for pos in self.snap_positions:
+                if pos < 0:
+                    raise ValueError(f"snap_positions value {pos} must be >= 0")
 
         seen_names: set[str] = set()
         for el in self.elements:
@@ -116,9 +138,5 @@ class ScrollimationIR(SlideIR, frozen=True):
                 if el.name in seen_names:
                     raise ValueError(f"duplicate element name: {el.name!r}")
                 seen_names.add(el.name)
-
-        for pos in self.snap_positions:
-            if pos < 0 or pos > self.scroll_range:
-                raise ValueError(f"snap_positions value {pos} is outside [0, {self.scroll_range}]")
 
         return self

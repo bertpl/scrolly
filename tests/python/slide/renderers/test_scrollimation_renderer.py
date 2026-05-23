@@ -1366,3 +1366,78 @@ class TestImageSequenceInteractions:
         # The outer div gets data-opacity-keyframes from element-level opacity (inherited mechanism).
         # Plus per-img data-opacity-keyframes from frame ramps.
         assert chunk.html.count("data-opacity-keyframes") == 1 + 2
+
+
+class TestSubstrateAutoAndFontScale:
+    """SlideHTML pass-through for scroll_range="auto" and font_scale (v0.2.0 item C/D)."""
+
+    def test_scroll_range_auto_maps_to_none(self) -> None:
+        # --- arrange ----------------------------
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range="auto",
+            elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
+        )
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir)
+
+        # --- assert -----------------------------
+        assert chunk.scroll_range is None
+
+    def test_scroll_range_zero_still_maps_to_none(self) -> None:
+        # --- arrange ----------------------------
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range=0,
+            elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
+        )
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir)
+
+        # --- assert -----------------------------
+        assert chunk.scroll_range is None
+
+    def test_scroll_range_positive_maps_to_int(self) -> None:
+        # --- arrange ----------------------------
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range=750,
+            elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
+        )
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir)
+
+        # --- assert -----------------------------
+        assert chunk.scroll_range == 750
+
+    def test_font_scale_default_passes_through(self) -> None:
+        # --- arrange ----------------------------
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range=100,
+            elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
+        )
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir)
+
+        # --- assert -----------------------------
+        assert chunk.font_scale == 1.0
+
+    def test_font_scale_explicit_passes_through(self) -> None:
+        # --- arrange ----------------------------
+        ir = ScrollimationIR(
+            title="T",
+            scroll_range=100,
+            font_scale=1.75,
+            elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
+        )
+
+        # --- act --------------------------------
+        chunk = _renderer().render(ir)
+
+        # --- assert -----------------------------
+        assert chunk.font_scale == 1.75

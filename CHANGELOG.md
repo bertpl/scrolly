@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scroll_range` is optional everywhere now; omit it for content-driven height.
+- `font_scale` is now available on every slide.
+
 ### Changed
 
 ### Deprecated
