@@ -22,11 +22,10 @@ from scrolly.slide.ir._framework.animated_values import (
     AnimatedVec2,
 )
 
+
 # ==================================================================================================
 #  SlideElement base
 # ==================================================================================================
-
-
 class SlideElement(BaseModel, frozen=True):
     """Base for all positioned visual units within a slide."""
 
@@ -93,8 +92,6 @@ class SlideElement(BaseModel, frozen=True):
 # ==================================================================================================
 #  Concrete element types
 # ==================================================================================================
-
-
 class ImageElement(SlideElement, frozen=True):
     """An element backed by an external image file (PNG, JPEG, SVG, etc.)."""
 

@@ -12,11 +12,10 @@ from pydantic import model_validator
 from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import SlideIR
 
+
 # ---------------------------------------------------------------------------
 # Frontmatter parsing
 # ---------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class Frontmatter:
     """Parsed slide-file frontmatter."""
@@ -92,8 +91,6 @@ def parse_frontmatter(source_text: str) -> tuple[Frontmatter, str]:
 # ---------------------------------------------------------------------------
 # StaticIR
 # ---------------------------------------------------------------------------
-
-
 class StaticIR(SlideIR, frozen=True):
     """Parsed representation of a static slide source file.
 

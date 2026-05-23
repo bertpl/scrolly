@@ -44,8 +44,6 @@ _STEP_RAMP_WIDTH = 1.0
 # ==================================================================================================
 #  CSS ramp expression generation
 # ==================================================================================================
-
-
 def ramp_expr(kfs: list[tuple[float, float]]) -> str | None:
     """Generate a CSS calc()-compatible sum-of-ramps expression.
 
@@ -91,8 +89,6 @@ def _num(v: float) -> str:
 # ==================================================================================================
 #  ScrollimationRenderer
 # ==================================================================================================
-
-
 class ScrollimationRenderer(Renderer):
     """Renderer for the `scrollimation` slide type."""
 
@@ -151,8 +147,6 @@ class ScrollimationRenderer(Renderer):
 # ==================================================================================================
 #  Content rendering
 # ==================================================================================================
-
-
 def _render_element_content(
     el: AnyElement,
     *,
@@ -247,8 +241,6 @@ def _render_iframe(
 # --------------------------------------------------------------------------
 #  Image sequence helpers
 # --------------------------------------------------------------------------
-
-
 def _render_image_sequence_imgs(el: ImageSequenceElement) -> str:
     """Render image-sequence content: one <img> per non-empty consecutive-run, each with its own opacity ramp.
 
@@ -375,8 +367,6 @@ def _image_sequence_run_keyframes(
 # ==================================================================================================
 #  CSS generation
 # ==================================================================================================
-
-
 def _build_scoped_css(slide: ScrollimationIR, slide_type: str, prefix: str) -> str:
     """Build all scoped CSS rules for a scrollimation slide."""
     ns = f".slide-type-{slide_type}"
@@ -508,8 +498,6 @@ def _element_css(ns: str, el: AnyElement, eid: str, index: int) -> str:
 # --------------------------------------------------------------------------
 #  Expression helpers
 # --------------------------------------------------------------------------
-
-
 def _scalar_expr(field: AnimatedScalar, unit: str = "") -> str:
     """Generate CSS value for a scalar animated field."""
     if not field.is_animated:

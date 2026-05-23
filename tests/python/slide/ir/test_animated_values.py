@@ -13,11 +13,10 @@ from scrolly.slide.ir import (
     Vec2Keyframes,
 )
 
+
 # ==================================================================================================
 #  ScalarKeyframes
 # ==================================================================================================
-
-
 class TestScalarKeyframes:
     """Tests for ScalarKeyframes validation and construction."""
 
@@ -52,8 +51,6 @@ class TestScalarKeyframes:
 # ==================================================================================================
 #  Vec2Keyframes
 # ==================================================================================================
-
-
 class TestVec2Keyframes:
     """Tests for Vec2Keyframes validation and construction."""
 
@@ -78,8 +75,6 @@ class TestVec2Keyframes:
 # ==================================================================================================
 #  AnimatedScalar
 # ==================================================================================================
-
-
 class TestAnimatedScalar:
     """Tests for AnimatedScalar parsing, properties, and serialization."""
 
@@ -188,8 +183,6 @@ class TestAnimatedScalar:
 # ==================================================================================================
 #  AnimatedVec2
 # ==================================================================================================
-
-
 class TestAnimatedVec2:
     """Tests for AnimatedVec2 parsing, properties, and serialization."""
 
@@ -277,8 +270,6 @@ class TestAnimatedVec2:
 # ==================================================================================================
 #  AnimatedSizeDim
 # ==================================================================================================
-
-
 class TestAnimatedSizeDim:
     """Tests for AnimatedSizeDim parsing, properties, and serialization."""
 
@@ -406,8 +397,6 @@ class TestAnimatedSizeDim:
 # ==================================================================================================
 #  JSON schema output
 # ==================================================================================================
-
-
 class TestJsonSchema:
     """Verify JSON schema generation produces usable oneOf schemas."""
 

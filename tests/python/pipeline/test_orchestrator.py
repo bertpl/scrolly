@@ -145,8 +145,6 @@ def test_worked_example_long_bg_slide_is_content_driven(tmp_path):
 # ---------------------------------------------------------------------------
 # validate_deck_sources
 # ---------------------------------------------------------------------------
-
-
 def test_validate_deck_sources_on_worked_example():
     deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
     deck = validate_deck_sources(deck_file)

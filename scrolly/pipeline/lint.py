@@ -37,8 +37,6 @@ def lint_deck(deck: Deck) -> list[Diagnostic]:
 # --------------------------------------------------------------------------
 #  Lint rules
 # --------------------------------------------------------------------------
-
-
 def _check_out_of_range_keyframes(deck: Deck) -> list[Diagnostic]:
     """Warn on keyframe positions outside [0, scroll_range]."""
     diagnostics: list[Diagnostic] = []

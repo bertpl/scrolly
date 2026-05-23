@@ -24,11 +24,10 @@ from scrolly.slide.registry import (
     registered_suffixes,
 )
 
+
 # ---------------------------------------------------------------------------
 # Test IR models
 # ---------------------------------------------------------------------------
-
-
 class _FakeIR(SlideIR, frozen=True):
     SUFFIX: ClassVar[str] = ".testfake.md"
     DESCRIPTION: ClassVar[str] = "Test fake"
@@ -52,8 +51,6 @@ class _OtherIR(SlideIR, frozen=True):
 # ---------------------------------------------------------------------------
 # Test processors
 # ---------------------------------------------------------------------------
-
-
 class _FakeRenderer(Renderer):
     @classmethod
     def can_process(cls, ir: SlideIR) -> bool:
@@ -75,8 +72,6 @@ class _FakeCompiler(Compiler):
 # ---------------------------------------------------------------------------
 # IR registration + suffix lookup
 # ---------------------------------------------------------------------------
-
-
 def test_static_suffix_is_registered_on_import():
     assert ".static.md" in registered_suffixes()
 
@@ -151,8 +146,6 @@ def test_longest_suffix_match_wins():
 # ---------------------------------------------------------------------------
 # Renderer registration + dispatch
 # ---------------------------------------------------------------------------
-
-
 def test_register_renderer_and_find():
     register_renderer(_FakeRenderer)
     ir = _FakeIR()
@@ -185,8 +178,6 @@ def test_find_renderer_returns_fresh_instance():
 # ---------------------------------------------------------------------------
 # Compiler registration + dispatch
 # ---------------------------------------------------------------------------
-
-
 def test_register_compiler_and_find():
     register_compiler(_FakeCompiler)
     ir = _OtherIR()
@@ -210,8 +201,6 @@ def test_register_compiler_is_idempotent():
 # ---------------------------------------------------------------------------
 # Built-in renderers + compilers resolve correctly
 # ---------------------------------------------------------------------------
-
-
 def test_static_ir_finds_renderer():
     from scrolly.slide.ir.static import StaticIR
 
@@ -248,8 +237,6 @@ def test_storyboard_ir_finds_compiler():
 # ---------------------------------------------------------------------------
 # registered_ir_types
 # ---------------------------------------------------------------------------
-
-
 def test_registered_ir_types_contains_builtins():
     types = registered_ir_types()
     assert "static" in types
