@@ -10,6 +10,7 @@ from scrolly.slide.element_ir import (
     ElementIR,
     ElementRenderer,
     PrimitiveElement,
+    RenderContext,
     RenderedElement,
     compile_to_primitives,
     find_element_compiler,
@@ -182,8 +183,8 @@ class _PrimitiveRenderer(ElementRenderer):
         """Match instances of `_Primitive`."""
         return isinstance(ir, _Primitive)
 
-    def render(self, ir: PrimitiveElement) -> RenderedElement:
-        """Render the primitive's label as a paragraph."""
+    def render(self, ir: PrimitiveElement, *, ctx: RenderContext) -> RenderedElement:
+        """Render the primitive's label as a paragraph (ctx is unused in this test stub)."""
         assert isinstance(ir, _Primitive)
         return RenderedElement(html=f"<p>{ir.label}</p>")
 

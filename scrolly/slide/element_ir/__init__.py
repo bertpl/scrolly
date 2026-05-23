@@ -11,7 +11,12 @@ package — it carries only the abstractions and the compile loop.
 from __future__ import annotations
 
 from scrolly.slide.element_ir.ir import ElementIR, PrimitiveElement
-from scrolly.slide.element_ir.processor import ElementCompiler, ElementProcessor, ElementRenderer
+from scrolly.slide.element_ir.processor import (
+    ElementCompiler,
+    ElementProcessor,
+    ElementRenderer,
+    RenderContext,
+)
 from scrolly.slide.element_ir.registry import (
     compile_to_primitives,
     find_element_compiler,
@@ -27,6 +32,7 @@ __all__ = [
     "ElementProcessor",
     "ElementRenderer",
     "PrimitiveElement",
+    "RenderContext",
     "RenderedElement",
     "compile_to_primitives",
     "find_element_compiler",
