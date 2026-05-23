@@ -1,10 +1,17 @@
 """Golden-HTML lock on the worked-example deck.
 
-Builds ``examples/worked-example/`` with default flags (inline, compressed,
-mini-map zoom control) and asserts the produced ``index.html`` is
-byte-identical to the committed golden fixture. This is the safety net
-for refactors that must not change rendered output — any byte difference
-fails the test and points at the exact diff to inspect.
+Builds ``examples/worked-example/`` with ``compress=False`` (inline,
+mini-map zoom control, plain inline payloads) and asserts the produced
+``index.html`` is byte-identical to the committed golden fixture. This is
+the safety net for refactors that must not change rendered output — any
+byte difference fails the test and points at the exact diff to inspect.
+
+Compression is deliberately disabled: gzip output is sensitive to the
+underlying zlib version and to a platform-dependent OS byte in the gzip
+header, so a compressed golden would be brittle across the CI matrix.
+The element-mechanism work this safety net guards touches HTML / CSS /
+asset wiring — not the compression pass — so the uncompressed form
+covers the relevant surface in full.
 
 Regeneration is gated behind an opt-in env var to keep accidental updates
 out of CI: set ``SCROLLY_UPDATE_GOLDENS=1`` when output legitimately
@@ -27,7 +34,7 @@ GOLDEN_FILE = FIXTURE_DIR / "worked_example.html"
 
 
 def test_worked_example_golden(tmp_path: Path) -> None:
-    """Default-flags build of the worked example is byte-identical to the committed golden.
+    """Uncompressed inline build of the worked example is byte-identical to the committed golden.
 
     Args:
         tmp_path: pytest's per-test temp directory; receives the build output.
@@ -36,7 +43,7 @@ def test_worked_example_golden(tmp_path: Path) -> None:
     out_dir = tmp_path / "out"
 
     # --- act --------------------------
-    build_deck(EXAMPLE_DECK, out_dir)
+    build_deck(EXAMPLE_DECK, out_dir, compress=False)
     actual = (out_dir / "index.html").read_bytes()
 
     # --- assert -----------------------
