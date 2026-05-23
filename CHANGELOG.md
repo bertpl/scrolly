@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Scrollimation slides can omit `scroll_range` to grow to fit their content.
-- Scrollimation slides now accept a `font_scale` field.
+- `scroll_range` is optional everywhere now; omit it for content-driven height.
+- `font_scale` is now available on every slide.
 
 ### Changed
 
