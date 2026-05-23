@@ -5,6 +5,9 @@ dist/
 .pytest_cache/
 .ruff_cache/
 
+# Golden-test debug output (written next to the fixture on mismatch)
+*.actual.html
+
 # Coverage
 htmlcov/
 .coverage

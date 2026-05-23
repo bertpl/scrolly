@@ -248,7 +248,7 @@ class PayloadBundler:
             return None
 
         stream = b"".join(p.payload for p in self._payloads)
-        compressed = gzip.compress(stream, GZIP_LEVEL)
+        compressed = gzip.compress(stream, GZIP_LEVEL, mtime=0)
         blob_b64 = base64.b64encode(compressed).decode("ascii")
 
         manifest_obj = {
