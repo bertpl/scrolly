@@ -1,59 +1,20 @@
-"""End-to-end deck build: parse → validate → infer → render → assemble → write."""
+"""End-to-end deck build: load → render → assemble → write."""
 
 from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
 
-from scrolly.deck import (
-    Deck,
-    Slide,
-    infer_edges,
-    parse_deck,
-    validate_deck,
-    validate_raw_deck,
-)
+from scrolly.deck import Deck, Slide
 from scrolly.errors import SlideSourceError
 from scrolly.pipeline._bundler import BundleStats, PayloadBundler
 from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
+from scrolly.pipeline.loader import load_deck
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
-from scrolly.slide.registry import find_renderer, get_ir_class_for_path
-
-
-def load_deck(deck_path: Path) -> tuple[Deck, dict[str, SlideIR]]:
-    """Parse, validate, and resolve a deck, returning it with its loaded slide IRs.
-
-    Runs the full deck-loading chain: parse → validate raw → infer edges
-    → validate → load each slide IR. The IRs are returned alongside the
-    deck so callers (notably ``build_deck``) don't re-load them
-    downstream. Validation is implicit in the load: any malformed or
-    missing source raises before this function returns.
-
-    Args:
-        deck_path: Path to the ``.deck.json`` file.
-
-    Returns:
-        A tuple ``(deck, slide_irs)`` where ``deck`` is the fully-resolved
-        :class:`Deck` and ``slide_irs`` maps slide id to the loaded
-        :class:`SlideIR` instance.
-
-    Raises:
-        ScrollyError: For any parse, validation, or slide-source failure.
-    """
-    raw_deck = parse_deck(deck_path)
-    validate_raw_deck(raw_deck)
-    deck = infer_edges(raw_deck)
-    validate_deck(deck)
-
-    slide_irs: dict[str, SlideIR] = {}
-    for slide in deck.slides:
-        ir_cls = get_ir_class_for_path(slide.source)
-        slide_irs[slide.id] = ir_cls.from_file(slide.source)
-
-    return deck, slide_irs
+from scrolly.slide.registry import find_renderer
 
 
 def build_deck(

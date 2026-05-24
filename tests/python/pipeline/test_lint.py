@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.pipeline.lint import Diagnostic, lint_deck
-from scrolly.pipeline.orchestrator import load_deck
+from scrolly.pipeline.loader import load_deck
 
 # --------------------------------------------------------------------------
 #  Helpers

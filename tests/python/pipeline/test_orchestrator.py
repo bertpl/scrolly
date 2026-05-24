@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import ScrollyError
-from scrolly.pipeline.orchestrator import build_deck, load_deck
+from scrolly.pipeline.loader import load_deck
+from scrolly.pipeline.orchestrator import build_deck
 from tests.python.conftest import PROJECT_ROOT
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
