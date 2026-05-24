@@ -37,7 +37,12 @@ class MarkdownRenderer(ElementRenderer):
         rendered_html = markdown.markdown(ir.markdown, extensions=list(_MD_EXTENSIONS))
         html = wrap_element(rendered_html, eid=ctx.eid, el=ir)
 
-        extras = f"  color: {ir.color};\n"
+        # Skip emitting `color: inherit` since that's the CSS default
+        # anyway — keeps the rendered <style> tidy when no explicit
+        # colour is set.
+        extras = ""
+        if ir.color != "inherit":
+            extras += f"  color: {ir.color};\n"
         if ir.text_align != "left":
             extras += f"  text-align: {ir.text_align};\n"
 

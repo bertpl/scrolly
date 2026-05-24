@@ -315,8 +315,8 @@ class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
 
     markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
     color: str = Field(
-        default="#808080",
-        description="CSS color value for the rendered text.",
+        default="inherit",
+        description="CSS color value for the rendered text. Default 'inherit' picks up the slide-level body colour.",
     )
     text_align: Literal["left", "center", "right"] = Field(
         default="left",
