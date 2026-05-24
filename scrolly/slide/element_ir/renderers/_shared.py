@@ -226,13 +226,13 @@ def substrate_css(
 #  Outer-wrapper HTML
 # ==================================================================================================
 def wrap_element(inner_html: str, *, eid: str, el: SlideElement) -> str:
-    """Build the standard ``.scrollimation-element`` wrapper around inner HTML.
+    """Build the standard ``.slide-element`` wrapper around inner HTML.
 
     Includes the ``data-opacity-keyframes`` attribute when the element's
     opacity is animated — consumed at runtime by ``canvas.js`` for
     scroll-driven opacity updates.
     """
-    attrs = f'class="scrollimation-element" data-element-id="{eid}"'
+    attrs = f'class="slide-element" data-element-id="{eid}"'
     if el.opacity.is_animated:
         kf_json = json.dumps(el.opacity.keyframes, separators=(",", ":"))
         attrs += f" data-opacity-keyframes='{html_escape(kf_json)}'"

@@ -26,7 +26,7 @@ class MarkdownRenderer(ElementRenderer):
         return isinstance(ir, MarkdownElement)
 
     def render(self, ir: PrimitiveElement, *, ctx: RenderContext) -> RenderedElement:
-        """Render markdown to HTML and wrap in the standard ``.scrollimation-element`` div.
+        """Render markdown to HTML and wrap in the standard ``.slide-element`` div.
 
         Markdown-specific properties (``color``, ``text_align``) become
         extra lines on the substrate CSS rule so the output keys

@@ -72,7 +72,7 @@ class TestHtmlEmission:
     def test_layer_div_with_data_id(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
-        assert '<div class="scrollimation-element" data-element-id="0">' in chunk.html
+        assert '<div class="slide-element" data-element-id="0">' in chunk.html
 
     def test_html_layer_content_passthrough(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.slide.json", MINIMAL)

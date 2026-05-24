@@ -290,7 +290,7 @@ body {
  *
  * Each chunk contains one .slide-type-slide-json wrapper that holds the
  * authored elements. The wrapper fills the chunk and acts as the
- * containing block for the .scrollimation-element children (each is
+ * containing block for the .slide-element children (each is
  * position:absolute within it). These rules used to be emitted per-slide
  * in the renderer's scoped_css, but every slide produced byte-identical
  * rules under the same selector — and the per-slide blocks then
@@ -309,7 +309,7 @@ body {
   height: 100%;
 }
 
-.slide-type-slide-json .scrollimation-element {
+.slide-type-slide-json .slide-element {
   position: absolute;
   overflow: hidden;
 }
