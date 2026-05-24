@@ -278,7 +278,7 @@ class TestValidationViaJson5:
 }
 """,
         )
-        with pytest.raises(SlideSourceError, match="validation failed"):
+        with pytest.raises(SlideSourceError, match="at least one size dimension must be non-auto"):
             parse_json5_ir(src, SlideIR, "slide")
 
     def test_object_fit_required(self, tmp_path: Path) -> None:
@@ -294,7 +294,7 @@ class TestValidationViaJson5:
 }
 """,
         )
-        with pytest.raises(SlideSourceError, match="validation failed"):
+        with pytest.raises(SlideSourceError, match="object_fit is required"):
             parse_json5_ir(src, SlideIR, "slide")
 
     def test_object_fit_forbidden_with_auto(self, tmp_path: Path) -> None:
@@ -310,7 +310,7 @@ class TestValidationViaJson5:
 }
 """,
         )
-        with pytest.raises(SlideSourceError, match="validation failed"):
+        with pytest.raises(SlideSourceError, match="object_fit is forbidden"):
             parse_json5_ir(src, SlideIR, "slide")
 
     def test_duplicate_element_names(self, tmp_path: Path) -> None:
@@ -327,7 +327,7 @@ class TestValidationViaJson5:
 }
 """,
         )
-        with pytest.raises(SlideSourceError, match="validation failed"):
+        with pytest.raises(SlideSourceError, match="duplicate element name"):
             parse_json5_ir(src, SlideIR, "slide")
 
     def test_negative_scroll_range(self, tmp_path: Path) -> None:
@@ -343,5 +343,5 @@ class TestValidationViaJson5:
 }
 """,
         )
-        with pytest.raises(SlideSourceError, match="validation failed"):
+        with pytest.raises(SlideSourceError, match="scroll_range must be >= 0"):
             parse_json5_ir(src, SlideIR, "slide")

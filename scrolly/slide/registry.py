@@ -61,7 +61,10 @@ def get_ir_class_for_path(source_path: Path) -> type[SlideIR]:
     )
     if not matches:
         known = ", ".join(sorted(_IR_TYPES)) or "(none registered)"
-        raise UnknownSlideTypeError(f"no slide type matches source filename '{name}' (registered suffixes: {known})")
+        raise UnknownSlideTypeError(
+            code="E504",
+            message=f"no slide type matches source filename '{name}' (registered suffixes: {known})",
+        )
     return _IR_TYPES[matches[0]]
 
 

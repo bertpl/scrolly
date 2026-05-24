@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import BaseModel, ValidationError
 
+from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import (
     AnimatedScalar,
     AnimatedSizeDim,
@@ -29,22 +30,22 @@ class TestScalarKeyframes:
 
     def test_rejects_single_keyframe(self) -> None:
         # --- act / assert -----------------
-        with pytest.raises(ValidationError, match="at least 2 entries"):
+        with pytest.raises(SlideSourceError, match="at least 2 entries"):
             ScalarKeyframes(keyframes=[(0, 1.0)])
 
     def test_rejects_empty_keyframes(self) -> None:
         # --- act / assert -----------------
-        with pytest.raises(ValidationError, match="at least 2 entries"):
+        with pytest.raises(SlideSourceError, match="at least 2 entries"):
             ScalarKeyframes(keyframes=[])
 
     def test_rejects_unsorted_positions(self) -> None:
         # --- act / assert -----------------
-        with pytest.raises(ValidationError, match="sorted by scroll position"):
+        with pytest.raises(SlideSourceError, match="sorted by scroll position"):
             ScalarKeyframes(keyframes=[(500, 1.0), (200, 0.5)])
 
     def test_rejects_duplicate_positions(self) -> None:
         # --- act / assert -----------------
-        with pytest.raises(ValidationError, match="sorted by scroll position"):
+        with pytest.raises(SlideSourceError, match="sorted by scroll position"):
             ScalarKeyframes(keyframes=[(0, 1.0), (500, 0.5), (500, 0.8)])
 
 
@@ -63,12 +64,12 @@ class TestVec2Keyframes:
 
     def test_rejects_single_keyframe(self) -> None:
         # --- act / assert -----------------
-        with pytest.raises(ValidationError, match="at least 2 entries"):
+        with pytest.raises(SlideSourceError, match="at least 2 entries"):
             Vec2Keyframes(keyframes=[(0, (10, 20))])
 
     def test_rejects_unsorted_positions(self) -> None:
         # --- act / assert -----------------
-        with pytest.raises(ValidationError, match="sorted by scroll position"):
+        with pytest.raises(SlideSourceError, match="sorted by scroll position"):
             Vec2Keyframes(keyframes=[(1000, (50, 80)), (0, (10, 20))])
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import (
     AnimatedScalar,
     AnimatedVec2,
@@ -109,11 +110,11 @@ class TestImageElement:
         assert element.object_fit is None
 
     def test_object_fit_required_when_both_numeric(self) -> None:
-        with pytest.raises(ValidationError, match="object_fit is required"):
+        with pytest.raises(SlideSourceError, match="object_fit is required"):
             ImageElement(**_image_element(object_fit=None))
 
     def test_object_fit_forbidden_with_auto_dim(self) -> None:
-        with pytest.raises(ValidationError, match="object_fit is forbidden"):
+        with pytest.raises(SlideSourceError, match="object_fit is forbidden"):
             ImageElement(**_image_element(width=100, height="auto", object_fit="cover"))
 
     def test_extra_field_rejected(self) -> None:
@@ -163,15 +164,15 @@ class TestMermaidElement:
 
 class TestSizeValidation:
     def test_auto_auto_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+        with pytest.raises(SlideSourceError, match="at least one size dimension must be non-auto"):
             HtmlElement(**_html_element(width="auto", height="auto"))
 
     def test_zero_width_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="numeric width must be > 0"):
+        with pytest.raises(SlideSourceError, match="numeric width must be > 0"):
             HtmlElement(**_html_element(width=0, height=100))
 
     def test_negative_height_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="numeric height must be > 0"):
+        with pytest.raises(SlideSourceError, match="numeric height must be > 0"):
             HtmlElement(**_html_element(width=100, height=-5))
 
     def test_auto_width_numeric_height(self) -> None:
@@ -234,15 +235,15 @@ class TestSlideIR:
         assert slide.scroll_range == 0
 
     def test_negative_scroll_range_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="scroll_range must be >= 0"):
+        with pytest.raises(SlideSourceError, match="scroll_range must be >= 0"):
             SlideIR(**_slide(scroll_range=-1))
 
     def test_empty_elements_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="at least one element"):
+        with pytest.raises(SlideSourceError, match="at least one element"):
             SlideIR(**_slide(elements=[]))
 
     def test_duplicate_element_names_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="duplicate element name"):
+        with pytest.raises(SlideSourceError, match="duplicate element name"):
             SlideIR(
                 **_slide(
                     elements=[
@@ -253,7 +254,7 @@ class TestSlideIR:
             )
 
     def test_initial_scroll_position_beyond_range_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="initial_scroll_position"):
+        with pytest.raises(SlideSourceError, match="initial_scroll_position"):
             SlideIR(**_slide(scroll_range=100, initial_scroll_position=200))
 
     def test_multiple_element_types(self) -> None:
@@ -296,11 +297,11 @@ class TestSlideIR:
         assert slide.snap_positions == (0, 500, 1000)
 
     def test_snap_positions_exceeds_range_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="snap_positions"):
+        with pytest.raises(SlideSourceError, match="snap_positions"):
             SlideIR(**_slide(scroll_range=100, snap_positions=[0, 200]))
 
     def test_snap_positions_negative_rejected(self) -> None:
-        with pytest.raises(ValidationError, match="snap_positions"):
+        with pytest.raises(SlideSourceError, match="snap_positions"):
             SlideIR(**_slide(snap_positions=[-1]))
 
 
@@ -388,7 +389,7 @@ class TestSubstrateDefaults:
 
     def test_scroll_range_rejects_negative_number(self) -> None:
         # --- arrange / act / assert -------------
-        with pytest.raises(ValidationError, match=r"scroll_range must be >= 0 or 'auto'"):
+        with pytest.raises(SlideSourceError, match=r"scroll_range must be >= 0 or 'auto'"):
             SlideIR(title="T", scroll_range=-1, elements=[_html_element()])
 
     def test_scroll_range_rejects_unknown_string(self) -> None:
@@ -425,7 +426,7 @@ class TestSubstrateDefaults:
 
     def test_auto_still_rejects_negative_snap_positions(self) -> None:
         # --- arrange / act / assert -------------
-        with pytest.raises(ValidationError, match=r"snap_positions value -1 must be >= 0"):
+        with pytest.raises(SlideSourceError, match=r"snap_positions value -1 must be >= 0"):
             SlideIR(
                 title="T",
                 scroll_range="auto",
@@ -449,7 +450,7 @@ class TestSubstrateDefaults:
 
     def test_font_scale_rejects_zero_and_negative(self) -> None:
         # --- arrange / act / assert -------------
-        with pytest.raises(ValidationError, match=r"font_scale must be > 0"):
+        with pytest.raises(SlideSourceError, match=r"font_scale must be > 0"):
             SlideIR(title="T", scroll_range=100, font_scale=0, elements=[_html_element()])
-        with pytest.raises(ValidationError, match=r"font_scale must be > 0"):
+        with pytest.raises(SlideSourceError, match=r"font_scale must be > 0"):
             SlideIR(title="T", scroll_range=100, font_scale=-1, elements=[_html_element()])

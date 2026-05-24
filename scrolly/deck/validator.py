@@ -29,7 +29,7 @@ def _check_unique_slide_ids(deck: RawDeck) -> None:
     seen: set[str] = set()
     for slide in deck.slides:
         if slide.id in seen:
-            raise DeckValidationError(f"duplicate slide id: '{slide.id}'")
+            raise DeckValidationError(code="E101", message=f"duplicate slide id: '{slide.id}'")
         seen.add(slide.id)
 
 
@@ -37,9 +37,15 @@ def _check_edges_reference_declared_slides(deck: RawDeck) -> None:
     known = {s.id for s in deck.slides}
     for idx, edge in enumerate(deck.edges):
         if edge.a.slide_id not in known:
-            raise DeckValidationError(f"edges[{idx}]: endpoint references unknown slide '{edge.a.slide_id}'")
+            raise DeckValidationError(
+                code="E501",
+                message=f"edges[{idx}]: endpoint references unknown slide '{edge.a.slide_id}'",
+            )
         if edge.b.slide_id not in known:
-            raise DeckValidationError(f"edges[{idx}]: endpoint references unknown slide '{edge.b.slide_id}'")
+            raise DeckValidationError(
+                code="E501",
+                message=f"edges[{idx}]: endpoint references unknown slide '{edge.b.slide_id}'",
+            )
 
 
 def _check_one_slide_per_cell(deck: RawDeck) -> None:
@@ -48,7 +54,10 @@ def _check_one_slide_per_cell(deck: RawDeck) -> None:
         if slide.position in cells:
             other = cells[slide.position]
             raise DeckValidationError(
-                f"slides '{other}' and '{slide.id}' both occupy position ({slide.position.x}, {slide.position.y})"
+                code="E102",
+                message=(
+                    f"slides '{other}' and '{slide.id}' both occupy position ({slide.position.x}, {slide.position.y})"
+                ),
             )
         cells[slide.position] = slide.id
 
@@ -57,7 +66,7 @@ def _check_unique_group_labels(deck: RawDeck) -> None:
     seen: set[str] = set()
     for group in deck.groups:
         if group.label in seen:
-            raise DeckValidationError(f"duplicate group label: '{group.label}'")
+            raise DeckValidationError(code="E103", message=f"duplicate group label: '{group.label}'")
         seen.add(group.label)
 
 
@@ -66,7 +75,10 @@ def _check_group_slides_exist(deck: RawDeck) -> None:
     for group in deck.groups:
         for slide_id in group.slide_ids:
             if slide_id not in known:
-                raise DeckValidationError(f"group '{group.label}': references unknown slide '{slide_id}'")
+                raise DeckValidationError(
+                    code="E502",
+                    message=f"group '{group.label}': references unknown slide '{slide_id}'",
+                )
 
 
 def _check_no_overlapping_group_membership(deck: RawDeck) -> None:
@@ -75,7 +87,8 @@ def _check_no_overlapping_group_membership(deck: RawDeck) -> None:
         for slide_id in group.slide_ids:
             if slide_id in seen:
                 raise DeckValidationError(
-                    f"slide '{slide_id}' belongs to both group '{seen[slide_id]}' and group '{group.label}'"
+                    code="E103",
+                    message=(f"slide '{slide_id}' belongs to both group '{seen[slide_id]}' and group '{group.label}'"),
                 )
             seen[slide_id] = group.label
 
@@ -90,5 +103,5 @@ def _check_no_duplicate_edges(deck: Deck) -> None:
             ]
         )
         if key in seen:
-            raise DeckValidationError(f"edges[{idx}]: duplicate edge")
+            raise DeckValidationError(code="E103", message=f"edges[{idx}]: duplicate edge")
         seen.add(key)

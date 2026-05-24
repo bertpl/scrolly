@@ -26,21 +26,24 @@ def parse_deck(deck_path: Path) -> RawDeck:
     try:
         raw = json5.loads(deck_path.read_text())
     except ValueError as e:
-        raise DeckParseError(f"{deck_path}: could not parse JSON5: {e}") from e
+        raise DeckParseError(code="E001", message=f"{deck_path}: could not parse JSON5: {e}") from e
 
     if not isinstance(raw, dict):
-        raise DeckParseError(f"{deck_path}: deck file must be a JSON5 object, got {type(raw).__name__}")
+        raise DeckParseError(
+            code="E002",
+            message=f"{deck_path}: deck file must be a JSON5 object, got {type(raw).__name__}",
+        )
 
     title = raw.get("title")
     if title is not None and not isinstance(title, str):
-        raise DeckParseError(f"{deck_path}: field 'title' must be a string if present")
+        raise DeckParseError(code="E004", message=f"{deck_path}: field 'title' must be a string if present")
 
     slides_raw = _require_list(raw, "slides", deck_path)
     slides, groups = _parse_slides_and_groups(slides_raw, deck_path)
 
     edges_raw = raw.get("edges", [])
     if not isinstance(edges_raw, list):
-        raise DeckParseError(f"{deck_path}: field 'edges' must be a list if present")
+        raise DeckParseError(code="E005", message=f"{deck_path}: field 'edges' must be a list if present")
     edges = tuple(_parse_edge(e, idx) for idx, e in enumerate(edges_raw))
 
     return RawDeck(title=title, slides=slides, edges=edges, groups=groups)
@@ -55,22 +58,22 @@ def _parse_slides_and_groups(slides_raw: list, deck_path: Path) -> tuple[tuple[S
     for top_idx, item in enumerate(slides_raw):
         ctx = f"slides[{top_idx}]"
         if not isinstance(item, dict):
-            raise DeckParseError(f"{ctx}: must be an object, got {type(item).__name__}")
+            raise DeckParseError(code="E006", message=f"{ctx}: must be an object, got {type(item).__name__}")
 
         if "group" in item:
             label = item["group"]
             if not isinstance(label, str) or not label.strip():
-                raise DeckParseError(f"{ctx}: 'group' must be a non-empty string")
+                raise DeckParseError(code="E004", message=f"{ctx}: 'group' must be a non-empty string")
             label = label.strip()
 
             if "slides" not in item or not isinstance(item["slides"], list):
-                raise DeckParseError(f"{ctx}: group must have a 'slides' list")
+                raise DeckParseError(code="E005", message=f"{ctx}: group must have a 'slides' list")
 
             group_slide_ids: list[str] = []
             for inner_idx, inner in enumerate(item["slides"]):
                 inner_ctx = f"slides[{top_idx}].slides[{inner_idx}]"
                 if isinstance(inner, dict) and "group" in inner:
-                    raise DeckParseError(f"{inner_ctx}: nested groups are not allowed")
+                    raise DeckParseError(code="E010", message=f"{inner_ctx}: nested groups are not allowed")
                 slide = _parse_slide(inner, deck_dir, flat_idx, inner_ctx)
                 slides.append(slide)
                 group_slide_ids.append(slide.id)
@@ -95,18 +98,21 @@ def _parse_group_color(raw: dict, ctx: str) -> str | None:
         return None
     color = raw["color"]
     if not isinstance(color, str):
-        raise DeckParseError(f"{ctx}: 'color' must be a string, got {type(color).__name__}")
+        raise DeckParseError(code="E004", message=f"{ctx}: 'color' must be a string, got {type(color).__name__}")
     if not _HEX_COLOR_RE.match(color):
-        raise DeckParseError(f"{ctx}: 'color' must be #RGB or #RRGGBB, got '{color}'")
+        raise DeckParseError(code="E009", message=f"{ctx}: 'color' must be #RGB or #RRGGBB, got '{color}'")
     return color
 
 
 def _require_list(d: dict, key: str, deck_path: Path) -> list:
     if key not in d:
-        raise DeckParseError(f"{deck_path}: missing required field '{key}'")
+        raise DeckParseError(code="E003", message=f"{deck_path}: missing required field '{key}'")
     v = d[key]
     if not isinstance(v, list):
-        raise DeckParseError(f"{deck_path}: field '{key}' must be a list, got {type(v).__name__}")
+        raise DeckParseError(
+            code="E005",
+            message=f"{deck_path}: field '{key}' must be a list, got {type(v).__name__}",
+        )
     return v
 
 
@@ -114,7 +120,7 @@ def _parse_slide(raw: Any, deck_dir: Path, idx: int, ctx: str | None = None) -> 
     if ctx is None:
         ctx = f"slides[{idx}]"
     if not isinstance(raw, dict):
-        raise DeckParseError(f"{ctx}: must be an object, got {type(raw).__name__}")
+        raise DeckParseError(code="E006", message=f"{ctx}: must be an object, got {type(raw).__name__}")
 
     slide_id = _require_str(raw, "id", ctx)
     position = _parse_position(raw, ctx)
@@ -126,22 +132,25 @@ def _parse_slide(raw: Any, deck_dir: Path, idx: int, ctx: str | None = None) -> 
 
 def _parse_position(raw_slide: dict, ctx: str) -> Position:
     if "position" not in raw_slide:
-        raise DeckParseError(f"{ctx}: missing required field 'position'")
+        raise DeckParseError(code="E003", message=f"{ctx}: missing required field 'position'")
     raw_pos = raw_slide["position"]
     if not isinstance(raw_pos, list) or len(raw_pos) != 2:
-        raise DeckParseError(f"{ctx}: 'position' must be a two-element array [x, y]")
+        raise DeckParseError(code="E007", message=f"{ctx}: 'position' must be a two-element array [x, y]")
     x, y = raw_pos
     if not _is_int(x) or not _is_int(y):
-        raise DeckParseError(f"{ctx}: 'position' entries must be integers")
+        raise DeckParseError(code="E008", message=f"{ctx}: 'position' entries must be integers")
     return Position(x=x, y=y)
 
 
 def _require_str(d: dict, key: str, ctx: str) -> str:
     if key not in d:
-        raise DeckParseError(f"{ctx}: missing required field '{key}'")
+        raise DeckParseError(code="E003", message=f"{ctx}: missing required field '{key}'")
     v = d[key]
     if not isinstance(v, str):
-        raise DeckParseError(f"{ctx}: field '{key}' must be a string, got {type(v).__name__}")
+        raise DeckParseError(
+            code="E004",
+            message=f"{ctx}: field '{key}' must be a string, got {type(v).__name__}",
+        )
     return v
 
 
@@ -153,9 +162,12 @@ def _is_int(v: Any) -> bool:
 def _parse_edge(raw: Any, idx: int) -> RawEdge:
     ctx = f"edges[{idx}]"
     if not isinstance(raw, list):
-        raise DeckParseError(f"{ctx}: must be a two-element array, got {type(raw).__name__}")
+        raise DeckParseError(
+            code="E005",
+            message=f"{ctx}: must be a two-element array, got {type(raw).__name__}",
+        )
     if len(raw) != 2:
-        raise DeckParseError(f"{ctx}: must be a two-element array, got {len(raw)} elements")
+        raise DeckParseError(code="E007", message=f"{ctx}: must be a two-element array, got {len(raw)} elements")
 
     return RawEdge(
         a=_parse_endpoint(raw[0], f"{ctx}[0]"),
@@ -165,12 +177,12 @@ def _parse_edge(raw: Any, idx: int) -> RawEdge:
 
 def _parse_endpoint(raw: Any, ctx: str) -> RawEndpoint:
     if not isinstance(raw, str):
-        raise DeckParseError(f"{ctx}: endpoint must be a string, got {type(raw).__name__}")
+        raise DeckParseError(code="E004", message=f"{ctx}: endpoint must be a string, got {type(raw).__name__}")
 
     parts = raw.split("|", 1)
     slide_id = parts[0].strip()
     if not slide_id:
-        raise DeckParseError(f"{ctx}: endpoint has empty slide id")
+        raise DeckParseError(code="E011", message=f"{ctx}: endpoint has empty slide id")
 
     if len(parts) == 1:
         return RawEndpoint(slide_id=slide_id, side=None)
@@ -180,6 +192,6 @@ def _parse_endpoint(raw: Any, ctx: str) -> RawEndpoint:
         side = Side(side_str)
     except ValueError:
         valid = ", ".join(s.value for s in Side)
-        raise DeckParseError(f"{ctx}: side '{side_str}' is not one of ({valid})") from None
+        raise DeckParseError(code="E011", message=f"{ctx}: side '{side_str}' is not one of ({valid})") from None
 
     return RawEndpoint(slide_id=slide_id, side=side)

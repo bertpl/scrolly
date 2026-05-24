@@ -99,12 +99,12 @@ def _validate_assets(slide_id: str, assets: tuple[Path, ...]) -> None:
     filenames: set[str] = set()
     for path in assets:
         if not path.exists():
-            raise SlideSourceError(f"slide {slide_id!r}: asset file does not exist: {path}")
+            raise SlideSourceError(code="E401", message=f"slide {slide_id!r}: asset file does not exist: {path}")
         name = path.name
         if not name or name in (".", ".."):
-            raise SlideSourceError(f"slide {slide_id!r}: invalid asset filename: {name!r}")
+            raise SlideSourceError(code="E402", message=f"slide {slide_id!r}: invalid asset filename: {name!r}")
         if name in filenames:
-            raise SlideSourceError(f"slide {slide_id!r}: duplicate asset filename: {name!r}")
+            raise SlideSourceError(code="E402", message=f"slide {slide_id!r}: duplicate asset filename: {name!r}")
         filenames.add(name)
 
 
@@ -206,7 +206,10 @@ def _mime_type(path: Path, slide_id: str) -> str:
     ext = path.suffix.lower()
     if ext not in _MIME_TYPES:
         raise SlideSourceError(
-            f"slide {slide_id!r}: unsupported image format '{ext}' for {path.name}. "
-            f"Supported: {', '.join(sorted(_MIME_TYPES))}"
+            code="E403",
+            message=(
+                f"slide {slide_id!r}: unsupported image format '{ext}' for {path.name}. "
+                f"Supported: {', '.join(sorted(_MIME_TYPES))}"
+            ),
         )
     return _MIME_TYPES[ext]

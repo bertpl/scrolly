@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel, ValidationError
 
+from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import (
     AnimatedScalar,
     AnimatedVec2,
@@ -128,15 +129,15 @@ class TestSlideElement:
 
 class TestSizeValidation:
     def test_auto_auto_rejected(self):
-        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+        with pytest.raises(SlideSourceError, match="at least one size dimension must be non-auto"):
             HtmlElement(**_html(width="auto", height="auto"))
 
     def test_zero_width_rejected(self):
-        with pytest.raises(ValidationError, match="numeric width must be > 0"):
+        with pytest.raises(SlideSourceError, match="numeric width must be > 0"):
             HtmlElement(**_html(width=0, height=100))
 
     def test_negative_height_rejected(self):
-        with pytest.raises(ValidationError, match="numeric height must be > 0"):
+        with pytest.raises(SlideSourceError, match="numeric height must be > 0"):
             HtmlElement(**_html(width=100, height=-5))
 
     def test_auto_width_numeric_height(self):
@@ -181,11 +182,11 @@ class TestImageElement:
         assert el.object_fit is None
 
     def test_object_fit_required_when_both_numeric(self):
-        with pytest.raises(ValidationError, match="object_fit is required"):
+        with pytest.raises(SlideSourceError, match="object_fit is required"):
             ImageElement(**_asset(object_fit=None))
 
     def test_object_fit_forbidden_with_auto(self):
-        with pytest.raises(ValidationError, match="object_fit is forbidden"):
+        with pytest.raises(SlideSourceError, match="object_fit is forbidden"):
             ImageElement(**_asset(width=100, height="auto", object_fit="cover"))
 
     def test_extra_field_rejected(self):
@@ -232,31 +233,31 @@ class TestImageSequenceElement:
         assert len(el.image_sequence) == 2
 
     def test_too_few_frames_rejected(self):
-        with pytest.raises(ValidationError, match="image_sequence must contain at least 2 entries"):
+        with pytest.raises(SlideSourceError, match="image_sequence must contain at least 2 entries"):
             ImageSequenceElement(**_image_sequence(image_sequence=["a.svg"]))
 
     def test_zero_hold_rejected(self):
-        with pytest.raises(ValidationError, match="hold must be > 0"):
+        with pytest.raises(SlideSourceError, match="hold must be > 0"):
             ImageSequenceElement(**_image_sequence(hold=0))
 
     def test_negative_hold_rejected(self):
-        with pytest.raises(ValidationError, match="hold must be > 0"):
+        with pytest.raises(SlideSourceError, match="hold must be > 0"):
             ImageSequenceElement(**_image_sequence(hold=-50))
 
     def test_frame_distance_equal_to_hold_rejected(self):
-        with pytest.raises(ValidationError, match=r"frame_distance .* must be > hold"):
+        with pytest.raises(SlideSourceError, match=r"frame_distance .* must be > hold"):
             ImageSequenceElement(**_image_sequence(frame_distance=200, hold=200))
 
     def test_frame_distance_less_than_hold_rejected(self):
-        with pytest.raises(ValidationError, match=r"frame_distance .* must be > hold"):
+        with pytest.raises(SlideSourceError, match=r"frame_distance .* must be > hold"):
             ImageSequenceElement(**_image_sequence(frame_distance=100, hold=200))
 
     def test_negative_fade_in_rejected(self):
-        with pytest.raises(ValidationError, match="fade_in must be >= 0"):
+        with pytest.raises(SlideSourceError, match="fade_in must be >= 0"):
             ImageSequenceElement(**_image_sequence(fade_in=-1))
 
     def test_negative_fade_out_rejected(self):
-        with pytest.raises(ValidationError, match="fade_out must be >= 0"):
+        with pytest.raises(SlideSourceError, match="fade_out must be >= 0"):
             ImageSequenceElement(**_image_sequence(fade_out=-1))
 
     def test_zero_fade_in_allowed(self):
@@ -268,7 +269,7 @@ class TestImageSequenceElement:
         assert el.fade_in == 150
 
     def test_object_fit_required_when_both_numeric(self):
-        with pytest.raises(ValidationError, match="object_fit is required"):
+        with pytest.raises(SlideSourceError, match="object_fit is required"):
             ImageSequenceElement(**_image_sequence(width=80, height=60))
 
     def test_object_fit_with_both_numeric(self):
@@ -276,7 +277,7 @@ class TestImageSequenceElement:
         assert el.object_fit == "cover"
 
     def test_object_fit_forbidden_with_auto(self):
-        with pytest.raises(ValidationError, match="object_fit is forbidden"):
+        with pytest.raises(SlideSourceError, match="object_fit is forbidden"):
             ImageSequenceElement(**_image_sequence(object_fit="cover"))
 
     def test_extra_field_rejected(self):
@@ -329,11 +330,11 @@ class TestIframeElement:
         assert el.shadow_color == "rgba(0,0,0,0.3)"
 
     def test_negative_border_width_rejected(self):
-        with pytest.raises(ValidationError, match="border_width must be >= 0"):
+        with pytest.raises(SlideSourceError, match="border_width must be >= 0"):
             IframeElement(**_iframe(border_width=-1))
 
     def test_negative_shadow_size_rejected(self):
-        with pytest.raises(ValidationError, match="shadow_size must be >= 0"):
+        with pytest.raises(SlideSourceError, match="shadow_size must be >= 0"):
             IframeElement(**_iframe(shadow_size=-5))
 
     def test_missing_iframe_html_rejected(self):
@@ -352,7 +353,7 @@ class TestIframeElement:
             el.iframe_html = "changed"
 
     def test_inherits_size_validation(self):
-        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+        with pytest.raises(SlideSourceError, match="at least one size dimension must be non-auto"):
             IframeElement(**_iframe(width="auto", height="auto"))
 
     def test_inherits_animated_opacity(self):
@@ -406,5 +407,5 @@ class TestMermaidElement:
         assert el.height.static_value == 50
 
     def test_size_validation_applies(self):
-        with pytest.raises(ValidationError, match="at least one size dimension must be non-auto"):
+        with pytest.raises(SlideSourceError, match="at least one size dimension must be non-auto"):
             MermaidElement(**_mermaid(width="auto", height="auto"))

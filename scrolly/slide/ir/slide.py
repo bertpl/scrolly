@@ -14,6 +14,7 @@ from typing import ClassVar, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
+from scrolly.errors import SlideSourceError
 from scrolly.slide.ir._framework.element import (
     HtmlElement,
     IframeElement,
@@ -132,35 +133,52 @@ class SlideIR(BaseModel, frozen=True):
 
     @model_validator(mode="after")
     def _validate_slide(self) -> SlideIR:
-        """Validate slide-level constraints."""
+        """Validate slide-level constraints.
+
+        Raises ``SlideSourceError`` rather than ``ValueError`` so the
+        catalog code propagates through Pydantic intact — Pydantic only
+        wraps ``ValueError`` / ``AssertionError`` / ``PydanticCustomError``.
+        """
         if self.font_scale <= 0:
-            raise ValueError(f"font_scale must be > 0, got {self.font_scale}")
+            raise SlideSourceError(code="E202", message=f"font_scale must be > 0, got {self.font_scale}")
         if self.initial_scroll_position < 0:
-            raise ValueError(f"initial_scroll_position must be >= 0, got {self.initial_scroll_position}")
+            raise SlideSourceError(
+                code="E203",
+                message=f"initial_scroll_position must be >= 0, got {self.initial_scroll_position}",
+            )
         if not self.elements:
-            raise ValueError("at least one element is required")
+            raise SlideSourceError(code="E201", message="at least one element is required")
 
         if isinstance(self.scroll_range, (int, float)):
             if self.scroll_range < 0:
-                raise ValueError(f"scroll_range must be >= 0 or 'auto', got {self.scroll_range}")
+                raise SlideSourceError(
+                    code="E204",
+                    message=f"scroll_range must be >= 0 or 'auto', got {self.scroll_range}",
+                )
             if self.initial_scroll_position > self.scroll_range:
-                raise ValueError(
-                    f"initial_scroll_position ({self.initial_scroll_position}) "
-                    f"must be <= scroll_range ({self.scroll_range})"
+                raise SlideSourceError(
+                    code="E205",
+                    message=(
+                        f"initial_scroll_position ({self.initial_scroll_position}) "
+                        f"must be <= scroll_range ({self.scroll_range})"
+                    ),
                 )
             for pos in self.snap_positions:
                 if pos < 0 or pos > self.scroll_range:
-                    raise ValueError(f"snap_positions value {pos} is outside [0, {self.scroll_range}]")
+                    raise SlideSourceError(
+                        code="E206",
+                        message=f"snap_positions value {pos} is outside [0, {self.scroll_range}]",
+                    )
         else:
             for pos in self.snap_positions:
                 if pos < 0:
-                    raise ValueError(f"snap_positions value {pos} must be >= 0")
+                    raise SlideSourceError(code="E206", message=f"snap_positions value {pos} must be >= 0")
 
         seen_names: set[str] = set()
         for el in self.elements:
             if el.name is not None:
                 if el.name in seen_names:
-                    raise ValueError(f"duplicate element name: {el.name!r}")
+                    raise SlideSourceError(code="E207", message=f"duplicate element name: {el.name!r}")
                 seen_names.add(el.name)
 
         return self

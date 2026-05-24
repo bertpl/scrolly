@@ -56,6 +56,9 @@ def _infer_side(
 
     # Diagonal or same cell — no unique side.
     raise DeckInferenceError(
-        f"edges[{edge_idx}]: cannot infer side for '{from_id}' — "
-        f"'{from_id}' and '{to_id}' are not on the same row or column"
+        code="E503",
+        message=(
+            f"edges[{edge_idx}]: cannot infer side for '{from_id}' — "
+            f"'{from_id}' and '{to_id}' are not on the same row or column"
+        ),
     )

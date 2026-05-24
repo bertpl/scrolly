@@ -28,26 +28,34 @@ def parse_json5_ir(source_path: Path, ir_cls: type[T], label: str) -> T:
     try:
         text = source_path.read_text(encoding="utf-8")
     except FileNotFoundError:
-        raise SlideSourceError(f"{label} source not found: {source_path}") from None
+        raise SlideSourceError(code="E505", message=f"{label} source not found: {source_path}") from None
 
     try:
         raw = json5.loads(text)
     except ValueError as exc:
-        raise SlideSourceError(f"{label} source is not valid JSON5: {source_path}: {exc}") from None
+        raise SlideSourceError(
+            code="E001",
+            message=f"{label} source is not valid JSON5: {source_path}: {exc}",
+        ) from None
 
     if not isinstance(raw, dict):
-        raise SlideSourceError(f"{label} source must be a JSON object, got {type(raw).__name__}: {source_path}")
+        raise SlideSourceError(
+            code="E002",
+            message=f"{label} source must be a JSON object, got {type(raw).__name__}: {source_path}",
+        )
 
     source_dir = source_path.parent
     try:
         _resolve_file_fields(raw, source_dir)
-    except (FileNotFoundError, ValueError) as exc:
-        raise SlideSourceError(f"{label} file field error: {source_path}: {exc}") from None
+    except FileNotFoundError as exc:
+        raise SlideSourceError(code="E505", message=f"{label} file field error: {source_path}: {exc}") from None
+    except ValueError as exc:
+        raise SlideSourceError(code="E012", message=f"{label} file field error: {source_path}: {exc}") from None
 
     try:
         return ir_cls.model_validate(raw)
     except ValidationError as exc:
-        raise SlideSourceError(f"{label} validation failed: {source_path}: {exc}") from None
+        raise SlideSourceError(code="E299", message=f"{label} validation failed: {source_path}: {exc}") from None
 
 
 def _resolve_file_fields(obj: dict | list, source_dir: Path) -> None:

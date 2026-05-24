@@ -16,6 +16,7 @@ from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
+from scrolly.errors import SlideSourceError
 from scrolly.slide.element_ir import ElementIR, PrimitiveElement
 from scrolly.slide.ir._framework.animated_values import (
     AnimatedScalar,
@@ -86,11 +87,14 @@ class SlideElement(ElementIR, frozen=True):
     def _validate_size(self) -> SlideElement:
         """Validate that at least one size dimension is non-auto."""
         if self.width.is_auto and self.height.is_auto:
-            raise ValueError('at least one size dimension must be non-auto; got both as "auto"')
+            raise SlideSourceError(
+                code="E301",
+                message='at least one size dimension must be non-auto; got both as "auto"',
+            )
         if self.width.is_static_numeric and self.width.static_value <= 0:
-            raise ValueError(f"numeric width must be > 0, got {self.width.static_value}")
+            raise SlideSourceError(code="E302", message=f"numeric width must be > 0, got {self.width.static_value}")
         if self.height.is_static_numeric and self.height.static_value <= 0:
-            raise ValueError(f"numeric height must be > 0, got {self.height.static_value}")
+            raise SlideSourceError(code="E302", message=f"numeric height must be > 0, got {self.height.static_value}")
         return self
 
 
@@ -120,9 +124,15 @@ class ImageElement(SlideElement, PrimitiveElement, frozen=True):
         h_is_auto = self.height.is_auto
         both_non_auto = not w_is_auto and not h_is_auto
         if both_non_auto and self.object_fit is None:
-            raise ValueError("object_fit is required when both size dimensions are numeric or animated")
+            raise SlideSourceError(
+                code="E303",
+                message="object_fit is required when both size dimensions are numeric or animated",
+            )
         if (w_is_auto or h_is_auto) and self.object_fit is not None:
-            raise ValueError('object_fit is forbidden when a size dimension is "auto"')
+            raise SlideSourceError(
+                code="E304",
+                message='object_fit is forbidden when a size dimension is "auto"',
+            )
         return self
 
 
@@ -214,17 +224,23 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     def _validate_image_sequence(self) -> ImageSequenceElement:
         """Validate image-sequence-specific timing and asset fields."""
         if len(self.image_sequence) < 2:
-            raise ValueError(f"image_sequence must contain at least 2 entries, got {len(self.image_sequence)}")
+            raise SlideSourceError(
+                code="E305",
+                message=f"image_sequence must contain at least 2 entries, got {len(self.image_sequence)}",
+            )
         if self.hold <= 0:
-            raise ValueError(f"hold must be > 0, got {self.hold}")
+            raise SlideSourceError(code="E306", message=f"hold must be > 0, got {self.hold}")
         if self.frame_distance <= self.hold:
-            raise ValueError(
-                f"frame_distance ({self.frame_distance}) must be > hold ({self.hold}) to allow a non-zero crossfade"
+            raise SlideSourceError(
+                code="E306",
+                message=(
+                    f"frame_distance ({self.frame_distance}) must be > hold ({self.hold}) to allow a non-zero crossfade"
+                ),
             )
         if self.fade_in < 0:
-            raise ValueError(f"fade_in must be >= 0, got {self.fade_in}")
+            raise SlideSourceError(code="E306", message=f"fade_in must be >= 0, got {self.fade_in}")
         if self.fade_out < 0:
-            raise ValueError(f"fade_out must be >= 0, got {self.fade_out}")
+            raise SlideSourceError(code="E306", message=f"fade_out must be >= 0, got {self.fade_out}")
         return self
 
     @model_validator(mode="after")
@@ -234,9 +250,15 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
         h_is_auto = self.height.is_auto
         both_non_auto = not w_is_auto and not h_is_auto
         if both_non_auto and self.object_fit is None:
-            raise ValueError("object_fit is required when both size dimensions are numeric or animated")
+            raise SlideSourceError(
+                code="E303",
+                message="object_fit is required when both size dimensions are numeric or animated",
+            )
         if (w_is_auto or h_is_auto) and self.object_fit is not None:
-            raise ValueError('object_fit is forbidden when a size dimension is "auto"')
+            raise SlideSourceError(
+                code="E304",
+                message='object_fit is forbidden when a size dimension is "auto"',
+            )
         return self
 
 
@@ -304,9 +326,9 @@ class IframeElement(SlideElement, PrimitiveElement, frozen=True):
     def _validate_decorations(self) -> IframeElement:
         """Validate non-negative border and shadow sizes."""
         if self.border_width < 0:
-            raise ValueError(f"border_width must be >= 0, got {self.border_width}")
+            raise SlideSourceError(code="E307", message=f"border_width must be >= 0, got {self.border_width}")
         if self.shadow_size < 0:
-            raise ValueError(f"shadow_size must be >= 0, got {self.shadow_size}")
+            raise SlideSourceError(code="E307", message=f"shadow_size must be >= 0, got {self.shadow_size}")
         return self
 
 
