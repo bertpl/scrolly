@@ -1,10 +1,10 @@
-"""Render a ``ScrollimationIR`` to a ``SlideHTML`` by driving the element-IR mechanism.
+"""Render a ``SlideIR`` to a ``SlideHTML`` by driving the element-IR mechanism.
 
 The renderer is a thin driver: for each authored element it runs the
-element-IR compile loop to lower the element to primitives, looks up the
-matching ``ElementRenderer`` for each primitive, and aggregates the
-returned ``RenderedElement`` contribution bundles. Type-specific HTML /
-CSS generation lives in ``scrolly.slide.element_ir.renderers``.
+element-IR compile loop to lower the element to primitives, looks up
+the matching ``ElementRenderer`` for each primitive, and aggregates the
+returned ``RenderedElement`` contribution bundles. Type-specific
+HTML / CSS generation lives in ``scrolly.slide.element_ir.renderers``.
 """
 
 from __future__ import annotations
@@ -20,20 +20,24 @@ from scrolly.slide.element_ir import (
 )
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
-from scrolly.slide.ir.scrollimation import ScrollimationIR
 from scrolly.slide.processor import Renderer
 
 if TYPE_CHECKING:
     from scrolly.pipeline._bundler import PayloadBundler
 
 
-class ScrollimationRenderer(Renderer):
-    """Renderer for the `scrollimation` slide type."""
+class SlideRenderer(Renderer):
+    """Renderer for the single slide type."""
 
     @classmethod
     def can_process(cls, ir: SlideIR) -> bool:
-        """Return True if this renderer handles the given IR type."""
-        return isinstance(ir, ScrollimationIR)
+        """Return True for exactly-``SlideIR`` instances.
+
+        Uses an exact-type match rather than ``isinstance`` so that
+        future subclasses can register their own renderers without
+        being intercepted by the built-in.
+        """
+        return type(ir) is SlideIR
 
     def render(
         self,
@@ -42,10 +46,10 @@ class ScrollimationRenderer(Renderer):
         *,
         bundler: PayloadBundler | None = None,
     ) -> SlideHTML:
-        """Render a ``ScrollimationIR`` to ``SlideHTML``.
+        """Render a ``SlideIR`` to ``SlideHTML``.
 
         Args:
-            ir: The IR to render. Must be a ``ScrollimationIR``.
+            ir: The IR to render.
             css_namespace: Slide id used to scope element CSS rules.
             bundler: Optional payload bundler. When provided, iframe
                 ``srcdoc`` payloads are registered with the bundler and
@@ -56,7 +60,7 @@ class ScrollimationRenderer(Renderer):
         Returns:
             The rendered ``SlideHTML``.
         """
-        assert isinstance(ir, ScrollimationIR)
+        assert isinstance(ir, SlideIR)
         prefix = f"{css_namespace}-" if css_namespace else ""
         slide_type = ir.slide_type
         ns = f".slide-type-{slide_type}"

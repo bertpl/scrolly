@@ -1,4 +1,4 @@
-"""Slide IR package — base class, element models, animated value types, and per-type IRs."""
+"""Slide IR package — the single slide IR, element models, and animated value types."""
 
 from scrolly.slide.ir._framework.animated_values import (
     AnimatedScalar,
@@ -7,7 +7,6 @@ from scrolly.slide.ir._framework.animated_values import (
     ScalarKeyframes,
     Vec2Keyframes,
 )
-from scrolly.slide.ir._framework.base import SlideIR
 from scrolly.slide.ir._framework.element import (
     HtmlElement,
     IframeElement,
@@ -18,6 +17,7 @@ from scrolly.slide.ir._framework.element import (
     SlideElement,
 )
 from scrolly.slide.ir._framework.utils import parse_json5_ir, resolve_asset_paths
+from scrolly.slide.ir.slide import SlideIR
 
 __all__ = [
     "AnimatedScalar",

@@ -1,8 +1,10 @@
-"""ScrollimationIR model.
+"""``SlideIR`` — the single slide IR model.
 
-The scrollimation IR contains a list of positioned elements, each with
-animatable properties.  Properties can be either static values or
-keyframe-based animations (piecewise linear, held constant beyond extremes).
+A slide is a list of positioned elements, each with animatable
+properties (static values or piecewise-linear keyframes). The renderer
+runs each element through the element-IR registry to produce the
+contributed HTML, CSS, assets, and snap positions; the assembled
+output goes into the deck-level page.
 """
 
 from __future__ import annotations
@@ -10,28 +12,45 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar, Literal, Self
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
-from scrolly.slide.ir import (
+from scrolly.slide.ir._framework.element import (
     HtmlElement,
     IframeElement,
     ImageElement,
     ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
-    SlideIR,
-    parse_json5_ir,
-    resolve_asset_paths,
 )
+from scrolly.slide.ir._framework.utils import parse_json5_ir, resolve_asset_paths
 
 AnyElement = ImageElement | ImageSequenceElement | HtmlElement | IframeElement | MarkdownElement | MermaidElement
 
 
-class ScrollimationIR(SlideIR, frozen=True):
-    """Top-level IR for a .scrollimation.json source file."""
+class SlideIR(BaseModel, frozen=True):
+    """The single slide IR. Loaded from ``.slide.json`` source files.
 
-    SUFFIX: ClassVar[str] = ".scrollimation.json"
-    DESCRIPTION: ClassVar[str] = "Scroll-driven animation"
+    Substrate fields:
+
+    - ``title`` (required) — navigation label.
+    - ``scroll_range`` — total scrollable distance in abstract scroll
+      units, or ``"auto"`` (default) for content-driven height.
+    - ``font_scale`` (default ``1.0``) — per-slide font multiplier.
+    - ``initial_scroll_position`` (default ``0``).
+    - ``scroll_speed`` (default ``1.0``), ``easing`` (default
+      ``"linear"``), ``snap_positions`` (default empty),
+      ``reverse`` (default ``False``).
+    - ``elements`` (required, non-empty) — the positioned content.
+
+    The ``SUFFIX`` and ``DESCRIPTION`` class attributes plus the
+    registry-driven ``from_file`` factory mean ``SlideIR`` participates
+    in the same one-entry dispatch mechanism the multi-type design used,
+    so registering a second slide type later (if ever needed) is a
+    registration rather than a re-architecture.
+    """
+
+    SUFFIX: ClassVar[str] = ".slide.json"
+    DESCRIPTION: ClassVar[str] = "Slide"
 
     title: str = Field(description="Human-readable slide title, shown in navigation UI.")
     scroll_range: float | Literal["auto"] = Field(
@@ -92,17 +111,27 @@ class ScrollimationIR(SlideIR, frozen=True):
         description="The elements in this slide, rendered in array order (first = bottom, last = top).",
     )
 
+    @property
+    def slide_type(self) -> str:
+        """CSS-safe type name derived from ``SUFFIX``."""
+        return self.SUFFIX.lstrip(".").replace(".", "-")
+
+    @classmethod
+    def source_schema(cls) -> dict:
+        """JSON-serialisable description of the source file format."""
+        return cls.model_json_schema()
+
     @classmethod
     def from_file(cls, source_path: Path) -> Self:
-        """Parse a .scrollimation.json source file."""
-        ir = parse_json5_ir(source_path, cls, "scrollimation")
+        """Parse a ``.slide.json`` source file."""
+        ir = parse_json5_ir(source_path, cls, "slide")
         resolved = resolve_asset_paths(ir.elements, source_path.parent)
         if resolved != list(ir.elements):
             ir = ir.model_copy(update={"elements": resolved})
         return ir
 
     @model_validator(mode="after")
-    def _validate_slide(self) -> ScrollimationIR:
+    def _validate_slide(self) -> SlideIR:
         """Validate slide-level constraints."""
         if self.font_scale <= 0:
             raise ValueError(f"font_scale must be > 0, got {self.font_scale}")
@@ -123,11 +152,6 @@ class ScrollimationIR(SlideIR, frozen=True):
                 if pos < 0 or pos > self.scroll_range:
                     raise ValueError(f"snap_positions value {pos} is outside [0, {self.scroll_range}]")
         else:
-            # scroll_range == "auto" — content-driven height. The range isn't
-            # statically known, so snap-positions / initial_scroll_position
-            # range checks against it are skipped here. Non-negativity of
-            # initial_scroll_position is still enforced above. Snap positions
-            # are validated for non-negativity below regardless of mode.
             for pos in self.snap_positions:
                 if pos < 0:
                     raise ValueError(f"snap_positions value {pos} must be >= 0")

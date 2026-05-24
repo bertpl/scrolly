@@ -1,8 +1,9 @@
-"""ABC hierarchy for IR processors: renderers and compilers.
+"""``Renderer`` ABC — single-step ``SlideIR → SlideHTML`` conversion.
 
-Renderers convert an IR into a SlideHTML (terminal).  Compilers convert an
-IR into another IR (intermediate).  Both share the ``can_process``
-dispatch classmethod via ``IRProcessor``.
+With the v0.2.0 collapse to a single slide type the ABC is dormant — one
+concrete subclass (``SlideRenderer``) is the only registered renderer —
+but kept so a future second type can register without re-architecting
+the dispatch surface.
 """
 
 from __future__ import annotations
@@ -17,16 +18,12 @@ if TYPE_CHECKING:
     from scrolly.pipeline._bundler import PayloadBundler
 
 
-class IRProcessor(abc.ABC):
-    """Base for all IR processors."""
+class Renderer(abc.ABC):
+    """Converts a ``SlideIR`` into a ``SlideHTML``."""
 
     @classmethod
     @abc.abstractmethod
     def can_process(cls, ir: SlideIR) -> bool: ...
-
-
-class Renderer(IRProcessor, abc.ABC):
-    """Converts an IR into a SlideHTML."""
 
     @abc.abstractmethod
     def render(
@@ -36,10 +33,3 @@ class Renderer(IRProcessor, abc.ABC):
         *,
         bundler: PayloadBundler | None = None,
     ) -> SlideHTML: ...
-
-
-class Compiler(IRProcessor, abc.ABC):
-    """Converts an IR into another IR."""
-
-    @abc.abstractmethod
-    def compile(self, ir: SlideIR) -> SlideIR: ...

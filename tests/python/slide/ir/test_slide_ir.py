@@ -18,7 +18,7 @@ from scrolly.slide.ir import (
     SlideIR,
     Vec2Keyframes,
 )
-from scrolly.slide.ir.scrollimation import ScrollimationIR
+from scrolly.slide.ir.slide import SlideIR
 
 # ── helpers ────────────────────────────────────────────────────────
 
@@ -149,11 +149,11 @@ class TestMermaidElement:
             MermaidElement(**data)
 
     def test_in_slide(self) -> None:
-        slide = ScrollimationIR(**_slide(elements=[_mermaid_element()]))
+        slide = SlideIR(**_slide(elements=[_mermaid_element()]))
         assert isinstance(slide.elements[0], MermaidElement)
 
     def test_mixed_element_types(self) -> None:
-        slide = ScrollimationIR(**_slide(elements=[_html_element(name="a"), _mermaid_element(name="b")]))
+        slide = SlideIR(**_slide(elements=[_html_element(name="a"), _mermaid_element(name="b")]))
         assert isinstance(slide.elements[0], HtmlElement)
         assert isinstance(slide.elements[1], MermaidElement)
 
@@ -198,15 +198,15 @@ class TestSizeValidation:
         assert element.position.static_value == (150, 200)
 
 
-# ── ScrollimationIR ────────────────────────────────────────────
+# ── SlideIR ────────────────────────────────────────────
 
 
-class TestScrollimationIR:
+class TestSlideIR:
     def test_is_slide_ir(self) -> None:
-        assert issubclass(ScrollimationIR, SlideIR)
+        assert issubclass(SlideIR, SlideIR)
 
     def test_valid_construction(self) -> None:
-        slide = ScrollimationIR(**_slide())
+        slide = SlideIR(**_slide())
         assert slide.title == "T"
         assert slide.scroll_range == 1000
         assert slide.initial_scroll_position == 0
@@ -215,35 +215,35 @@ class TestScrollimationIR:
         assert len(slide.elements) == 1
 
     def test_defaults(self) -> None:
-        slide = ScrollimationIR(**_slide())
+        slide = SlideIR(**_slide())
         assert slide.initial_scroll_position == 0
         assert slide.scroll_speed == 1.0
         assert slide.easing == "linear"
         assert slide.reverse is False
 
     def test_reverse_true(self) -> None:
-        slide = ScrollimationIR(**_slide(reverse=True))
+        slide = SlideIR(**_slide(reverse=True))
         assert slide.reverse is True
 
     def test_reverse_false_explicit(self) -> None:
-        slide = ScrollimationIR(**_slide(reverse=False))
+        slide = SlideIR(**_slide(reverse=False))
         assert slide.reverse is False
 
     def test_scroll_range_zero_valid(self) -> None:
-        slide = ScrollimationIR(**_slide(scroll_range=0))
+        slide = SlideIR(**_slide(scroll_range=0))
         assert slide.scroll_range == 0
 
     def test_negative_scroll_range_rejected(self) -> None:
         with pytest.raises(ValidationError, match="scroll_range must be >= 0"):
-            ScrollimationIR(**_slide(scroll_range=-1))
+            SlideIR(**_slide(scroll_range=-1))
 
     def test_empty_elements_rejected(self) -> None:
         with pytest.raises(ValidationError, match="at least one element"):
-            ScrollimationIR(**_slide(elements=[]))
+            SlideIR(**_slide(elements=[]))
 
     def test_duplicate_element_names_rejected(self) -> None:
         with pytest.raises(ValidationError, match="duplicate element name"):
-            ScrollimationIR(
+            SlideIR(
                 **_slide(
                     elements=[
                         _html_element(name="dup"),
@@ -254,10 +254,10 @@ class TestScrollimationIR:
 
     def test_initial_scroll_position_beyond_range_rejected(self) -> None:
         with pytest.raises(ValidationError, match="initial_scroll_position"):
-            ScrollimationIR(**_slide(scroll_range=100, initial_scroll_position=200))
+            SlideIR(**_slide(scroll_range=100, initial_scroll_position=200))
 
     def test_multiple_element_types(self) -> None:
-        slide = ScrollimationIR(
+        slide = SlideIR(
             **_slide(
                 elements=[
                     _image_element(name="bg"),
@@ -272,36 +272,36 @@ class TestScrollimationIR:
 
     def test_element_with_animated_opacity(self) -> None:
         el = _html_element(opacity={"keyframes": [(0, 0.0), (1000, 1.0)]})
-        slide = ScrollimationIR(**_slide(elements=[el]))
+        slide = SlideIR(**_slide(elements=[el]))
         assert slide.elements[0].opacity.is_animated
         assert slide.elements[0].opacity.keyframes == [(0, 0.0), (1000, 1.0)]
 
     def test_element_with_animated_position(self) -> None:
         el = _html_element(position={"keyframes": [(0, (0, 0)), (1000, (50, 50))]})
-        slide = ScrollimationIR(**_slide(elements=[el]))
+        slide = SlideIR(**_slide(elements=[el]))
         assert slide.elements[0].position.is_animated
 
     def test_element_with_static_opacity(self) -> None:
         el = _html_element(opacity=0.5)
-        slide = ScrollimationIR(**_slide(elements=[el]))
+        slide = SlideIR(**_slide(elements=[el]))
         assert not slide.elements[0].opacity.is_animated
         assert slide.elements[0].opacity.static_value == 0.5
 
     def test_snap_positions_default_empty(self) -> None:
-        slide = ScrollimationIR(**_slide())
+        slide = SlideIR(**_slide())
         assert slide.snap_positions == ()
 
     def test_snap_positions_accepted(self) -> None:
-        slide = ScrollimationIR(**_slide(scroll_range=1000, snap_positions=[0, 500, 1000]))
+        slide = SlideIR(**_slide(scroll_range=1000, snap_positions=[0, 500, 1000]))
         assert slide.snap_positions == (0, 500, 1000)
 
     def test_snap_positions_exceeds_range_rejected(self) -> None:
         with pytest.raises(ValidationError, match="snap_positions"):
-            ScrollimationIR(**_slide(scroll_range=100, snap_positions=[0, 200]))
+            SlideIR(**_slide(scroll_range=100, snap_positions=[0, 200]))
 
     def test_snap_positions_negative_rejected(self) -> None:
         with pytest.raises(ValidationError, match="snap_positions"):
-            ScrollimationIR(**_slide(snap_positions=[-1]))
+            SlideIR(**_slide(snap_positions=[-1]))
 
 
 # ── from_file ─────────────────────────────────────────────────────
@@ -326,9 +326,9 @@ MINIMAL_JSON5 = """\
 
 class TestFromFile:
     def test_returns_scrollimation_ir(self, tmp_path: Path) -> None:
-        src = _write(tmp_path, "s.scrollimation.json", MINIMAL_JSON5)
-        ir = ScrollimationIR.from_file(src)
-        assert isinstance(ir, ScrollimationIR)
+        src = _write(tmp_path, "s.slide.json", MINIMAL_JSON5)
+        ir = SlideIR.from_file(src)
+        assert isinstance(ir, SlideIR)
         assert ir.title == "T"
         assert ir.scroll_range == 100
 
@@ -336,7 +336,7 @@ class TestFromFile:
         _write(tmp_path, "hero.jpg", "fake")
         src = _write(
             tmp_path,
-            "s.scrollimation.json",
+            "s.slide.json",
             """\
 {
   title: "T",
@@ -347,19 +347,19 @@ class TestFromFile:
 }
 """,
         )
-        ir = ScrollimationIR.from_file(src)
+        ir = SlideIR.from_file(src)
         assert ir.elements[0].image.is_absolute()
 
     def test_slide_type_property(self, tmp_path: Path) -> None:
-        src = _write(tmp_path, "s.scrollimation.json", MINIMAL_JSON5)
-        ir = ScrollimationIR.from_file(src)
-        assert ir.slide_type == "scrollimation-json"
+        src = _write(tmp_path, "s.slide.json", MINIMAL_JSON5)
+        ir = SlideIR.from_file(src)
+        assert ir.slide_type == "slide-json"
 
     def test_missing_file_raises(self) -> None:
         from scrolly.errors import SlideSourceError
 
         with pytest.raises(SlideSourceError, match="not found"):
-            ScrollimationIR.from_file(Path("/no/such/file.scrollimation.json"))
+            SlideIR.from_file(Path("/no/such/file.slide.json"))
 
 
 class TestSubstrateDefaults:
@@ -367,21 +367,21 @@ class TestSubstrateDefaults:
 
     def test_scroll_range_defaults_to_auto(self) -> None:
         # --- arrange / act ----------------------
-        ir = ScrollimationIR(title="T", elements=[_html_element()])
+        ir = SlideIR(title="T", elements=[_html_element()])
 
         # --- assert -----------------------------
         assert ir.scroll_range == "auto"
 
     def test_scroll_range_accepts_explicit_auto(self) -> None:
         # --- arrange / act ----------------------
-        ir = ScrollimationIR(title="T", scroll_range="auto", elements=[_html_element()])
+        ir = SlideIR(title="T", scroll_range="auto", elements=[_html_element()])
 
         # --- assert -----------------------------
         assert ir.scroll_range == "auto"
 
     def test_scroll_range_accepts_numeric(self) -> None:
         # --- arrange / act ----------------------
-        ir = ScrollimationIR(title="T", scroll_range=500, elements=[_html_element()])
+        ir = SlideIR(title="T", scroll_range=500, elements=[_html_element()])
 
         # --- assert -----------------------------
         assert ir.scroll_range == 500.0
@@ -389,19 +389,19 @@ class TestSubstrateDefaults:
     def test_scroll_range_rejects_negative_number(self) -> None:
         # --- arrange / act / assert -------------
         with pytest.raises(ValidationError, match=r"scroll_range must be >= 0 or 'auto'"):
-            ScrollimationIR(title="T", scroll_range=-1, elements=[_html_element()])
+            SlideIR(title="T", scroll_range=-1, elements=[_html_element()])
 
     def test_scroll_range_rejects_unknown_string(self) -> None:
         # --- arrange / act / assert -------------
         with pytest.raises(ValidationError):
-            ScrollimationIR(title="T", scroll_range="huge", elements=[_html_element()])
+            SlideIR(title="T", scroll_range="huge", elements=[_html_element()])
 
     def test_auto_skips_initial_scroll_position_upper_bound(self) -> None:
         # --- arrange / act ----------------------
         # With scroll_range="auto" the upper bound isn't statically known,
         # so an initial_scroll_position that would exceed any reasonable
         # numeric range is still accepted.
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range="auto",
             initial_scroll_position=99999,
@@ -413,7 +413,7 @@ class TestSubstrateDefaults:
 
     def test_auto_skips_snap_position_upper_bound(self) -> None:
         # --- arrange / act ----------------------
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range="auto",
             snap_positions=(0, 5000, 99999),
@@ -426,7 +426,7 @@ class TestSubstrateDefaults:
     def test_auto_still_rejects_negative_snap_positions(self) -> None:
         # --- arrange / act / assert -------------
         with pytest.raises(ValidationError, match=r"snap_positions value -1 must be >= 0"):
-            ScrollimationIR(
+            SlideIR(
                 title="T",
                 scroll_range="auto",
                 snap_positions=(-1,),
@@ -435,14 +435,14 @@ class TestSubstrateDefaults:
 
     def test_font_scale_defaults_to_one(self) -> None:
         # --- arrange / act ----------------------
-        ir = ScrollimationIR(title="T", scroll_range=100, elements=[_html_element()])
+        ir = SlideIR(title="T", scroll_range=100, elements=[_html_element()])
 
         # --- assert -----------------------------
         assert ir.font_scale == 1.0
 
     def test_font_scale_accepts_positive_values(self) -> None:
         # --- arrange / act ----------------------
-        ir = ScrollimationIR(title="T", scroll_range=100, font_scale=1.5, elements=[_html_element()])
+        ir = SlideIR(title="T", scroll_range=100, font_scale=1.5, elements=[_html_element()])
 
         # --- assert -----------------------------
         assert ir.font_scale == 1.5
@@ -450,6 +450,6 @@ class TestSubstrateDefaults:
     def test_font_scale_rejects_zero_and_negative(self) -> None:
         # --- arrange / act / assert -------------
         with pytest.raises(ValidationError, match=r"font_scale must be > 0"):
-            ScrollimationIR(title="T", scroll_range=100, font_scale=0, elements=[_html_element()])
+            SlideIR(title="T", scroll_range=100, font_scale=0, elements=[_html_element()])
         with pytest.raises(ValidationError, match=r"font_scale must be > 0"):
-            ScrollimationIR(title="T", scroll_range=100, font_scale=-1, elements=[_html_element()])
+            SlideIR(title="T", scroll_range=100, font_scale=-1, elements=[_html_element()])

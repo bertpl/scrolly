@@ -40,8 +40,7 @@ def deck_source_schema() -> dict:
                                     "type": "string",
                                     "description": (
                                         "Path to the slide source file, relative to the deck file. "
-                                        "The filename suffix determines the slide type "
-                                        "(e.g. .static.md, .scrollimation.json, .storyboard.json)."
+                                        "Must end in .slide.json."
                                     ),
                                 },
                             },

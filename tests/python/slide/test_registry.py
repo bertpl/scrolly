@@ -1,4 +1,11 @@
-"""Tests for slide IR, renderer, and compiler registration and dispatch."""
+"""Tests for slide-IR + renderer registration and dispatch.
+
+After the v0.2.0 collapse to a single slide type the registry holds
+one ``SlideIR`` and one ``SlideRenderer``; the look-up surface still
+supports adding a second type without re-architecting, so the tests
+here exercise both the dormant-multi-type machinery and the single
+registered entry.
+"""
 
 from __future__ import annotations
 
@@ -6,18 +13,16 @@ from pathlib import Path
 from typing import ClassVar, Self
 
 import pytest
+from pydantic import Field
 
-import scrolly.slide  # noqa: F401 — trigger built-in type registration
+import scrolly.slide  # noqa: F401 — trigger built-in registration
 from scrolly.errors import UnknownSlideTypeError
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
-from scrolly.slide.processor import Compiler, Renderer
+from scrolly.slide.processor import Renderer
 from scrolly.slide.registry import (
-    _IR_TYPES,
-    find_compiler,
     find_renderer,
     get_ir_class_for_path,
-    register_compiler,
     register_ir,
     register_renderer,
     registered_ir_types,
@@ -26,192 +31,128 @@ from scrolly.slide.registry import (
 
 
 # ---------------------------------------------------------------------------
-# Test IR models
+# Test IR + renderer (suffix is test-only, never collides with the real one)
 # ---------------------------------------------------------------------------
 class _FakeIR(SlideIR, frozen=True):
-    SUFFIX: ClassVar[str] = ".testfake.md"
+    SUFFIX: ClassVar[str] = ".testfake.slide.json"
     DESCRIPTION: ClassVar[str] = "Test fake"
-    value: str = "fake"
+    marker: str = Field(default="fake")
 
     @classmethod
-    def from_file(cls, source_path: Path) -> Self:
-        return cls()
+    def from_file(cls, source_path: Path) -> Self:  # noqa: D401
+        """Stub loader for tests."""
+        return cls(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
 
 
-class _OtherIR(SlideIR, frozen=True):
-    SUFFIX: ClassVar[str] = ".testother.json"
-    DESCRIPTION: ClassVar[str] = "Test other"
-    value: str = "other"
+class _NoSuffixIR(SlideIR, frozen=True):
+    """SlideIR subclass that blanks out the inherited SUFFIX."""
+
+    SUFFIX: ClassVar[str] = ""
+    marker: str = Field(default="x")
 
     @classmethod
-    def from_file(cls, source_path: Path) -> Self:
-        return cls()
+    def from_file(cls, source_path: Path) -> Self:  # noqa: D401
+        """Stub loader for tests."""
+        return cls(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
 
 
-# ---------------------------------------------------------------------------
-# Test processors
-# ---------------------------------------------------------------------------
 class _FakeRenderer(Renderer):
     @classmethod
     def can_process(cls, ir: SlideIR) -> bool:
+        """Match `_FakeIR` instances only."""
         return isinstance(ir, _FakeIR)
 
-    def render(self, ir: SlideIR) -> SlideHTML:
-        return SlideHTML(title="fake", html="")
-
-
-class _FakeCompiler(Compiler):
-    @classmethod
-    def can_process(cls, ir: SlideIR) -> bool:
-        return isinstance(ir, _OtherIR)
-
-    def compile(self, ir: SlideIR) -> SlideIR:
-        return _FakeIR(value="compiled")
+    def render(self, ir: SlideIR, css_namespace: str = "") -> SlideHTML:  # type: ignore[override]
+        """Trivial render — returns a minimal SlideHTML."""
+        return SlideHTML(title="fake", html="<p>fake</p>")
 
 
 # ---------------------------------------------------------------------------
 # IR registration + suffix lookup
 # ---------------------------------------------------------------------------
-def test_static_suffix_is_registered_on_import():
-    assert ".static.md" in registered_suffixes()
+def test_slide_suffix_is_registered_on_import() -> None:
+    assert ".slide.json" in registered_suffixes()
 
 
-def test_scrollimation_suffix_is_registered_on_import():
-    assert ".scrollimation.json" in registered_suffixes()
-
-
-def test_storyboard_suffix_is_registered_on_import():
-    assert ".storyboard.json" in registered_suffixes()
-
-
-def test_register_ir_and_lookup():
+def test_register_ir_and_lookup() -> None:
     register_ir(_FakeIR)
-    cls = get_ir_class_for_path(Path("/foo/bar.testfake.md"))
+    cls = get_ir_class_for_path(Path("/foo/bar.testfake.slide.json"))
     assert cls is _FakeIR
 
 
-def test_unknown_suffix_raises():
+def test_unknown_suffix_raises() -> None:
     with pytest.raises(UnknownSlideTypeError, match="no slide type matches"):
         get_ir_class_for_path(Path("/foo/bar.totally-unknown-suffix.xyz"))
 
 
-class _NoSuffixIR(SlideIR, frozen=True):
-    value: str = ""
-
-    @classmethod
-    def from_file(cls, source_path: Path) -> Self:
-        return cls()
-
-
-def test_register_ir_rejects_type_without_suffix():
+def test_register_ir_rejects_type_without_suffix() -> None:
     with pytest.raises(TypeError, match="SUFFIX"):
         register_ir(_NoSuffixIR)
 
 
-def test_register_ir_rejects_duplicate_suffix_from_different_class():
-    class _DuplicateStaticIR(SlideIR, frozen=True):
-        SUFFIX: ClassVar[str] = ".static.md"
-        value: str = ""
+def test_register_ir_rejects_duplicate_suffix_from_different_class() -> None:
+    class _DuplicateSlideIR(SlideIR, frozen=True):
+        SUFFIX: ClassVar[str] = ".slide.json"
 
         @classmethod
-        def from_file(cls, source_path: Path) -> Self:
-            return cls()
+        def from_file(cls, source_path: Path) -> Self:  # noqa: D401
+            """Stub loader for tests."""
+            return cls(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
 
     with pytest.raises(ValueError, match="already registered"):
-        register_ir(_DuplicateStaticIR)
+        register_ir(_DuplicateSlideIR)
 
 
-def test_register_ir_is_idempotent_for_same_class():
+def test_register_ir_is_idempotent_for_same_class() -> None:
     register_ir(_FakeIR)
     register_ir(_FakeIR)
-    assert ".testfake.md" in registered_suffixes()
+    assert ".testfake.slide.json" in registered_suffixes()
 
 
-def test_longest_suffix_match_wins():
+def test_longest_suffix_match_wins() -> None:
     class _DeepIR(SlideIR, frozen=True):
-        SUFFIX: ClassVar[str] = ".deep.static.md"
-        value: str = "deep"
+        SUFFIX: ClassVar[str] = ".deep.slide.json"
 
         @classmethod
-        def from_file(cls, source_path: Path) -> Self:
-            return cls()
+        def from_file(cls, source_path: Path) -> Self:  # noqa: D401
+            """Stub loader for tests."""
+            return cls(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
 
     register_ir(_DeepIR)
-    assert get_ir_class_for_path(Path("/foo/x.deep.static.md")) is _DeepIR
-    from scrolly.slide.ir.static import StaticIR
-
-    assert get_ir_class_for_path(Path("/foo/x.static.md")) is StaticIR
+    assert get_ir_class_for_path(Path("/foo/x.deep.slide.json")) is _DeepIR
+    assert get_ir_class_for_path(Path("/foo/x.slide.json")) is SlideIR
 
 
 # ---------------------------------------------------------------------------
 # Renderer registration + dispatch
 # ---------------------------------------------------------------------------
-def test_register_renderer_and_find():
+def test_register_renderer_and_find() -> None:
     register_renderer(_FakeRenderer)
-    ir = _FakeIR()
+    ir = _FakeIR(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
     renderer = find_renderer(ir)
     assert isinstance(renderer, _FakeRenderer)
 
 
-def test_find_renderer_returns_none_for_unhandled_ir():
-    ir = _OtherIR()
-    # _OtherIR has no renderer registered (only a compiler)
-    register_compiler(_FakeCompiler)
-    result = find_renderer(ir)
-    assert result is None
-
-
-def test_register_renderer_is_idempotent():
+def test_register_renderer_is_idempotent() -> None:
     register_renderer(_FakeRenderer)
     register_renderer(_FakeRenderer)
-    ir = _FakeIR()
+    ir = _FakeIR(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
     assert find_renderer(ir) is not None
 
 
-def test_find_renderer_returns_fresh_instance():
+def test_find_renderer_returns_fresh_instance() -> None:
     register_renderer(_FakeRenderer)
-    a = find_renderer(_FakeIR())
-    b = find_renderer(_FakeIR())
+    sample = _FakeIR(title="t", elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}])
+    a = find_renderer(sample)
+    b = find_renderer(sample)
     assert a is not b
 
 
 # ---------------------------------------------------------------------------
-# Compiler registration + dispatch
+# Built-in registration resolves correctly
 # ---------------------------------------------------------------------------
-def test_register_compiler_and_find():
-    register_compiler(_FakeCompiler)
-    ir = _OtherIR()
-    compiler = find_compiler(ir)
-    assert isinstance(compiler, _FakeCompiler)
-
-
-def test_find_compiler_returns_none_for_unhandled_ir():
-    ir = _FakeIR()
-    result = find_compiler(ir)
-    assert result is None
-
-
-def test_register_compiler_is_idempotent():
-    register_compiler(_FakeCompiler)
-    register_compiler(_FakeCompiler)
-    ir = _OtherIR()
-    assert find_compiler(ir) is not None
-
-
-# ---------------------------------------------------------------------------
-# Built-in renderers + compilers resolve correctly
-# ---------------------------------------------------------------------------
-def test_static_ir_finds_renderer():
-    from scrolly.slide.ir.static import StaticIR
-
-    ir = StaticIR(title="x", body="# x", initial_scroll_position=0)
-    assert find_renderer(ir) is not None
-
-
-def test_scrollimation_ir_finds_renderer():
-    from scrolly.slide.ir.scrollimation import ScrollimationIR
-
-    ir = ScrollimationIR(
+def test_slide_ir_finds_renderer() -> None:
+    ir = SlideIR(
         title="T",
         scroll_range=100,
         elements=[{"html": "<p>hi</p>", "position": [0, 0], "width": 100, "height": 100}],
@@ -219,37 +160,7 @@ def test_scrollimation_ir_finds_renderer():
     assert find_renderer(ir) is not None
 
 
-def test_storyboard_ir_finds_compiler():
-    from scrolly.slide.ir.storyboard import StoryboardIR
-
-    ir = StoryboardIR(
-        title="T",
-        scene_distance=100,
-        scenes=[
-            {"elements": [{"html": "<p>1</p>", "position": [0, 0], "width": 80, "height": "auto"}]},
-            {"elements": [{"html": "<p>2</p>", "position": [0, 0], "width": 80, "height": "auto"}]},
-        ],
-    )
-    assert find_compiler(ir) is not None
-    assert find_renderer(ir) is None
-
-
-# ---------------------------------------------------------------------------
-# registered_ir_types
-# ---------------------------------------------------------------------------
-def test_registered_ir_types_contains_builtins():
+def test_registered_ir_types_contains_builtin_slide() -> None:
     types = registered_ir_types()
-    assert "static" in types
-    assert "scrollimation" in types
-    assert "storyboard" in types
-
-
-def test_registered_ir_types_maps_to_correct_classes():
-    from scrolly.slide.ir.scrollimation import ScrollimationIR
-    from scrolly.slide.ir.static import StaticIR
-    from scrolly.slide.ir.storyboard import StoryboardIR
-
-    types = registered_ir_types()
-    assert types["static"] is StaticIR
-    assert types["scrollimation"] is ScrollimationIR
-    assert types["storyboard"] is StoryboardIR
+    assert "slide" in types
+    assert types["slide"] is SlideIR

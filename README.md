@@ -26,8 +26,15 @@ scrolly build examples/worked-example/deck.deck.json --out /tmp/scrolly-out --fo
 open /tmp/scrolly-out/index.html
 ```
 
-See [`examples/worked-example/`](examples/worked-example/) for a reference deck
-demonstrating all supported slide types.
+See [`examples/worked-example/`](examples/worked-example/) for a reference deck.
+
+## Source format
+
+A deck is a `.deck.json` manifest plus one `.slide.json` per slide.
+Both files are parsed as **JSON5** but kept on the `.json` extension —
+a deliberate agent-first choice so common tooling that defaults to
+`*.json` continues to work; the JSON5 superset is what authors and
+agents actually write.
 
 ## Supported image formats
 

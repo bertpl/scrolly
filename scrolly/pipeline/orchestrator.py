@@ -19,8 +19,7 @@ from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
 from scrolly.slide.html import SlideHTML
-from scrolly.slide.ir import SlideIR
-from scrolly.slide.registry import find_compiler, find_renderer, get_ir_class_for_path
+from scrolly.slide.registry import find_renderer, get_ir_class_for_path
 
 
 def validate_deck_sources(deck_path: Path) -> Deck:
@@ -103,35 +102,19 @@ def _render_slides(
 ) -> dict[str, SlideHTML]:
     """Render every slide's source into a ``SlideHTML``, keyed by slide id.
 
-    Dispatches via ``can_process``: parse the source into an IR, then
-    check renderers (first match renders to SlideHTML) or compilers (first
-    match compiles to a new IR, repeat).  Cycle detection via visited
-    IR classes.
+    Dispatch is by filename suffix: ``get_ir_class_for_path`` picks the
+    registered ``SlideIR`` whose ``SUFFIX`` matches; ``find_renderer``
+    looks up the matching ``Renderer``. With v0.2.0 collapsed to a
+    single slide type, both lookups are one-entry tail-matches.
     """
     chunks: dict[str, SlideHTML] = {}
     for slide in slides:
         ir_cls = get_ir_class_for_path(slide.source)
         ir = ir_cls.from_file(slide.source)
-
-        visited: set[type[SlideIR]] = set()
-        while True:
-            renderer = find_renderer(ir)
-            if renderer is not None:
-                chunks[slide.id] = renderer.render(ir, css_namespace=slide.id, bundler=bundler)
-                break
-
-            compiler = find_compiler(ir)
-            if compiler is None:
-                raise SlideSourceError(f"no renderer or compiler for {type(ir).__name__} (slide '{slide.id}')")
-
-            ir = compiler.compile(ir)
-            ir_cls = type(ir)
-            if ir_cls in visited:
-                raise SlideSourceError(
-                    f"conversion cycle detected for slide '{slide.id}': "
-                    f"IR type {ir_cls.__name__} produced more than once"
-                )
-            visited.add(ir_cls)
+        renderer = find_renderer(ir)
+        if renderer is None:
+            raise SlideSourceError(f"no renderer for {type(ir).__name__} (slide '{slide.id}')")
+        chunks[slide.id] = renderer.render(ir, css_namespace=slide.id, bundler=bundler)
 
     return chunks
 
