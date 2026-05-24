@@ -324,6 +324,15 @@ body {
   transform: translateY(calc(1px * var(--scroll-position, 0)));
 }
 
+/* In deck view, iframe content captures pointer events before they
+ * reach the slide-container's click-to-select handler — making the
+ * iframe-covered region of a slide unclickable. Disable pointer events
+ * on iframes here so clicks fall through to the slide. Slide view
+ * (the default) re-enables interaction inside the iframe. */
+body.view-deck .slide-type-slide-json iframe {
+  pointer-events: none;
+}
+
 /* ---- Edge glows (no-target + disambiguation) -------------------------- */
 
 /* Two side-edge glow effects share shape, size, and animation: the red
