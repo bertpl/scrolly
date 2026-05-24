@@ -56,9 +56,18 @@ class TestRegistration:
 
 class TestHtmlEmission:
     def test_wrapper_div(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
         src = _write(tmp_path / "s.slide.json", MINIMAL)
+
+        # --- act --------------------------
         chunk = _build(src)
-        assert '<div class="slide-type-slide-json">' in chunk.html
+
+        # --- assert -----------------------
+        # MINIMAL uses a numeric scroll_range, so the wrapper opts into
+        # the animation-mode counter-translate via the class. The base
+        # class is always present.
+        assert "slide-type-slide-json" in chunk.html
+        assert "scroll-mode-animation" in chunk.html
 
     def test_layer_div_with_data_id(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.slide.json", MINIMAL)
@@ -378,16 +387,18 @@ class TestScopedCssBase:
         chunk = _build(src)
         assert chunk.scoped_css
 
-    def test_wrapper_is_absolute_positioned(self, tmp_path: Path) -> None:
+    def test_per_element_css_present(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
         src = _write(tmp_path / "s.slide.json", MINIMAL)
-        chunk = _build(src)
-        assert "position: absolute" in chunk.scoped_css
 
-    def test_layers_are_absolute_with_overflow_hidden(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.slide.json", MINIMAL)
+        # --- act --------------------------
         chunk = _build(src)
-        assert "position: absolute" in chunk.scoped_css
-        assert "overflow: hidden" in chunk.scoped_css
+
+        # --- assert -----------------------
+        # The per-element rule is what's left in scoped_css after the
+        # wrapper rules moved to canvas.css. Verify at least one such
+        # rule is emitted.
+        assert 'data-element-id="0"' in chunk.scoped_css
 
 
 class TestScopedCssPosition:

@@ -65,32 +65,21 @@ class SlideRenderer(Renderer):
         slide_type = ir.slide_type
         ns = f".slide-type-{slide_type}"
 
-        # ``canvas.css`` translates `.chunk` by ``translateY(-1px *
-        # var(--scroll-position))`` for every scrolling slide. When
-        # ``scroll_range`` is a fixed number the slide scrolls
-        # *logically* (the scroll position is an input to animations,
-        # not a physical translation), so the wrapper counter-translates
-        # to keep absolute children visually stationary. When
-        # ``scroll_range == "auto"`` the slide scrolls *physically* and
-        # the chunk's translation must reach the content untouched —
-        # the wrapper must not cancel it.
+        # Wrapper geometry and the .scrollimation-element child rule are
+        # identical for every slide, so they live in canvas.css rather
+        # than being emitted per-slide. Per-slide blocks for the same
+        # selector would cascade by source order, and a numeric-range
+        # slide later in the document could leak its counter-translate
+        # transform onto every other wrapper — breaking physical scroll
+        # on auto-range slides. The `scroll-mode-animation` class opts
+        # the wrapper into the counter-translate behaviour for numeric-
+        # range slides; content-driven slides omit the class and let
+        # the chunk's translation reach their content unobstructed.
         is_content_driven = not (isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0)
-        wrapper_transform = (
-            "" if is_content_driven else "  transform: translateY(calc(1px * var(--scroll-position, 0)));\n"
-        )
+        mode_class = "" if is_content_driven else " scroll-mode-animation"
 
         element_htmls: list[str] = []
-        css_rules: list[str] = [
-            f"{ns} {{\n"
-            f"  position: absolute;\n"
-            f"  top: 0;\n"
-            f"  left: 0;\n"
-            f"  width: 100%;\n"
-            f"  height: 100%;\n"
-            f"{wrapper_transform}"
-            f"}}",
-            f"{ns} .scrollimation-element {{\n  position: absolute;\n  overflow: hidden;\n}}",
-        ]
+        css_rules: list[str] = []
         asset_paths: list[Path] = []
         has_mermaid = False
 
@@ -123,7 +112,7 @@ class SlideRenderer(Renderer):
             css_rules.append(f"{ns} .mermaid svg {{\n  width: 100%;\n  height: 100%;\n}}")
 
         inner = "\n".join(element_htmls)
-        html = f'<div class="slide-type-{slide_type}">\n{inner}\n</div>'
+        html = f'<div class="slide-type-{slide_type}{mode_class}">\n{inner}\n</div>'
         scoped_css = "\n\n".join(css_rules)
         unique_assets = list(dict.fromkeys(asset_paths))
 
