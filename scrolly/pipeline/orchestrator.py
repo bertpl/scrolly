@@ -19,21 +19,41 @@ from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
 from scrolly.slide.html import SlideHTML
+from scrolly.slide.ir import SlideIR
 from scrolly.slide.registry import find_renderer, get_ir_class_for_path
 
 
-def validate_deck_sources(deck_path: Path) -> Deck:
-    """Validate a deck and all its slide sources without rendering or writing."""
+def load_deck(deck_path: Path) -> tuple[Deck, dict[str, SlideIR]]:
+    """Parse, validate, and resolve a deck, returning it with its loaded slide IRs.
+
+    Runs the full deck-loading chain: parse → validate raw → infer edges
+    → validate → load each slide IR. The IRs are returned alongside the
+    deck so callers (notably ``build_deck``) don't re-load them
+    downstream. Validation is implicit in the load: any malformed or
+    missing source raises before this function returns.
+
+    Args:
+        deck_path: Path to the ``.deck.json`` file.
+
+    Returns:
+        A tuple ``(deck, slide_irs)`` where ``deck`` is the fully-resolved
+        :class:`Deck` and ``slide_irs`` maps slide id to the loaded
+        :class:`SlideIR` instance.
+
+    Raises:
+        ScrollyError: For any parse, validation, or slide-source failure.
+    """
     raw_deck = parse_deck(deck_path)
     validate_raw_deck(raw_deck)
     deck = infer_edges(raw_deck)
     validate_deck(deck)
 
+    slide_irs: dict[str, SlideIR] = {}
     for slide in deck.slides:
         ir_cls = get_ir_class_for_path(slide.source)
-        ir_cls.from_file(slide.source)
+        slide_irs[slide.id] = ir_cls.from_file(slide.source)
 
-    return deck
+    return deck, slide_irs
 
 
 def build_deck(
@@ -46,10 +66,7 @@ def build_deck(
     compress: bool = True,
 ) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`."""
-    raw_deck = parse_deck(deck_path)
-    validate_raw_deck(raw_deck)
-    deck = infer_edges(raw_deck)
-    validate_deck(deck)
+    deck, slide_irs = load_deck(deck_path)
 
     # Bundler is the canonical "compressible payload tracker" whenever
     # we're emitting an inlined build. It's instantiated regardless of the
@@ -59,7 +76,7 @@ def build_deck(
     # `compress=True` and the gate passes.
     bundler: PayloadBundler | None = PayloadBundler() if inline else None
 
-    chunks = _render_slides(deck.slides, bundler=bundler)
+    chunks = _render_slides(deck.slides, slide_irs, bundler=bundler)
     chunks = rewrite_asset_refs(chunks, inline=inline, bundler=bundler)
 
     compressed_payload_json: str | None = None
@@ -97,20 +114,18 @@ def build_deck(
 
 def _render_slides(
     slides: tuple[Slide, ...],
+    slide_irs: dict[str, SlideIR],
     *,
     bundler: PayloadBundler | None = None,
 ) -> dict[str, SlideHTML]:
-    """Render every slide's source into a ``SlideHTML``, keyed by slide id.
+    """Render each slide's pre-loaded IR into a ``SlideHTML``, keyed by slide id.
 
-    Dispatch is by filename suffix: ``get_ir_class_for_path`` picks the
-    registered ``SlideIR`` whose ``SUFFIX`` matches; ``find_renderer``
-    looks up the matching ``Renderer``. With v0.2.0 collapsed to a
-    single slide type, both lookups are one-entry tail-matches.
+    Renderer dispatch is via ``find_renderer`` against the IR instance —
+    a one-entry match against the single registered slide type.
     """
     chunks: dict[str, SlideHTML] = {}
     for slide in slides:
-        ir_cls = get_ir_class_for_path(slide.source)
-        ir = ir_cls.from_file(slide.source)
+        ir = slide_irs[slide.id]
         renderer = find_renderer(ir)
         if renderer is None:
             raise SlideSourceError(f"no renderer for {type(ir).__name__} (slide '{slide.id}')")
