@@ -6,7 +6,8 @@ import click
 from rich.console import Console
 
 from scrolly import __version__
-from scrolly.errors import ScrollyError
+from scrolly._cli._errors import errors_command
+from scrolly.errors import ScrollyError, ValidationError
 from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
 
@@ -102,18 +103,44 @@ def schema(type_name: str | None) -> None:
 @cli.command()
 @click.argument("deck_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--strict", is_flag=True, help="Enable additional lint checks (e.g. out-of-range keyframes).")
-def validate(deck_path: Path, strict: bool) -> None:
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    help='Emit machine-readable JSON instead of text: {"ok": bool, "errors": [...]}.',
+)
+def validate(deck_path: Path, strict: bool, as_json: bool) -> None:
     """Validate a deck and all its slide sources without building."""
     try:
         deck, _ = load_deck(deck_path)
     except ScrollyError as e:
-        _err_console.print(f"[red]error:[/red] {e}")
+        if as_json:
+            click.echo(json.dumps({"ok": False, "errors": [_error_to_dict(e)]}, indent=2))
+        else:
+            _err_console.print(f"[red]error:[/red] {e}")
         sys.exit(1)
 
     if strict:
         _report_diagnostics(deck)
 
-    click.echo(f"Valid: {len(deck.slides)} slides, {len(deck.edges)} edges")
+    if as_json:
+        click.echo(json.dumps({"ok": True, "errors": []}, indent=2))
+    else:
+        click.echo(f"Valid: {len(deck.slides)} slides, {len(deck.edges)} edges")
+
+
+def _error_to_dict(err: ScrollyError) -> dict:
+    """Serialise a ``ScrollyError`` for JSON output."""
+    if isinstance(err, ValidationError):
+        return {
+            "code": err.code,
+            "message": err.message,
+            "file": err.file,
+            "line": err.line,
+            "field": err.field,
+            "suggestion": err.suggestion,
+        }
+    return {"code": None, "message": str(err)}
 
 
 def _report_diagnostics(deck) -> None:
@@ -158,3 +185,6 @@ def init(dir_path: Path) -> None:
     (slides_dir / "intro.slide.json").write_text(_INIT_SLIDE)
 
     click.echo(f"Created deck in {dir_path}")
+
+
+cli.add_command(errors_command)

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Validation and parse errors now carry numbered codes (e.g. `[E202]`); look up cause / example / fix via `scrolly errors <code>`.
+- `--json` flag on `scrolly validate` for machine-readable output.
+
 ### Changed
 
 ### Deprecated

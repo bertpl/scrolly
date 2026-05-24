@@ -12,6 +12,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, RootModel, model_validator
 
+from scrolly.errors import SlideSourceError
+
 
 # ==================================================================================================
 #  Keyframe container models
@@ -30,13 +32,16 @@ class ScalarKeyframes(BaseModel, frozen=True):
     def _validate(self) -> ScalarKeyframes:
         """Validate keyframe list is non-empty and sorted by scroll position."""
         if len(self.keyframes) < 2:
-            raise ValueError("keyframes must contain at least 2 entries")
+            raise SlideSourceError(code="E308", message="keyframes must contain at least 2 entries")
         positions = [kf[0] for kf in self.keyframes]
         for i in range(1, len(positions)):
             if positions[i] <= positions[i - 1]:
-                raise ValueError(
-                    f"keyframes must be sorted by scroll position with no duplicates; "
-                    f"got {positions[i - 1]} followed by {positions[i]}"
+                raise SlideSourceError(
+                    code="E308",
+                    message=(
+                        f"keyframes must be sorted by scroll position with no duplicates; "
+                        f"got {positions[i - 1]} followed by {positions[i]}"
+                    ),
                 )
         return self
 
@@ -55,13 +60,16 @@ class Vec2Keyframes(BaseModel, frozen=True):
     def _validate(self) -> Vec2Keyframes:
         """Validate keyframe list is non-empty and sorted by scroll position."""
         if len(self.keyframes) < 2:
-            raise ValueError("keyframes must contain at least 2 entries")
+            raise SlideSourceError(code="E308", message="keyframes must contain at least 2 entries")
         positions = [kf[0] for kf in self.keyframes]
         for i in range(1, len(positions)):
             if positions[i] <= positions[i - 1]:
-                raise ValueError(
-                    f"keyframes must be sorted by scroll position with no duplicates; "
-                    f"got {positions[i - 1]} followed by {positions[i]}"
+                raise SlideSourceError(
+                    code="E308",
+                    message=(
+                        f"keyframes must be sorted by scroll position with no duplicates; "
+                        f"got {positions[i - 1]} followed by {positions[i]}"
+                    ),
                 )
         return self
 

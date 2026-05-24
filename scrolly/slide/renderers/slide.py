@@ -98,7 +98,8 @@ class SlideRenderer(Renderer):
                 renderer = find_element_renderer(prim)
                 if renderer is None:
                     raise SlideSourceError(
-                        f"no element renderer registered for {type(prim).__name__} (slide element index {i})"
+                        code="E601",
+                        message=(f"no element renderer registered for {type(prim).__name__} (slide element index {i})"),
                     )
                 rendered = renderer.render(prim, ctx=ctx)
                 element_htmls.append(rendered.html)

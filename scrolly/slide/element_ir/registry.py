@@ -88,7 +88,10 @@ def _compile_one(ir: ElementIR, lineage: frozenset[type[ElementIR]]) -> list[Pri
 
     compiler = find_element_compiler(ir)
     if compiler is None:
-        raise SlideSourceError(f"no element compiler or renderer registered for {type(ir).__name__}")
+        raise SlideSourceError(
+            code="E601",
+            message=f"no element compiler or renderer registered for {type(ir).__name__}",
+        )
 
     results = compiler.compile(ir)
     out: list[PrimitiveElement] = []
@@ -96,7 +99,10 @@ def _compile_one(ir: ElementIR, lineage: frozenset[type[ElementIR]]) -> list[Pri
         result_type = type(result)
         if result_type in lineage:
             raise SlideSourceError(
-                f"element conversion cycle detected: {result_type.__name__} produced twice along the same lineage"
+                code="E602",
+                message=(
+                    f"element conversion cycle detected: {result_type.__name__} produced twice along the same lineage"
+                ),
             )
         out.extend(_compile_one(result, lineage | {result_type}))
     return out

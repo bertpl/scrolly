@@ -23,9 +23,12 @@ def write_output(
     """
     if out_dir.exists():
         if not out_dir.is_dir():
-            raise OutputError(f"output path is not a directory: {out_dir}")
+            raise OutputError(code="E701", message=f"output path is not a directory: {out_dir}")
         if any(out_dir.iterdir()) and not force:
-            raise OutputError(f"output directory is not empty: {out_dir}. Pass --force to overwrite.")
+            raise OutputError(
+                code="E702",
+                message=f"output directory is not empty: {out_dir}. Pass --force to overwrite.",
+            )
     else:
         out_dir.mkdir(parents=True)
 

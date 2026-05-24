@@ -89,7 +89,10 @@ def _render_slides(
         ir = slide_irs[slide.id]
         renderer = find_renderer(ir)
         if renderer is None:
-            raise SlideSourceError(f"no renderer for {type(ir).__name__} (slide '{slide.id}')")
+            raise SlideSourceError(
+                code="E603",
+                message=f"no renderer for {type(ir).__name__} (slide '{slide.id}')",
+            )
         chunks[slide.id] = renderer.render(ir, css_namespace=slide.id, bundler=bundler)
 
     return chunks
