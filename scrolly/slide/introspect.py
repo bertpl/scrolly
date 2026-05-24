@@ -14,9 +14,11 @@ from __future__ import annotations
 from typing import Any
 
 from scrolly.deck.model import Deck
+from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import SlideIR
 from scrolly.slide.ir._framework.animated_values import AnimatedScalar
 from scrolly.slide.ir._framework.element import ImageSequenceElement
+from scrolly.slide.registry import find_renderer
 
 # The substrate properties shared by every ``SlideElement`` subtype.
 # Used by ``timeline_to_json`` (to list animated ones) and
@@ -273,6 +275,75 @@ def snapshot_to_json(
             }
         }
     }
+
+
+def dom_to_json(
+    deck: Deck,
+    slide_irs: dict[str, SlideIR],
+    slide_ids: tuple[str, ...] | None = None,
+) -> dict:
+    """Serialize the rendered per-element HTML + scoped CSS for each slide.
+
+    Drives the slide renderer's ``render_elements`` (the per-element
+    sibling of ``render``) for each slide, returning the per-element
+    pieces without going through deck-level assembly: no canvas runtime,
+    no scrollbar, no edge geometry, no inter-slide chrome — just what
+    each element produced. The single biggest agent blind spot is
+    "what does my config actually become" and this is the answer.
+
+    For the current 1:1 authored→primitive mapping (no element
+    compilers are registered today) each authored element yields one
+    rendered piece. The renderer joins multi-primitive expansions per
+    authored element so the output remains one entry per author-visible
+    element regardless of future compiler additions.
+
+    Args:
+        deck: Fully-resolved deck.
+        slide_irs: Map from slide id to loaded ``SlideIR``.
+        slide_ids: Optional tuple of slide ids to include; ``None``
+            (or empty) returns all slides.
+
+    Returns:
+        Dict ``{"slides": {<id>: {elements: [{index, name, type, html,
+        scoped_css}, ...]}}}``.
+
+    Raises:
+        SlideSourceError: If no slide renderer is registered for an
+            IR type (E603) or no element renderer for a primitive
+            (E601). These mirror the same errors raised during
+            ``build_deck`` so introspect doesn't mask them.
+    """
+    target_ids = set(slide_ids) if slide_ids else None
+
+    slides_view: dict[str, dict] = {}
+    for slide in deck.slides:
+        if target_ids is not None and slide.id not in target_ids:
+            continue
+        ir = slide_irs[slide.id]
+        renderer = find_renderer(ir)
+        if renderer is None:
+            raise SlideSourceError(
+                code="E603",
+                message=f"no renderer for {type(ir).__name__} (slide '{slide.id}')",
+            )
+
+        rendered_elements = renderer.render_elements(ir, css_namespace=slide.id)
+
+        elements_view = []
+        for index, (authored_el, rendered) in enumerate(zip(ir.elements, rendered_elements)):
+            elements_view.append(
+                {
+                    "index": index,
+                    "name": authored_el.name,
+                    "type": type(authored_el).__name__,
+                    "html": rendered.html,
+                    "scoped_css": rendered.scoped_css,
+                }
+            )
+
+        slides_view[slide.id] = {"elements": elements_view}
+
+    return {"slides": slides_view}
 
 
 def _compute_visibility_intervals(

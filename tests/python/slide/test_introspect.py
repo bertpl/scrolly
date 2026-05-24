@@ -10,7 +10,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from scrolly.pipeline import load_deck
-from scrolly.slide.introspect import _compute_visibility_intervals, snaps_to_json, snapshot_to_json, timeline_to_json
+from scrolly.slide.introspect import (
+    _compute_visibility_intervals,
+    dom_to_json,
+    snaps_to_json,
+    snapshot_to_json,
+    timeline_to_json,
+)
 from scrolly.slide.ir._framework.animated_values import AnimatedScalar, ScalarKeyframes
 from tests.python.conftest import PROJECT_ROOT
 
@@ -133,6 +139,35 @@ def test_timeline_parallax_has_animated_properties_and_intervals() -> None:
     assert "position" in bg["animated_properties"]
     # Visibility intervals are non-empty (bg is fully opaque throughout).
     assert len(bg["visibility_intervals"]) >= 1
+
+
+def test_dom_returns_one_entry_per_authored_element() -> None:
+    """The per-authored-element view has ``len(ir.elements)`` entries per slide."""
+    # --- arrange ----------------------
+    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+
+    # --- act --------------------------
+    result = dom_to_json(deck, slide_irs, ("parallax",))
+
+    # --- assert -----------------------
+    parallax_view = result["slides"]["parallax"]
+    parallax_ir = slide_irs["parallax"]
+    assert len(parallax_view["elements"]) == len(parallax_ir.elements)
+
+
+def test_dom_includes_scoped_css_with_eid_selector() -> None:
+    """Scoped CSS rules carry the element's ``data-element-id`` selector."""
+    # --- arrange ----------------------
+    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+
+    # --- act --------------------------
+    result = dom_to_json(deck, slide_irs, ("setup",))
+
+    # --- assert -----------------------
+    el = result["slides"]["setup"]["elements"][0]
+    # Element ids are ``<slide_id>-<index>``; setup has one element at index 0.
+    assert 'data-element-id="setup-0"' in el["html"]
+    assert "setup-0" in el["scoped_css"]
 
 
 def test_snapshot_resolves_animated_properties_at_scroll() -> None:
