@@ -65,6 +65,20 @@ class SlideRenderer(Renderer):
         slide_type = ir.slide_type
         ns = f".slide-type-{slide_type}"
 
+        # ``canvas.css`` translates `.chunk` by ``translateY(-1px *
+        # var(--scroll-position))`` for every scrolling slide. When
+        # ``scroll_range`` is a fixed number the slide scrolls
+        # *logically* (the scroll position is an input to animations,
+        # not a physical translation), so the wrapper counter-translates
+        # to keep absolute children visually stationary. When
+        # ``scroll_range == "auto"`` the slide scrolls *physically* and
+        # the chunk's translation must reach the content untouched —
+        # the wrapper must not cancel it.
+        is_content_driven = not (isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0)
+        wrapper_transform = (
+            "" if is_content_driven else "  transform: translateY(calc(1px * var(--scroll-position, 0)));\n"
+        )
+
         element_htmls: list[str] = []
         css_rules: list[str] = [
             f"{ns} {{\n"
@@ -73,7 +87,7 @@ class SlideRenderer(Renderer):
             f"  left: 0;\n"
             f"  width: 100%;\n"
             f"  height: 100%;\n"
-            f"  transform: translateY(calc(1px * var(--scroll-position, 0)));\n"
+            f"{wrapper_transform}"
             f"}}",
             f"{ns} .scrollimation-element {{\n  position: absolute;\n  overflow: hidden;\n}}",
         ]
