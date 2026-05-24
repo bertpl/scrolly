@@ -16,6 +16,41 @@ from scrolly.errors import SlideSourceError
 
 
 # ==================================================================================================
+#  Internal interpolation helper
+# ==================================================================================================
+def _interpolate_scalar(keyframes: list[tuple[float, float]], scroll: float) -> float:
+    """Interpolate a scalar keyframe sequence at ``scroll``.
+
+    Linear between bracketing keyframes; held constant beyond the first
+    and last keyframe (the canonical scrolly convention for keyframe
+    extrapolation, matching what the browser sees via the renderer's
+    CSS ``calc()`` expressions).
+
+    Args:
+        keyframes: Sorted list of ``(scroll_position, value)`` tuples
+            with at least two entries (validated upstream).
+        scroll: Scroll position to evaluate at.
+
+    Returns:
+        Interpolated scalar value at ``scroll``.
+    """
+    if scroll <= keyframes[0][0]:
+        return keyframes[0][1]
+    if scroll >= keyframes[-1][0]:
+        return keyframes[-1][1]
+    for i in range(1, len(keyframes)):
+        p2, v2 = keyframes[i]
+        if p2 >= scroll:
+            p1, v1 = keyframes[i - 1]
+            t = (scroll - p1) / (p2 - p1)
+            return v1 + (v2 - v1) * t
+    # Unreachable: the held-constant cases above cover scroll outside the
+    # extremes, and the loop finds a bracketing pair for any scroll strictly
+    # between them.
+    raise RuntimeError("keyframe interpolation gap")
+
+
+# ==================================================================================================
 #  Keyframe container models
 # ==================================================================================================
 class ScalarKeyframes(BaseModel, frozen=True):
@@ -107,6 +142,17 @@ class AnimatedScalar(RootModel[float | ScalarKeyframes], frozen=True):
             raise ValueError("Cannot access keyframes on a static property")
         return self.root.keyframes
 
+    def evaluate_at(self, scroll: float) -> float:
+        """Resolve to a numeric value at the given scroll position.
+
+        Static values return themselves regardless of ``scroll``; animated
+        values linearly interpolate between bracketing keyframes, held
+        constant beyond the first and last keyframe.
+        """
+        if not self.is_animated:
+            return self.root
+        return _interpolate_scalar(self.root.keyframes, scroll)
+
 
 class AnimatedVec2(RootModel[tuple[float, float] | Vec2Keyframes], frozen=True):
     """A 2D vector property: either a static [x, y] or a keyframe animation."""
@@ -137,6 +183,20 @@ class AnimatedVec2(RootModel[tuple[float, float] | Vec2Keyframes], frozen=True):
         if not self.is_animated:
             raise ValueError("Cannot access keyframes on a static property")
         return self.root.keyframes
+
+    def evaluate_at(self, scroll: float) -> tuple[float, float]:
+        """Resolve to an ``(x, y)`` value at the given scroll position.
+
+        Static values return themselves regardless of ``scroll``; animated
+        values interpolate each component independently using the same
+        linear / held-beyond-extremes rule as :class:`AnimatedScalar`.
+        """
+        if not self.is_animated:
+            return self.root
+        kf = self.root.keyframes
+        x_kf = [(pos, xy[0]) for pos, xy in kf]
+        y_kf = [(pos, xy[1]) for pos, xy in kf]
+        return (_interpolate_scalar(x_kf, scroll), _interpolate_scalar(y_kf, scroll))
 
 
 class AnimatedSizeDim(RootModel[Literal["auto"] | float | ScalarKeyframes], frozen=True):
@@ -178,3 +238,18 @@ class AnimatedSizeDim(RootModel[Literal["auto"] | float | ScalarKeyframes], froz
         if not self.is_animated:
             raise ValueError("Cannot access keyframes on a non-animated property")
         return self.root.keyframes
+
+    def evaluate_at(self, scroll: float) -> float | Literal["auto"]:
+        """Resolve to a numeric value or ``"auto"`` at the given scroll position.
+
+        Static ``"auto"`` stays ``"auto"`` regardless of ``scroll``; static
+        numeric values return themselves; animated values interpolate via
+        the shared scalar rule (keyframes here are always numeric — the
+        schema forbids ``"auto"`` inside a keyframe list, so the held-
+        constant extrapolation always produces a number).
+        """
+        if self.is_auto:
+            return "auto"
+        if self.is_animated:
+            return _interpolate_scalar(self.root.keyframes, scroll)
+        return self.root

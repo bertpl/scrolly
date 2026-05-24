@@ -409,3 +409,69 @@ class TestMermaidElement:
     def test_size_validation_applies(self):
         with pytest.raises(SlideSourceError, match="at least one size dimension must be non-auto"):
             MermaidElement(**_mermaid(width="auto", height="auto"))
+
+
+# ==================================================================================================
+#  ImageSequenceElement.hold_centre_positions — snap-derivation
+# ==================================================================================================
+def _seq(**overrides) -> dict:
+    """Minimal valid ImageSequenceElement kwargs."""
+    base = {
+        "image_sequence": [Path("a.png"), Path("b.png"), Path("c.png")],
+        "frame_distance": 400,
+        "hold": 200,
+        "position": [0, 0],
+        "width": 100,
+        "height": 50,
+        "object_fit": "cover",
+    }
+    return {**base, **overrides}
+
+
+def test_hold_centre_positions_basic() -> None:
+    """Hold-centres are at ``scroll_offset + i * frame_distance + hold/2`` per frame."""
+    # --- arrange ----------------------
+    el = ImageSequenceElement(**_seq(scroll_offset=0, frame_distance=400, hold=200))
+
+    # --- act --------------------------
+    centres = el.hold_centre_positions()
+
+    # --- assert -----------------------
+    # Frame i hold starts at 0 + i*400 = [0, 400, 800]; centre = +100 → [100, 500, 900]
+    assert centres == [100.0, 500.0, 900.0]
+
+
+def test_hold_centre_positions_with_offset() -> None:
+    """``scroll_offset`` shifts every centre."""
+    # --- arrange ----------------------
+    el = ImageSequenceElement(**_seq(scroll_offset=50, frame_distance=400, hold=200))
+
+    # --- act --------------------------
+    centres = el.hold_centre_positions()
+
+    # --- assert -----------------------
+    assert centres == [150.0, 550.0, 950.0]
+
+
+def test_hold_centre_positions_one_per_frame() -> None:
+    """Result has exactly as many entries as the image_sequence list."""
+    # --- arrange ----------------------
+    el = ImageSequenceElement(**_seq(image_sequence=[Path("a.png"), Path("b.png")]))
+
+    # --- act / assert -----------------
+    assert len(el.hold_centre_positions()) == 2
+
+
+def test_hold_centre_positions_blank_frames_still_get_centres() -> None:
+    """Blank slots (None entries) participate in the timeline like any other frame."""
+    # --- arrange ----------------------
+    el = ImageSequenceElement(
+        **_seq(image_sequence=[Path("a.png"), None, Path("c.png")], scroll_offset=0, frame_distance=400, hold=200)
+    )
+
+    # --- act --------------------------
+    centres = el.hold_centre_positions()
+
+    # --- assert -----------------------
+    # Three centres regardless of the blank in the middle.
+    assert centres == [100.0, 500.0, 900.0]
