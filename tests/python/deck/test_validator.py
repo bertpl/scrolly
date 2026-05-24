@@ -19,7 +19,7 @@ from scrolly.errors import DeckValidationError
 
 
 def _slide(id_: str, x: int, y: int) -> Slide:
-    return Slide(id=id_, position=Position(x, y), source=Path(f"/{id_}.static.md"))
+    return Slide(id=id_, position=Position(x, y), source=Path(f"/{id_}.slide.json"))
 
 
 def test_valid_empty_raw_deck():

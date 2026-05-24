@@ -14,16 +14,16 @@ def inline(request):
 
 
 def _single(id_: str, html: str) -> tuple[Deck, dict[str, SlideHTML]]:
-    slide = Slide(id=id_, position=Position(0, 0), source=Path(f"/{id_}.static.md"))
+    slide = Slide(id=id_, position=Position(0, 0), source=Path(f"/{id_}.slide.json"))
     deck = Deck(title="test", slides=(slide,), edges=())
     chunks = {id_: SlideHTML(title=id_.title(), html=html)}
     return deck, chunks
 
 
 def _l_shape() -> tuple[Deck, dict[str, SlideHTML]]:
-    intro = Slide(id="intro", position=Position(0, 0), source=Path("/intro.static.md"))
-    details = Slide(id="details", position=Position(1, 0), source=Path("/details.static.md"))
-    appendix = Slide(id="appendix", position=Position(1, 1), source=Path("/appendix.static.md"))
+    intro = Slide(id="intro", position=Position(0, 0), source=Path("/intro.slide.json"))
+    details = Slide(id="details", position=Position(1, 0), source=Path("/details.slide.json"))
+    appendix = Slide(id="appendix", position=Position(1, 1), source=Path("/appendix.slide.json"))
     deck = Deck(
         title="L",
         slides=(intro, details, appendix),
@@ -52,7 +52,7 @@ def test_assembler_includes_deck_title(inline):
 
 
 def test_assembler_uses_fallback_title_when_none(inline):
-    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.static.md"))
+    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.slide.json"))
     deck = Deck(title=None, slides=(slide,), edges=())
     chunks = {"x": SlideHTML(title="X", html="")}
     assert "<title>scrolly</title>" in assemble(deck, chunks, inline=inline)
@@ -150,7 +150,7 @@ def test_scoped_css_emitted_in_head_when_chunk_carries_it(inline):
     # When a chunk's scoped_css is non-empty, the assembler emits a
     # <style> block in <head>. Per-slide-type CSS cascades from <head>
     # alongside canvas.css.
-    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.static.md"))
+    slide = Slide(id="x", position=Position(0, 0), source=Path("/x.slide.json"))
     deck = Deck(title="t", slides=(slide,), edges=())
     chunks = {"x": SlideHTML(title="X", html="<p>x</p>", scoped_css=".x { color: red }")}
     html = assemble(deck, chunks, inline=inline)
@@ -160,8 +160,8 @@ def test_scoped_css_emitted_in_head_when_chunk_carries_it(inline):
 def test_scoped_css_dedup_across_chunks(inline):
     # Identical scoped_css across multiple chunks (e.g. all static
     # slides sharing one block) emits exactly once.
-    a = Slide(id="a", position=Position(0, 0), source=Path("/a.static.md"))
-    b = Slide(id="b", position=Position(1, 0), source=Path("/b.static.md"))
+    a = Slide(id="a", position=Position(0, 0), source=Path("/a.slide.json"))
+    b = Slide(id="b", position=Position(1, 0), source=Path("/b.slide.json"))
     deck = Deck(title="t", slides=(a, b), edges=())
     same_css = ".same { color: red }"
     chunks = {
@@ -175,8 +175,8 @@ def test_scoped_css_dedup_across_chunks(inline):
 def test_scoped_css_ordering_is_first_occurrence_in_slide_order(inline):
     # Multiple unique scoped_css blocks emit in the order their
     # first-carrying chunk appears in deck.slides — stable across builds.
-    a = Slide(id="a", position=Position(0, 0), source=Path("/a.static.md"))
-    b = Slide(id="b", position=Position(1, 0), source=Path("/b.static.md"))
+    a = Slide(id="a", position=Position(0, 0), source=Path("/a.slide.json"))
+    b = Slide(id="b", position=Position(1, 0), source=Path("/b.slide.json"))
     deck = Deck(title="t", slides=(a, b), edges=())
     chunks = {
         "a": SlideHTML(title="A", html="", scoped_css=".A {}"),
@@ -287,7 +287,7 @@ def test_slide_container_emits_font_scale_when_non_default():
     # --font-scale: <N>; to the slide-container's inline style. The CSS
     # rule `.chunk { font-size: calc(1rem * var(--font-scale, 1)) }`
     # consumes it.
-    slide = Slide(id="big", position=Position(0, 0), source=Path("/big.static.md"))
+    slide = Slide(id="big", position=Position(0, 0), source=Path("/big.slide.json"))
     deck = Deck(title="t", slides=(slide,), edges=())
     chunks = {"big": SlideHTML(title="Big", html="<p>x</p>", font_scale=1.4)}
     html = assemble(deck, chunks)
@@ -298,8 +298,8 @@ def test_slide_container_font_scale_isolated_per_slide():
     # A per-slide font_scale must not leak to other slides — each
     # slide-container gets its own inline-style decision based on its own
     # chunk's font_scale.
-    intro = Slide(id="intro", position=Position(0, 0), source=Path("/intro.static.md"))
-    big = Slide(id="big", position=Position(1, 0), source=Path("/big.static.md"))
+    intro = Slide(id="intro", position=Position(0, 0), source=Path("/intro.slide.json"))
+    big = Slide(id="big", position=Position(1, 0), source=Path("/big.slide.json"))
     deck = Deck(title="t", slides=(intro, big), edges=())
     chunks = {
         "intro": SlideHTML(title="Intro", html=""),

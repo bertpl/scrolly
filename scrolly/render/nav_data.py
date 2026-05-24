@@ -63,7 +63,8 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
     arrow-size apart on small viewports.
     `scroll_range = null` signals content-driven mode (canvas.js attaches
     a `ResizeObserver` and recomputes from content overflow); an int signals
-    fixed-timeline mode (used by future scrollimation slides).
+    fixed-timeline mode (scroll position is a logical input to per-element
+    keyframe animations).
     """
     slides_data: dict[str, dict[str, Any]] = {
         slide.id: {

@@ -18,7 +18,7 @@ class HtmlRenderer(ElementRenderer):
         return isinstance(ir, HtmlElement)
 
     def render(self, ir: PrimitiveElement, *, ctx: RenderContext) -> RenderedElement:
-        """Wrap raw HTML in the standard ``.scrollimation-element`` div."""
+        """Wrap raw HTML in the standard element ``<div>``."""
         assert isinstance(ir, HtmlElement)
         html = wrap_element(ir.html, eid=ctx.eid, el=ir)
         substrate = substrate_css(ir, index=ctx.index, selector_prefix=ctx.selector_prefix)

@@ -1,7 +1,7 @@
 {
   title: "Minimal",
   slides: [
-    { id: "only", position: [0, 0], source: "slides/only.static.md" },
+    { id: "only", position: [0, 0], source: "slides/only.slide.json" },
   ],
   edges: [],
 }

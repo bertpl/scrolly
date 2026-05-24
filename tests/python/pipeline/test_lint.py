@@ -23,7 +23,7 @@ def _write(path: Path, content: str) -> Path:
 
 
 def _make_deck(tmp_path: Path, slide_content: str, slide_name: str = "s.slide.json"):
-    """Create a minimal deck with one scrollimation slide and return the validated Deck."""
+    """Create a minimal deck with one slide and return the validated Deck."""
     _write(tmp_path / "slides" / slide_name, slide_content)
     deck_json = f"""{{
   title: "Test",

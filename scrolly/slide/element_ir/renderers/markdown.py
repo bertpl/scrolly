@@ -1,8 +1,7 @@
 """``MarkdownRenderer`` — renders a ``MarkdownElement`` primitive.
 
-In v0.2.0 this is the single home of markdown-to-HTML conversion in the
-scrollimation path. (The legacy ``static`` slide-type renderer still
-runs its own conversion; that path is removed in a later collapsing PR.)
+The single home of markdown-to-HTML conversion: runs ``markdown.markdown``
+at render time and wraps the result in the standard element wrapper.
 """
 
 from __future__ import annotations
@@ -27,7 +26,7 @@ class MarkdownRenderer(ElementRenderer):
         return isinstance(ir, MarkdownElement)
 
     def render(self, ir: PrimitiveElement, *, ctx: RenderContext) -> RenderedElement:
-        """Render markdown to HTML and wrap in the standard ``.scrollimation-element`` div.
+        """Render markdown to HTML and wrap in the standard ``.slide-element`` div.
 
         Markdown-specific properties (``color``, ``text_align``) become
         extra lines on the substrate CSS rule so the output keys

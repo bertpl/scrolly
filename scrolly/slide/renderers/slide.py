@@ -65,7 +65,7 @@ class SlideRenderer(Renderer):
         slide_type = ir.slide_type
         ns = f".slide-type-{slide_type}"
 
-        # Wrapper geometry and the .scrollimation-element child rule are
+        # Wrapper geometry and the .slide-element child rule are
         # identical for every slide, so they live in canvas.css rather
         # than being emitted per-slide. Per-slide blocks for the same
         # selector would cascade by source order, and a numeric-range

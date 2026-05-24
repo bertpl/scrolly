@@ -1,12 +1,10 @@
 """Shared CSS-expression helpers used by every primitive renderer.
 
-These mirror the helpers that previously lived in the monolithic
-``scrolly.slide.renderers.scrollimation`` module. ``substrate_css``
-builds the per-element substrate rule (position, size, transform,
-opacity, z-index, ``will-change``) plus any renderer-supplied extras;
-``wrap_element`` builds the standard ``.scrollimation-element`` wrapper
-``<div>`` (including the ``data-opacity-keyframes`` attribute when the
-element's opacity is animated).
+``substrate_css`` builds the per-element substrate rule (position, size,
+transform, opacity, z-index, ``will-change``) plus any renderer-supplied
+extras; ``wrap_element`` builds the standard element wrapper ``<div>``
+(including the ``data-opacity-keyframes`` attribute when the element's
+opacity is animated).
 """
 
 from __future__ import annotations
@@ -228,13 +226,13 @@ def substrate_css(
 #  Outer-wrapper HTML
 # ==================================================================================================
 def wrap_element(inner_html: str, *, eid: str, el: SlideElement) -> str:
-    """Build the standard ``.scrollimation-element`` wrapper around inner HTML.
+    """Build the standard ``.slide-element`` wrapper around inner HTML.
 
     Includes the ``data-opacity-keyframes`` attribute when the element's
     opacity is animated — consumed at runtime by ``canvas.js`` for
     scroll-driven opacity updates.
     """
-    attrs = f'class="scrollimation-element" data-element-id="{eid}"'
+    attrs = f'class="slide-element" data-element-id="{eid}"'
     if el.opacity.is_animated:
         kf_json = json.dumps(el.opacity.keyframes, separators=(",", ":"))
         attrs += f" data-opacity-keyframes='{html_escape(kf_json)}'"

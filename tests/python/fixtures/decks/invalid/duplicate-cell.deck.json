@@ -1,7 +1,7 @@
 {
   slides: [
-    { id: "a", position: [0, 0], source: "slides/a.static.md" },
-    { id: "b", position: [0, 0], source: "slides/b.static.md" },
+    { id: "a", position: [0, 0], source: "slides/a.slide.json" },
+    { id: "b", position: [0, 0], source: "slides/b.slide.json" },
   ],
   edges: [],
 }

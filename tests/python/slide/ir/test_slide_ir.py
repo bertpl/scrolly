@@ -1,4 +1,4 @@
-"""Tests for scrollimation IR models — structural validation via pydantic."""
+"""Tests for the slide IR — structural validation via pydantic."""
 
 from __future__ import annotations
 
@@ -325,7 +325,7 @@ MINIMAL_JSON5 = """\
 
 
 class TestFromFile:
-    def test_returns_scrollimation_ir(self, tmp_path: Path) -> None:
+    def test_returns_slide_ir(self, tmp_path: Path) -> None:
         src = _write(tmp_path, "s.slide.json", MINIMAL_JSON5)
         ir = SlideIR.from_file(src)
         assert isinstance(ir, SlideIR)

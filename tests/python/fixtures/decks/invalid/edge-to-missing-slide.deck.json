@@ -1,6 +1,6 @@
 {
   slides: [
-    { id: "a", position: [0, 0], source: "slides/a.static.md" },
+    { id: "a", position: [0, 0], source: "slides/a.slide.json" },
   ],
   edges: [
     ["a", "ghost"],

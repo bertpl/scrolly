@@ -469,7 +469,7 @@
           // resize on any contributing element re-triggers the range
           // computation.
           this._observer.observe(chunk);
-          chunk.querySelectorAll(".scrollimation-element").forEach((el) => {
+          chunk.querySelectorAll(".slide-element").forEach((el) => {
             this._observer.observe(el);
           });
         } else {
@@ -484,7 +484,7 @@
       // children are out of flow and don't contribute, so walk them and
       // take the lowest bottom edge into account separately.
       let bottom = chunk.scrollHeight;
-      chunk.querySelectorAll(".scrollimation-element").forEach((el) => {
+      chunk.querySelectorAll(".slide-element").forEach((el) => {
         const elBottom = el.offsetTop + el.offsetHeight;
         if (elBottom > bottom) bottom = elBottom;
       });

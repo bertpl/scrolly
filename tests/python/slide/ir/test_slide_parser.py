@@ -1,4 +1,4 @@
-"""Tests for scrollimation JSON5 parsing — file -> pydantic IR."""
+"""Tests for slide JSON5 parsing — file -> pydantic IR."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ MINIMAL = """\
 class TestParsing:
     def test_minimal(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.slide.json", MINIMAL)
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert slide.title == "T"
         assert slide.scroll_range == 1000
         assert len(slide.elements) == 1
@@ -42,7 +42,7 @@ class TestParsing:
 
     def test_defaults_applied(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.slide.json", MINIMAL)
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert slide.initial_scroll_position == 0
         assert slide.scroll_speed == 1.0
         assert slide.easing == "linear"
@@ -62,7 +62,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert isinstance(slide.elements[0], ImageElement)
         assert isinstance(slide.elements[1], HtmlElement)
         assert isinstance(slide.elements[2], MarkdownElement)
@@ -90,7 +90,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert isinstance(slide.elements[0], IframeElement)
         el = slide.elements[0]
         assert el.iframe_html == "<!doctype html><p>hi</p>"
@@ -119,7 +119,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         el = slide.elements[0]
         assert el.opacity.is_animated
         assert el.opacity.keyframes == [(0, 0), (500, 1), (1000, 0)]
@@ -143,7 +143,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         el = slide.elements[0]
         assert el.position.is_animated
         assert el.position.keyframes == [(0, (0, 0)), (1000, (50, 50))]
@@ -168,7 +168,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert slide.title == "T"
 
     def test_scroll_range_zero(self, tmp_path: Path) -> None:
@@ -184,7 +184,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert slide.scroll_range == 0
 
     def test_scroll_speed_custom(self, tmp_path: Path) -> None:
@@ -201,7 +201,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert slide.scroll_speed == 0.5
 
     def test_image_element_with_auto_dim(self, tmp_path: Path) -> None:
@@ -217,7 +217,7 @@ class TestParsing:
 }
 """,
         )
-        slide = parse_json5_ir(src, SlideIR, "scrollimation")
+        slide = parse_json5_ir(src, SlideIR, "slide")
         assert isinstance(slide.elements[0], ImageElement)
         assert slide.elements[0].object_fit is None
 
@@ -228,17 +228,17 @@ class TestParsing:
 class TestParseErrors:
     def test_missing_file(self, tmp_path: Path) -> None:
         with pytest.raises(SlideSourceError, match="not found"):
-            parse_json5_ir(tmp_path / "no_such.slide.json", SlideIR, "scrollimation")
+            parse_json5_ir(tmp_path / "no_such.slide.json", SlideIR, "slide")
 
     def test_invalid_json5(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "bad.slide.json", "not json at all {{{")
         with pytest.raises(SlideSourceError, match="not valid JSON5"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_top_level_not_object(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "bad.slide.json", "[1, 2, 3]")
         with pytest.raises(SlideSourceError, match="must be a JSON object"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_missing_title(self, tmp_path: Path) -> None:
         src = _write(
@@ -253,12 +253,12 @@ class TestParseErrors:
 """,
         )
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_missing_elements(self, tmp_path: Path) -> None:
         src = _write(tmp_path / "s.slide.json", '{ title: "T", scroll_range: 100 }')
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
 
 # ── Validation through JSON5 path ─────────────────────────────────
@@ -279,7 +279,7 @@ class TestValidationViaJson5:
 """,
         )
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_object_fit_required(self, tmp_path: Path) -> None:
         src = _write(
@@ -295,7 +295,7 @@ class TestValidationViaJson5:
 """,
         )
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_object_fit_forbidden_with_auto(self, tmp_path: Path) -> None:
         src = _write(
@@ -311,7 +311,7 @@ class TestValidationViaJson5:
 """,
         )
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_duplicate_element_names(self, tmp_path: Path) -> None:
         src = _write(
@@ -328,7 +328,7 @@ class TestValidationViaJson5:
 """,
         )
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")
 
     def test_negative_scroll_range(self, tmp_path: Path) -> None:
         src = _write(
@@ -344,4 +344,4 @@ class TestValidationViaJson5:
 """,
         )
         with pytest.raises(SlideSourceError, match="validation failed"):
-            parse_json5_ir(src, SlideIR, "scrollimation")
+            parse_json5_ir(src, SlideIR, "slide")

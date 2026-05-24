@@ -14,7 +14,7 @@ def test_parse_minimal_valid_deck():
     assert len(deck.slides) == 1
     assert deck.slides[0].id == "only"
     assert deck.slides[0].position == Position(0, 0)
-    assert deck.slides[0].source.name == "only.static.md"
+    assert deck.slides[0].source.name == "only.slide.json"
     assert deck.edges == ()
 
 
@@ -62,14 +62,14 @@ def test_parse_error_on_missing_slides_field(tmp_path):
 
 def test_parse_error_on_bad_position_shape(tmp_path):
     f = tmp_path / "bad-pos.deck.json"
-    f.write_text("{ slides: [{ id: 'a', position: [0], source: 'x.static.md' }], edges: [] }")
+    f.write_text("{ slides: [{ id: 'a', position: [0], source: 'x.slide.json' }], edges: [] }")
     with pytest.raises(DeckParseError, match="'position' must be"):
         parse_deck(f)
 
 
 def test_parse_error_on_boolean_position(tmp_path):
     f = tmp_path / "bool-pos.deck.json"
-    f.write_text("{ slides: [{ id: 'a', position: [true, 0], source: 'x.static.md' }], edges: [] }")
+    f.write_text("{ slides: [{ id: 'a', position: [true, 0], source: 'x.slide.json' }], edges: [] }")
     with pytest.raises(DeckParseError, match="must be integers"):
         parse_deck(f)
 
@@ -80,8 +80,8 @@ def test_parse_error_on_unknown_side(tmp_path):
         """
         {
           slides: [
-            { id: 'a', position: [0, 0], source: 'a.static.md' },
-            { id: 'b', position: [1, 0], source: 'b.static.md' },
+            { id: 'a', position: [0, 0], source: 'a.slide.json' },
+            { id: 'b', position: [1, 0], source: 'b.slide.json' },
           ],
           edges: [
             ['a|sideways', 'b'],
@@ -98,7 +98,7 @@ def test_parse_error_on_empty_slide_id(tmp_path):
     f.write_text(
         """
         {
-          slides: [{ id: 'a', position: [0, 0], source: 'a.static.md' }],
+          slides: [{ id: 'a', position: [0, 0], source: 'a.slide.json' }],
           edges: [['|right', 'a']],
         }
         """
@@ -113,8 +113,8 @@ def test_parse_edge_with_only_one_side_specified(tmp_path):
         """
         {
           slides: [
-            { id: 'a', position: [0, 0], source: 'a.static.md' },
-            { id: 'b', position: [1, 0], source: 'b.static.md' },
+            { id: 'a', position: [0, 0], source: 'a.slide.json' },
+            { id: 'b', position: [1, 0], source: 'b.slide.json' },
           ],
           edges: [['a|right', 'b']],
         }
@@ -162,10 +162,10 @@ def test_parse_group_color(tmp_path, color, expected):
     f.write_text(f"""{{
       slides: [{{
         group: "G", color: "{color}",
-        slides: [{{ id: "a", position: [0, 0], source: "a.static.md" }}],
+        slides: [{{ id: "a", position: [0, 0], source: "a.slide.json" }}],
       }}],
     }}""")
-    (tmp_path / "a.static.md").write_text("---\ninitial_scroll_position: 0\n---\n# A\n")
+    (tmp_path / "a.slide.json").write_text("---\ninitial_scroll_position: 0\n---\n# A\n")
 
     # --- act --------------------------------
     deck = parse_deck(f)
@@ -191,7 +191,7 @@ def test_parse_error_on_invalid_group_color(tmp_path, color):
     f.write_text(f"""{{
       slides: [{{
         group: "G", color: "{color}",
-        slides: [{{ id: "a", position: [0, 0], source: "a.static.md" }}],
+        slides: [{{ id: "a", position: [0, 0], source: "a.slide.json" }}],
       }}],
     }}""")
 
@@ -208,7 +208,7 @@ def test_parse_error_on_nested_groups(tmp_path):
         {
           group: "Outer",
           slides: [
-            { group: "Inner", slides: [{ id: "a", position: [0, 0], source: "a.static.md" }] },
+            { group: "Inner", slides: [{ id: "a", position: [0, 0], source: "a.slide.json" }] },
           ],
         },
       ],
@@ -225,7 +225,7 @@ def test_parse_error_on_empty_group_label(tmp_path):
       slides: [
         {
           group: "",
-          slides: [{ id: "a", position: [0, 0], source: "a.static.md" }],
+          slides: [{ id: "a", position: [0, 0], source: "a.slide.json" }],
         },
       ],
     }

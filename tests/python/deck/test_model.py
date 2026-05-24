@@ -27,10 +27,10 @@ def test_position_is_hashable_and_equal_by_value():
 
 
 def test_slide_construction():
-    s = Slide(id="x", position=Position(0, 0), source=Path("/tmp/x.static.md"))
+    s = Slide(id="x", position=Position(0, 0), source=Path("/tmp/x.slide.json"))
     assert s.id == "x"
     assert s.position == Position(0, 0)
-    assert s.source == Path("/tmp/x.static.md")
+    assert s.source == Path("/tmp/x.slide.json")
 
 
 def test_raw_endpoint_allows_none_side():

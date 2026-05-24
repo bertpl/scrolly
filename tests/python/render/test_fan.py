@@ -5,7 +5,7 @@ from scrolly.render.fan import FanEntry, compute_fan_offsets
 
 
 def _slide(id_: str, x: int, y: int) -> Slide:
-    return Slide(id=id_, position=Position(x, y), source=Path(f"/{id_}.static.md"))
+    return Slide(id=id_, position=Position(x, y), source=Path(f"/{id_}.slide.json"))
 
 
 # ---- empty / trivial cases ------------------------------------------------

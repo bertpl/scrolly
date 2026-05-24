@@ -2,7 +2,7 @@
 
 Importing this package registers all built-in renderers with the
 element-IR registry. The slide-level driver in
-``scrolly.slide.renderers.scrollimation`` looks them up via
+``scrolly.slide.renderers.slide`` looks them up via
 ``find_element_renderer`` and aggregates the ``RenderedElement`` bundles.
 """
 
