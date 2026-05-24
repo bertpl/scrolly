@@ -261,6 +261,24 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
             )
         return self
 
+    def hold_centre_positions(self) -> list[float]:
+        """Return the scroll positions at each frame's hold-period centre.
+
+        Each frame's hold period starts at ``scroll_offset + i * frame_distance``
+        and lasts ``hold`` units, so the centre is
+        ``scroll_offset + i * frame_distance + hold / 2``. These are the
+        natural snap stops for an image sequence: the scroll values where
+        a given frame is most clearly on display.
+
+        Blank slots (``None`` entries in ``image_sequence``) participate
+        in the timeline like any other frame — the centre of their hold
+        period is still a meaningful settle point.
+
+        Returns:
+            One float per frame in ``image_sequence``, in order.
+        """
+        return [self.scroll_offset + i * self.frame_distance + self.hold / 2 for i in range(len(self.image_sequence))]
+
 
 class HtmlElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with inline HTML content."""

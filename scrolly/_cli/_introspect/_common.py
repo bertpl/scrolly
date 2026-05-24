@@ -71,3 +71,66 @@ def run_introspect_command(
         output_path.write_text(rendered, encoding="utf-8")
     else:
         click.echo(rendered)
+
+
+def run_snapshot_command(
+    deck_path: Path,
+    slide_id: str,
+    scrolls: tuple[float, ...],
+    output_path: Path | None,
+) -> None:
+    """Run the snapshot subcommand: load → validate slide_id + scrolls → snapshot → output.
+
+    Snapshot differs from the other introspect commands in two ways:
+    ``--slide`` is mandatory and single-valued (scroll positions are
+    slide-local, so multi-slide queries are ambiguous), and ``--scroll N``
+    is mandatory and repeatable. This helper enforces both invariants
+    plus the per-slide scroll-range validation: any ``--scroll`` outside
+    ``[0, scroll_range]`` for numeric ``scroll_range``, or below 0 for
+    ``"auto"`` slides, rejects the whole invocation with a clear message
+    rather than silently clamping or extrapolating beyond what the
+    browser can physically reach.
+
+    Args:
+        deck_path: Path to the ``.deck.json`` file.
+        slide_id: Slide to snapshot (mandatory, single).
+        scrolls: Tuple of scroll positions (mandatory, non-empty).
+        output_path: Optional file destination; ``None`` writes to stdout.
+
+    Raises:
+        SystemExit: Non-zero exit on validation gate failure, unknown
+            ``slide_id``, or any out-of-range scroll value.
+    """
+    from scrolly.slide.introspect import snapshot_to_json
+
+    try:
+        deck, slide_irs = load_deck(deck_path)
+    except ScrollyError as e:
+        _err_console.print(f"[red]error:[/red] {e}")
+        sys.exit(1)
+
+    known = {s.id for s in deck.slides}
+    if slide_id not in known:
+        _err_console.print(f"[red]error:[/red] unknown slide id: '{slide_id}'. Known: {', '.join(sorted(known))}")
+        sys.exit(1)
+
+    ir = slide_irs[slide_id]
+    scroll_range = ir.scroll_range
+    invalid: list[tuple[float, str]] = []
+    for scroll in scrolls:
+        if scroll < 0:
+            invalid.append((scroll, "negative scroll values are never reachable"))
+        elif isinstance(scroll_range, (int, float)) and scroll > scroll_range:
+            invalid.append((scroll, f"exceeds slide's scroll_range ({scroll_range})"))
+    if invalid:
+        lines = "\n".join(f"  scroll={s}: {reason}" for s, reason in invalid)
+        _err_console.print(f"[red]error:[/red] --scroll out-of-range for slide '{slide_id}':\n{lines}")
+        sys.exit(1)
+
+    payload = snapshot_to_json(deck, slide_irs, slide_id, scrolls)
+    rendered = json.dumps(payload, indent=2)
+
+    if output_path is not None:
+        output_path.write_text(rendered, encoding="utf-8")
+    else:
+        click.echo(rendered)
