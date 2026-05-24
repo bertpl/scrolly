@@ -7,6 +7,7 @@ from rich.console import Console
 
 from scrolly import __version__
 from scrolly._cli._errors import errors_command
+from scrolly._cli._introspect import introspect
 from scrolly.errors import ScrollyError, ValidationError
 from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
@@ -188,3 +189,4 @@ def init(dir_path: Path) -> None:
 
 
 cli.add_command(errors_command)
+cli.add_command(introspect)
