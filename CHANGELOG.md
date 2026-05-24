@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.1 (2026-05-24)
 
 ### Added
 
@@ -15,17 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `scrolly introspect snaps|timeline|snapshot` commands for inspecting scroll-driven element behavior.
 - New `scrolly introspect dom` command for inspecting rendered per-element HTML and scoped CSS.
 - New `scrolly schema --list-types` flag for scripting (bare type names, one per line).
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.2.0 (2026-05-24)
 
 ### Added
