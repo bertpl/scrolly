@@ -14,7 +14,7 @@ from typing import Literal
 from scrolly.deck.model import Deck
 from scrolly.slide.ir._framework.animated_values import AnimatedScalar, AnimatedVec2
 from scrolly.slide.ir._framework.element import ImageSequenceElement
-from scrolly.slide.ir.scrollimation import ScrollimationIR
+from scrolly.slide.ir.slide import SlideIR
 from scrolly.slide.registry import get_ir_class_for_path
 
 
@@ -49,7 +49,7 @@ def _check_out_of_range_keyframes(deck: Deck) -> list[Diagnostic]:
 
     for slide in deck.slides:
         ir = _parse_slide_ir(slide.source)
-        if not isinstance(ir, ScrollimationIR):
+        if not isinstance(ir, SlideIR):
             continue
 
         if not isinstance(ir.scroll_range, (int, float)):

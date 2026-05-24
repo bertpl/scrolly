@@ -1,15 +1,11 @@
-"""Slide IR, renderer, and compiler registration and dispatch.
+"""Slide-IR and renderer registration + dispatch.
 
-Built-in types register themselves on ``import scrolly.slide`` via
-``scrolly/slide/types/__init__.py``.
-
-Dispatch is by filename suffix: each IR class declares a ``SUFFIX``
-(e.g. ``".static.md"``); ``get_ir_class_for_path`` finds the registered
-IR whose suffix is a tail-match of the source filename.
-
-For rendering and compilation, the pipeline calls ``find_renderer`` and
-``find_compiler``, which iterate their respective lists and return the
-first whose ``can_process`` returns ``True``.
+In the single-slide-type v0.2.0 design, the IR registry holds exactly
+one entry and the renderer registry holds exactly one entry. Both
+mechanisms are kept as one-line look-ups so introducing a second slide
+type later (if it ever earns its place) is a registration call rather
+than a re-architecture; the populated taxonomy was what got collapsed,
+not the dispatch surface.
 """
 
 from __future__ import annotations
@@ -18,15 +14,14 @@ from pathlib import Path
 
 from scrolly.errors import UnknownSlideTypeError
 from scrolly.slide.ir import SlideIR
-from scrolly.slide.processor import Compiler, Renderer
+from scrolly.slide.processor import Renderer
 
 _IR_TYPES: dict[str, type[SlideIR]] = {}
 _RENDERERS: list[type[Renderer]] = []
-_COMPILERS: list[type[Compiler]] = []
 
 
 def register_ir(ir_cls: type[SlideIR]) -> None:
-    """Register a SlideIR subclass under its ``SUFFIX``.
+    """Register a ``SlideIR`` subclass under its ``SUFFIX``.
 
     Re-registering the same class for the same suffix is a no-op.
     Two distinct classes claiming the same suffix is an error.
@@ -45,22 +40,18 @@ def register_ir(ir_cls: type[SlideIR]) -> None:
 
 
 def register_renderer(renderer_cls: type[Renderer]) -> None:
-    """Register a Renderer subclass. Checked in registration order."""
+    """Register a ``Renderer`` subclass. Checked in registration order."""
     if renderer_cls not in _RENDERERS:
         _RENDERERS.append(renderer_cls)
 
 
-def register_compiler(compiler_cls: type[Compiler]) -> None:
-    """Register a Compiler subclass. Checked in registration order."""
-    if compiler_cls not in _COMPILERS:
-        _COMPILERS.append(compiler_cls)
-
-
 def get_ir_class_for_path(source_path: Path) -> type[SlideIR]:
-    """Return the SlideIR subclass whose SUFFIX matches ``source_path``.
+    """Return the ``SlideIR`` subclass whose ``SUFFIX`` tail-matches ``source_path``.
 
     Picks the type whose ``SUFFIX`` is the longest tail-match of the
-    filename.  Raises ``UnknownSlideTypeError`` if no registered suffix matches.
+    filename. Raises ``UnknownSlideTypeError`` if no registered suffix
+    matches — the registry now serves as a file-role tag and validity
+    gate rather than a type selector.
     """
     name = source_path.name
     matches = sorted(
@@ -75,16 +66,8 @@ def get_ir_class_for_path(source_path: Path) -> type[SlideIR]:
 
 
 def find_renderer(ir: SlideIR) -> Renderer | None:
-    """Return a fresh Renderer instance that can process ``ir``, or None."""
+    """Return a fresh ``Renderer`` instance that can process ``ir``, or ``None``."""
     for cls in _RENDERERS:
-        if cls.can_process(ir):
-            return cls()
-    return None
-
-
-def find_compiler(ir: SlideIR) -> Compiler | None:
-    """Return a fresh Compiler instance that can process ``ir``, or None."""
-    for cls in _COMPILERS:
         if cls.can_process(ir):
             return cls()
     return None

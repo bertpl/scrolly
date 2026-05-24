@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from scrolly.slide.ir.scrollimation import ScrollimationIR
-from scrolly.slide.renderers.scrollimation import ScrollimationRenderer
+from scrolly.slide.ir.slide import SlideIR
+from scrolly.slide.renderers.slide import SlideRenderer
 
 
 def _write(path: Path, text: str) -> Path:
@@ -16,12 +16,12 @@ def _write(path: Path, text: str) -> Path:
     return path
 
 
-def _renderer() -> ScrollimationRenderer:
-    return ScrollimationRenderer()
+def _renderer() -> SlideRenderer:
+    return SlideRenderer()
 
 
 def _build(source_path: Path):
-    ir = ScrollimationIR.from_file(source_path)
+    ir = SlideIR.from_file(source_path)
     return _renderer().render(ir)
 
 
@@ -38,41 +38,50 @@ MINIMAL = """\
 
 class TestRegistration:
     def test_suffix(self) -> None:
-        assert ScrollimationIR.SUFFIX == ".scrollimation.json"
+        assert SlideIR.SUFFIX == ".slide.json"
 
     def test_slide_type_property(self) -> None:
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range=100,
             elements=[{"html": "<p>hi</p>", "position": [0, 0], "width": 100, "height": 100}],
         )
-        assert ir.slide_type == "scrollimation-json"
+        assert ir.slide_type == "slide-json"
 
     def test_registered(self) -> None:
         from scrolly.slide.registry import registered_suffixes
 
-        assert ".scrollimation.json" in registered_suffixes()
+        assert ".slide.json" in registered_suffixes()
 
 
 class TestHtmlEmission:
     def test_wrapper_div(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        # --- arrange ----------------------
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
+
+        # --- act --------------------------
         chunk = _build(src)
-        assert '<div class="slide-type-scrollimation-json">' in chunk.html
+
+        # --- assert -----------------------
+        # MINIMAL uses a numeric scroll_range, so the wrapper opts into
+        # the animation-mode counter-translate via the class. The base
+        # class is always present.
+        assert "slide-type-slide-json" in chunk.html
+        assert "scroll-mode-animation" in chunk.html
 
     def test_layer_div_with_data_id(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert '<div class="scrollimation-element" data-element-id="0">' in chunk.html
 
     def test_html_layer_content_passthrough(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert "<p>hi</p>" in chunk.html
 
     def test_markdown_layer_rendered(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -90,7 +99,7 @@ class TestHtmlEmission:
     def test_asset_layer_emits_img_with_asset_prefix(self, tmp_path: Path) -> None:
         _write(tmp_path / "hero.jpg", "fake image")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -107,7 +116,7 @@ class TestHtmlEmission:
     def test_multiple_layers_all_present(self, tmp_path: Path) -> None:
         _write(tmp_path / "img.svg", "<svg/>")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -127,7 +136,7 @@ class TestHtmlEmission:
 
     def test_mermaid_layer_emits_pre_tag(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -144,7 +153,7 @@ class TestHtmlEmission:
 
     def test_mermaid_content_html_escaped(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -160,7 +169,7 @@ class TestHtmlEmission:
 
     def test_has_mermaid_flag_set(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -175,13 +184,13 @@ class TestHtmlEmission:
         assert chunk.has_mermaid is True
 
     def test_has_mermaid_flag_false_without_mermaid(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.has_mermaid is False
 
     def test_mermaid_scoped_css(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -197,7 +206,7 @@ class TestHtmlEmission:
 
     def test_layer_order_matches_source(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -219,7 +228,7 @@ class TestAssets:
     def test_chunk_assets_populated_for_asset_layer(self, tmp_path: Path) -> None:
         _write(tmp_path / "hero.jpg", "fake")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -236,7 +245,7 @@ class TestAssets:
         assert chunk.assets[0].is_absolute()
 
     def test_chunk_assets_empty_for_non_asset_layers(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.assets == ()
 
@@ -244,7 +253,7 @@ class TestAssets:
         _write(tmp_path / "a.jpg", "fake")
         _write(tmp_path / "b.svg", "fake")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -265,18 +274,18 @@ class TestAssets:
 
 class TestMetadata:
     def test_title(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.title == "Test slide"
 
     def test_scroll_range_fixed_timeline(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.scroll_range == 1000
 
     def test_scroll_range_zero_becomes_none(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -292,7 +301,7 @@ class TestMetadata:
 
     def test_initial_scroll_position(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -309,7 +318,7 @@ class TestMetadata:
 
     def test_scroll_speed(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -325,13 +334,13 @@ class TestMetadata:
         assert chunk.scroll_speed == 0.5
 
     def test_snap_positions_default_empty(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.snap_positions == ()
 
     def test_snap_positions_flow_to_chunk(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -347,13 +356,13 @@ class TestMetadata:
         assert chunk.snap_positions == (0, 500, 1000)
 
     def test_reverse_default_false(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.reverse is False
 
     def test_reverse_flag_flows_to_chunk(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -374,26 +383,28 @@ class TestMetadata:
 
 class TestScopedCssBase:
     def test_scoped_css_is_non_empty(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert chunk.scoped_css
 
-    def test_wrapper_is_absolute_positioned(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
-        chunk = _build(src)
-        assert "position: absolute" in chunk.scoped_css
+    def test_per_element_css_present(self, tmp_path: Path) -> None:
+        # --- arrange ----------------------
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
 
-    def test_layers_are_absolute_with_overflow_hidden(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        # --- act --------------------------
         chunk = _build(src)
-        assert "position: absolute" in chunk.scoped_css
-        assert "overflow: hidden" in chunk.scoped_css
+
+        # --- assert -----------------------
+        # The per-element rule is what's left in scoped_css after the
+        # wrapper rules moved to canvas.css. Verify at least one such
+        # rule is emitted.
+        assert 'data-element-id="0"' in chunk.scoped_css
 
 
 class TestScopedCssPosition:
     def test_left_top_from_static_position(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -410,7 +421,7 @@ class TestScopedCssPosition:
 
     def test_default_initial_translate_zero(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -429,7 +440,7 @@ class TestScopedCssPosition:
 class TestScopedCssSize:
     def test_numeric_size(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -446,7 +457,7 @@ class TestScopedCssSize:
 
     def test_auto_height(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -463,7 +474,7 @@ class TestScopedCssSize:
 
     def test_auto_width(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -482,7 +493,7 @@ class TestScopedCssSize:
 class TestScopedCssMarkdown:
     def test_text_align_center(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -498,7 +509,7 @@ class TestScopedCssMarkdown:
 
     def test_text_align_default_not_emitted(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -516,7 +527,7 @@ class TestScopedCssMarkdown:
 class TestScopedCssTransform:
     def test_anchor_sets_transform_origin_and_translate(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -532,14 +543,14 @@ class TestScopedCssTransform:
         assert "translate(-50%, -50%)" in chunk.scoped_css
 
     def test_default_anchor_no_translate(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", MINIMAL)
+        src = _write(tmp_path / "s.slide.json", MINIMAL)
         chunk = _build(src)
         assert "transform-origin: 0% 0%" in chunk.scoped_css
         assert "translate(" not in chunk.scoped_css
 
     def test_animated_anchor_generates_calc_expressions(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -557,7 +568,7 @@ class TestScopedCssTransform:
 
     def test_initial_scale_and_rotate(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -574,7 +585,7 @@ class TestScopedCssTransform:
 
     def test_initial_opacity(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -593,7 +604,7 @@ class TestScopedCssAssetLayer:
     def test_object_fit_cover(self, tmp_path: Path) -> None:
         _write(tmp_path / "img.jpg", "fake")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -610,7 +621,7 @@ class TestScopedCssAssetLayer:
     def test_object_fit_contain(self, tmp_path: Path) -> None:
         _write(tmp_path / "img.jpg", "fake")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -627,7 +638,7 @@ class TestScopedCssAssetLayer:
     def test_auto_size_emits_img_rule_without_object_fit(self, tmp_path: Path) -> None:
         _write(tmp_path / "img.jpg", "fake")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -648,7 +659,7 @@ class TestScopedCssAssetLayer:
 class TestScopedCssStacking:
     def test_z_index_follows_array_order(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -702,7 +713,7 @@ class TestImageSequenceHtml:
     def test_one_img_per_unique_consecutive_path(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
         chunk = _build(src)
         assert chunk.html.count("<img ") == 3
 
@@ -710,7 +721,7 @@ class TestImageSequenceHtml:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             _seq_slide(["a.svg", "b.svg", "b.svg", "b.svg", "c.svg"]),
         )
         chunk = _build(src)
@@ -720,7 +731,7 @@ class TestImageSequenceHtml:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             _seq_slide(["a.svg", "b.svg", "b.svg", "c.svg"]),
         )
         chunk = _build(src)
@@ -732,14 +743,14 @@ class TestImageSequenceHtml:
     def test_each_img_has_data_opacity_keyframes(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
         chunk = _build(src)
         assert chunk.html.count("data-opacity-keyframes") == 3
 
     def test_img_src_uses_asset_prefix(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
         chunk = _build(src)
         for name in ("a.svg", "b.svg", "c.svg"):
             assert f'src="__asset__/{name}"' in chunk.html
@@ -747,7 +758,7 @@ class TestImageSequenceHtml:
     def test_empty_slot_emits_no_img(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "b.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "", "b.svg"]))
         chunk = _build(src)
         # Two real frames -> two <img> tags; the empty slot emits nothing.
         assert chunk.html.count("<img ") == 2
@@ -759,7 +770,7 @@ class TestImageSequenceHtml:
     def test_consecutive_empty_slots_emit_no_img(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "", "b.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "", "", "b.svg"]))
         chunk = _build(src)
         assert chunk.html.count("<img ") == 2
 
@@ -769,7 +780,7 @@ class TestImageSequenceAssets:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             _seq_slide(["a.svg", "b.svg", "b.svg", "c.svg"]),
         )
         chunk = _build(src)
@@ -779,7 +790,7 @@ class TestImageSequenceAssets:
     def test_assets_are_absolute_paths(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "b.svg"]))
         chunk = _build(src)
         for path in chunk.assets:
             assert path.is_absolute()
@@ -787,7 +798,7 @@ class TestImageSequenceAssets:
     def test_empty_slots_excluded_from_assets(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "b.svg", ""]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "", "b.svg", ""]))
         chunk = _build(src)
         names = sorted(p.name for p in chunk.assets)
         assert names == ["a.svg", "b.svg"]
@@ -797,7 +808,7 @@ class TestImageSequenceCss:
     def test_first_img_in_flow_rest_absolute_for_stacking(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "b.svg"]))
         chunk = _build(src)
         # Base img rule covers all imgs and does NOT use absolute positioning
         # (the first img must stay in normal flow so it establishes the box height).
@@ -815,7 +826,7 @@ class TestImageSequenceCss:
     def test_per_run_opacity_rule_emitted(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg", "c.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "b.svg", "c.svg"]))
         chunk = _build(src)
         assert 'img[data-frame-index="0"]' in chunk.scoped_css
         assert 'img[data-frame-index="1"]' in chunk.scoped_css
@@ -826,7 +837,7 @@ class TestImageSequenceCss:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             _seq_slide(["a.svg", "b.svg"], height=100, object_fit="cover"),
         )
         chunk = _build(src)
@@ -835,7 +846,7 @@ class TestImageSequenceCss:
     def test_no_opacity_rule_for_empty_slot(self, tmp_path: Path) -> None:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
-        src = _write(tmp_path / "s.scrollimation.json", _seq_slide(["a.svg", "", "b.svg"]))
+        src = _write(tmp_path / "s.slide.json", _seq_slide(["a.svg", "", "b.svg"]))
         chunk = _build(src)
         assert 'img[data-frame-index="0"]' in chunk.scoped_css
         assert 'img[data-frame-index="1"]' not in chunk.scoped_css
@@ -1174,13 +1185,13 @@ class TestIframeElement:
         return self.BASE.format(name=name_field, decor=decor)
 
     def test_iframe_tag_with_srcdoc(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        src = _write(tmp_path / "s.slide.json", self._slide())
         chunk = _build(src)
         assert "<iframe " in chunk.html
         assert "srcdoc=" in chunk.html
 
     def test_iframe_srcdoc_html_escaped(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        src = _write(tmp_path / "s.slide.json", self._slide())
         chunk = _build(src)
         # The raw `<p>iframe</p>` from the source becomes `&lt;p&gt;iframe&lt;/p&gt;` inside srcdoc.
         assert "&lt;p&gt;iframe&lt;/p&gt;" in chunk.html
@@ -1188,22 +1199,22 @@ class TestIframeElement:
         assert "<p>iframe</p>" not in chunk.html
 
     def test_iframe_sandbox_allow_scripts(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        src = _write(tmp_path / "s.slide.json", self._slide())
         chunk = _build(src)
         assert 'sandbox="allow-scripts"' in chunk.html
 
     def test_iframe_title_from_name(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide(name="demo"))
+        src = _write(tmp_path / "s.slide.json", self._slide(name="demo"))
         chunk = _build(src)
         assert 'title="demo"' in chunk.html
 
     def test_iframe_title_omitted_without_name(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        src = _write(tmp_path / "s.slide.json", self._slide())
         chunk = _build(src)
         assert "title=" not in chunk.html
 
     def test_iframe_fill_css_rule(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        src = _write(tmp_path / "s.slide.json", self._slide())
         chunk = _build(src)
         # The wrapper-internal iframe rule sets the iframe to fill its wrapper without a default browser border.
         assert "] iframe {" in chunk.scoped_css
@@ -1229,7 +1240,7 @@ class TestIframeDecorations:
 """
 
     def test_no_decoration_by_default(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide())
+        src = _write(tmp_path / "s.slide.json", self._slide())
         chunk = _build(src)
         # Wrapper rule has no border, no box-shadow, no box-sizing. The iframe
         # child rule's `border: 0` is in a separate rule and not checked here.
@@ -1240,14 +1251,14 @@ class TestIframeDecorations:
         assert "box-sizing" not in wrapper_section
 
     def test_border_only(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide(border_width=4, border_color="#333"))
+        src = _write(tmp_path / "s.slide.json", self._slide(border_width=4, border_color="#333"))
         chunk = _build(src)
         assert "border: 4px solid #333" in chunk.scoped_css
         assert "box-sizing: border-box" in chunk.scoped_css
         assert "box-shadow" not in chunk.scoped_css
 
     def test_shadow_only(self, tmp_path: Path) -> None:
-        src = _write(tmp_path / "s.scrollimation.json", self._slide(shadow_size=12, shadow_color="rgba(0,0,0,0.3)"))
+        src = _write(tmp_path / "s.slide.json", self._slide(shadow_size=12, shadow_color="rgba(0,0,0,0.3)"))
         chunk = _build(src)
         assert "box-shadow: 0 0 12px rgba(0,0,0,0.3)" in chunk.scoped_css
         assert "box-sizing: border-box" in chunk.scoped_css
@@ -1258,7 +1269,7 @@ class TestIframeDecorations:
 
     def test_border_and_shadow_together(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             self._slide(border_width=2, border_color="#000", shadow_size=8, shadow_color="#888"),
         )
         chunk = _build(src)
@@ -1268,7 +1279,7 @@ class TestIframeDecorations:
 
     def test_zero_decoration_values_emit_nothing(self, tmp_path: Path) -> None:
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             self._slide(border_width=0, shadow_size=0),
         )
         chunk = _build(src)
@@ -1293,8 +1304,8 @@ class TestIframeBundler:
         # --- arrange ----------------------------
         from scrolly.pipeline._bundler import PayloadBundler
 
-        src = _write(tmp_path / "s.scrollimation.json", self._slide(self.HTML_PAYLOAD))
-        ir = ScrollimationIR.from_file(src)
+        src = _write(tmp_path / "s.slide.json", self._slide(self.HTML_PAYLOAD))
+        ir = SlideIR.from_file(src)
         bundler = PayloadBundler()
 
         # --- act --------------------------------
@@ -1309,8 +1320,8 @@ class TestIframeBundler:
         # --- arrange ----------------------------
         from scrolly.pipeline._bundler import PayloadBundler
 
-        src = _write(tmp_path / "s.scrollimation.json", self._slide(self.HTML_PAYLOAD))
-        ir = ScrollimationIR.from_file(src)
+        src = _write(tmp_path / "s.slide.json", self._slide(self.HTML_PAYLOAD))
+        ir = SlideIR.from_file(src)
         bundler = PayloadBundler()
 
         # --- act --------------------------------
@@ -1325,8 +1336,8 @@ class TestIframeBundler:
 
     def test_without_bundler_emits_uncompressed_srcdoc(self, tmp_path: Path) -> None:
         # --- arrange ----------------------------
-        src = _write(tmp_path / "s.scrollimation.json", self._slide(self.HTML_PAYLOAD))
-        ir = ScrollimationIR.from_file(src)
+        src = _write(tmp_path / "s.slide.json", self._slide(self.HTML_PAYLOAD))
+        ir = SlideIR.from_file(src)
 
         # --- act --------------------------------
         chunk = _renderer().render(ir)
@@ -1342,7 +1353,7 @@ class TestImageSequenceInteractions:
         for name in ("a.svg", "b.svg"):
             _write(tmp_path / name, "<svg/>")
         src = _write(
-            tmp_path / "s.scrollimation.json",
+            tmp_path / "s.slide.json",
             """\
 {
   title: "T",
@@ -1373,7 +1384,7 @@ class TestSubstrateAutoAndFontScale:
 
     def test_scroll_range_auto_maps_to_none(self) -> None:
         # --- arrange ----------------------------
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range="auto",
             elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
@@ -1387,7 +1398,7 @@ class TestSubstrateAutoAndFontScale:
 
     def test_scroll_range_zero_still_maps_to_none(self) -> None:
         # --- arrange ----------------------------
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range=0,
             elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
@@ -1401,7 +1412,7 @@ class TestSubstrateAutoAndFontScale:
 
     def test_scroll_range_positive_maps_to_int(self) -> None:
         # --- arrange ----------------------------
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range=750,
             elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
@@ -1415,7 +1426,7 @@ class TestSubstrateAutoAndFontScale:
 
     def test_font_scale_default_passes_through(self) -> None:
         # --- arrange ----------------------------
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range=100,
             elements=[{"html": "<p>x</p>", "position": [0, 0], "width": 100, "height": 100}],
@@ -1429,7 +1440,7 @@ class TestSubstrateAutoAndFontScale:
 
     def test_font_scale_explicit_passes_through(self) -> None:
         # --- arrange ----------------------------
-        ir = ScrollimationIR(
+        ir = SlideIR(
             title="T",
             scroll_range=100,
             font_scale=1.75,

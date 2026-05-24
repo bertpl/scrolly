@@ -1,10 +1,10 @@
-"""Render a ``ScrollimationIR`` to a ``SlideHTML`` by driving the element-IR mechanism.
+"""Render a ``SlideIR`` to a ``SlideHTML`` by driving the element-IR mechanism.
 
 The renderer is a thin driver: for each authored element it runs the
-element-IR compile loop to lower the element to primitives, looks up the
-matching ``ElementRenderer`` for each primitive, and aggregates the
-returned ``RenderedElement`` contribution bundles. Type-specific HTML /
-CSS generation lives in ``scrolly.slide.element_ir.renderers``.
+element-IR compile loop to lower the element to primitives, looks up
+the matching ``ElementRenderer`` for each primitive, and aggregates the
+returned ``RenderedElement`` contribution bundles. Type-specific
+HTML / CSS generation lives in ``scrolly.slide.element_ir.renderers``.
 """
 
 from __future__ import annotations
@@ -20,20 +20,24 @@ from scrolly.slide.element_ir import (
 )
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
-from scrolly.slide.ir.scrollimation import ScrollimationIR
 from scrolly.slide.processor import Renderer
 
 if TYPE_CHECKING:
     from scrolly.pipeline._bundler import PayloadBundler
 
 
-class ScrollimationRenderer(Renderer):
-    """Renderer for the `scrollimation` slide type."""
+class SlideRenderer(Renderer):
+    """Renderer for the single slide type."""
 
     @classmethod
     def can_process(cls, ir: SlideIR) -> bool:
-        """Return True if this renderer handles the given IR type."""
-        return isinstance(ir, ScrollimationIR)
+        """Return True for exactly-``SlideIR`` instances.
+
+        Uses an exact-type match rather than ``isinstance`` so that
+        future subclasses can register their own renderers without
+        being intercepted by the built-in.
+        """
+        return type(ir) is SlideIR
 
     def render(
         self,
@@ -42,10 +46,10 @@ class ScrollimationRenderer(Renderer):
         *,
         bundler: PayloadBundler | None = None,
     ) -> SlideHTML:
-        """Render a ``ScrollimationIR`` to ``SlideHTML``.
+        """Render a ``SlideIR`` to ``SlideHTML``.
 
         Args:
-            ir: The IR to render. Must be a ``ScrollimationIR``.
+            ir: The IR to render.
             css_namespace: Slide id used to scope element CSS rules.
             bundler: Optional payload bundler. When provided, iframe
                 ``srcdoc`` payloads are registered with the bundler and
@@ -56,23 +60,26 @@ class ScrollimationRenderer(Renderer):
         Returns:
             The rendered ``SlideHTML``.
         """
-        assert isinstance(ir, ScrollimationIR)
+        assert isinstance(ir, SlideIR)
         prefix = f"{css_namespace}-" if css_namespace else ""
         slide_type = ir.slide_type
         ns = f".slide-type-{slide_type}"
 
+        # Wrapper geometry and the .scrollimation-element child rule are
+        # identical for every slide, so they live in canvas.css rather
+        # than being emitted per-slide. Per-slide blocks for the same
+        # selector would cascade by source order, and a numeric-range
+        # slide later in the document could leak its counter-translate
+        # transform onto every other wrapper — breaking physical scroll
+        # on auto-range slides. The `scroll-mode-animation` class opts
+        # the wrapper into the counter-translate behaviour for numeric-
+        # range slides; content-driven slides omit the class and let
+        # the chunk's translation reach their content unobstructed.
+        is_content_driven = not (isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0)
+        mode_class = "" if is_content_driven else " scroll-mode-animation"
+
         element_htmls: list[str] = []
-        css_rules: list[str] = [
-            f"{ns} {{\n"
-            f"  position: absolute;\n"
-            f"  top: 0;\n"
-            f"  left: 0;\n"
-            f"  width: 100%;\n"
-            f"  height: 100%;\n"
-            f"  transform: translateY(calc(1px * var(--scroll-position, 0)));\n"
-            f"}}",
-            f"{ns} .scrollimation-element {{\n  position: absolute;\n  overflow: hidden;\n}}",
-        ]
+        css_rules: list[str] = []
         asset_paths: list[Path] = []
         has_mermaid = False
 
@@ -105,7 +112,7 @@ class ScrollimationRenderer(Renderer):
             css_rules.append(f"{ns} .mermaid svg {{\n  width: 100%;\n  height: 100%;\n}}")
 
         inner = "\n".join(element_htmls)
-        html = f'<div class="slide-type-{slide_type}">\n{inner}\n</div>'
+        html = f'<div class="slide-type-{slide_type}{mode_class}">\n{inner}\n</div>'
         scoped_css = "\n\n".join(css_rules)
         unique_assets = list(dict.fromkeys(asset_paths))
 

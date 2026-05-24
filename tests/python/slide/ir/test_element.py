@@ -371,7 +371,7 @@ class TestMarkdownElement:
 
     def test_default_color(self):
         el = MarkdownElement(**_md())
-        assert el.color == "#808080"
+        assert el.color == "inherit"
 
     def test_custom_color(self):
         el = MarkdownElement(**_md(color="#fff"))

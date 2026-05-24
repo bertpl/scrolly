@@ -15,7 +15,7 @@ def test_init_creates_deck_and_slide(tmp_path):
     result = runner.invoke(cli, ["init", str(target)])
     assert result.exit_code == 0
     assert (target / "deck.deck.json").exists()
-    assert (target / "slides" / "intro.static.md").exists()
+    assert (target / "slides" / "intro.slide.json").exists()
 
 
 def test_init_deck_is_valid_json5(tmp_path):
@@ -27,12 +27,13 @@ def test_init_deck_is_valid_json5(tmp_path):
     assert raw["slides"][0]["id"] == "intro"
 
 
-def test_init_slide_has_frontmatter(tmp_path):
+def test_init_slide_is_valid_json5(tmp_path):
     target = tmp_path / "my-deck"
     runner.invoke(cli, ["init", str(target)])
-    text = (target / "slides" / "intro.static.md").read_text()
-    assert text.startswith("---\n")
-    assert "initial_scroll_position" in text
+    raw = json5.loads((target / "slides" / "intro.slide.json").read_text())
+    assert "title" in raw
+    assert "elements" in raw
+    assert raw["elements"][0]["markdown"].startswith("# My Deck")
 
 
 def test_init_output_passes_validate(tmp_path):

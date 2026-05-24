@@ -22,7 +22,7 @@ def _write(path: Path, content: str) -> Path:
     return path
 
 
-def _make_deck(tmp_path: Path, slide_content: str, slide_name: str = "s.scrollimation.json"):
+def _make_deck(tmp_path: Path, slide_content: str, slide_name: str = "s.slide.json"):
     """Create a minimal deck with one scrollimation slide and return the validated Deck."""
     _write(tmp_path / "slides" / slide_name, slide_content)
     deck_json = f"""{{
@@ -186,33 +186,6 @@ class TestOutOfRangeKeyframes:
 
         # --- assert -----------------------
         assert "'my-element'" in diagnostics[0].location
-
-    def test_no_warnings_for_storyboard_slides(self, tmp_path: Path) -> None:
-        # --- arrange ----------------------
-        _write(
-            tmp_path / "slides" / "s.storyboard.json",
-            """{
-  title: "T",
-  scene_distance: 300,
-  scenes: [
-    { elements: [{ html: "<p>A</p>", position: [0, 0], width: 100, height: "auto" }] },
-    { elements: [{ html: "<p>B</p>", position: [0, 0], width: 100, height: "auto" }] },
-  ],
-}""",
-        )
-        deck_json = """{
-  title: "Test",
-  slides: [{ id: "s", position: [0, 0], source: "slides/s.storyboard.json" }],
-  edges: [],
-}"""
-        _write(tmp_path / "deck.deck.json", deck_json)
-        deck = validate_deck_sources(tmp_path / "deck.deck.json")
-
-        # --- act --------------------------
-        diagnostics = lint_deck(deck)
-
-        # --- assert -----------------------
-        assert diagnostics == []
 
     def test_no_warnings_on_worked_example(self) -> None:
         # --- arrange ----------------------

@@ -9,6 +9,20 @@ from tests.python.conftest import PROJECT_ROOT
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
 
 
+def _markdown_slide(title: str, body: str) -> str:
+    """Build a minimal ``.slide.json`` source for a single markdown element."""
+    import json as _json
+
+    return (
+        "{\n"
+        f"  title: {_json.dumps(title)},\n"
+        "  elements: [\n"
+        f'    {{ markdown: {_json.dumps(body)}, position: [0, 0], width: 100, height: "auto" }},\n'
+        "  ],\n"
+        "}\n"
+    )
+
+
 def _find_example_decks() -> list[Path]:
     if not EXAMPLES_DIR.exists():
         return []
@@ -48,12 +62,12 @@ def test_example_deck_builds(deck_file, tmp_path):
 
 
 def test_builds_a_minimal_in_memory_deck(tmp_path):
-    slide = tmp_path / "only.static.md"
-    slide.write_text("---\ninitial_scroll_position: 0\n---\n# Only\n\nhello")
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("Only", "# Only\n\nhello"))
 
     deck_file = tmp_path / "deck.deck.json"
     deck_file.write_text(
-        '{ title: "tiny", slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }'
+        '{ title: "tiny", slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }'
     )
 
     out = tmp_path / "dist"
@@ -64,18 +78,17 @@ def test_builds_a_minimal_in_memory_deck(tmp_path):
     assert "<h1>Only</h1>" in html
     assert "<title>tiny</title>" in html
     assert 'data-id="only"' in html
-    # SlideHTML-extracted title (from the H1) lands in the embedded nav-data JSON.
     assert '"title": "Only"' in html
 
 
 def test_builds_multi_slide_deck(tmp_path):
-    (tmp_path / "a.static.md").write_text("---\ninitial_scroll_position: 0\n---\n# A")
-    (tmp_path / "b.static.md").write_text("---\ninitial_scroll_position: 0\n---\n# B")
+    (tmp_path / "a.slide.json").write_text(_markdown_slide("A", "# A"))
+    (tmp_path / "b.slide.json").write_text(_markdown_slide("B", "# B"))
     deck_file = tmp_path / "deck.deck.json"
     deck_file.write_text(
         "{ slides: ["
-        '{ id: "a", position: [0, 0], source: "a.static.md" },'
-        '{ id: "b", position: [1, 0], source: "b.static.md" }'
+        '{ id: "a", position: [0, 0], source: "a.slide.json" },'
+        '{ id: "b", position: [1, 0], source: "b.slide.json" }'
         '], edges: [["a|right", "b|left"]] }'
     )
 
@@ -104,10 +117,10 @@ def test_build_surfaces_unknown_slide_type(tmp_path):
 
 
 def test_build_refuses_to_clobber_without_force(tmp_path):
-    slide = tmp_path / "only.static.md"
-    slide.write_text("---\ninitial_scroll_position: 0\n---\n# x")
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("x", "# x"))
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
 
     out = tmp_path / "dist"
     out.mkdir()
@@ -153,35 +166,35 @@ def test_validate_deck_sources_on_worked_example():
 
 
 def test_validate_deck_sources_on_minimal_deck(tmp_path):
-    slide = tmp_path / "only.static.md"
-    slide.write_text("---\ninitial_scroll_position: 0\n---\n# Only\n")
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("Only", "# Only"))
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
     deck = validate_deck_sources(deck_file)
     assert len(deck.slides) == 1
 
 
 def test_validate_deck_sources_rejects_missing_slide(tmp_path):
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "gone", position: [0, 0], source: "nonexistent.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "gone", position: [0, 0], source: "nonexistent.slide.json" }], edges: [] }')
     with pytest.raises(ScrollyError):
         validate_deck_sources(deck_file)
 
 
 def test_validate_deck_sources_rejects_invalid_slide_content(tmp_path):
-    slide = tmp_path / "bad.static.md"
-    slide.write_text("no frontmatter here")
+    slide = tmp_path / "bad.slide.json"
+    slide.write_text("this is not JSON5")
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "bad", position: [0, 0], source: "bad.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "bad", position: [0, 0], source: "bad.slide.json" }], edges: [] }')
     with pytest.raises(ScrollyError):
         validate_deck_sources(deck_file)
 
 
 def test_build_force_overwrites_non_empty_out_dir(tmp_path):
-    slide = tmp_path / "only.static.md"
-    slide.write_text("---\ninitial_scroll_position: 0\n---\n# x")
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("x", "# x"))
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
 
     out = tmp_path / "dist"
     out.mkdir()
@@ -196,7 +209,7 @@ def test_build_force_overwrites_non_empty_out_dir(tmp_path):
 # ==================================================================================================
 def _deck_with_iframe(tmp_path: Path) -> Path:
     """Write a one-slide deck whose only element is a sizable iframe payload."""
-    slide_src = tmp_path / "only.scrollimation.json"
+    slide_src = tmp_path / "only.slide.json"
     iframe_html = "<!doctype html><p>some compressible iframe content</p>" * 30
     import json as _json
 
@@ -206,7 +219,7 @@ def _deck_with_iframe(tmp_path: Path) -> Path:
         "  ],\n}\n"
     )
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.scrollimation.json" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
     return deck_file
 
 
@@ -276,13 +289,13 @@ def test_inline_false_skips_bundle_script(tmp_path):
     assert "<iframe data-scrolly-target" not in html
 
 
-def test_static_only_deck_emits_no_bundle_script(tmp_path):
-    # A static-only deck has no compressible payloads, so the bundler has
-    # nothing to register and the script tag is not emitted.
-    slide = tmp_path / "only.static.md"
-    slide.write_text("---\ninitial_scroll_position: 0\n---\n# A\n\nsome body text")
+def test_markdown_only_deck_emits_no_bundle_script(tmp_path):
+    # A markdown-only deck has no compressible payloads, so the bundler
+    # has nothing to register and the script tag is not emitted.
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("A", "# A\n\nsome body text"))
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
 
     out = tmp_path / "dist"
     build_deck(deck_file, out)
@@ -341,11 +354,11 @@ def test_meta_payloads_inline_false_has_empty_counts(tmp_path):
     assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
 
 
-def test_meta_payloads_static_only_deck(tmp_path):
-    slide = tmp_path / "only.static.md"
-    slide.write_text("---\ninitial_scroll_position: 0\n---\n# A\n\nbody")
+def test_meta_payloads_markdown_only_deck(tmp_path):
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("A", "# A\n\nbody"))
     deck_file = tmp_path / "deck.deck.json"
-    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.static.md" }], edges: [] }')
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
     out = tmp_path / "dist"
     build_deck(deck_file, out)
 

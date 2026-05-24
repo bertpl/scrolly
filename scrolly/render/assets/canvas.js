@@ -434,16 +434,21 @@
 
     init(canvas) {
       this._observer = new ResizeObserver((entries) => {
+        // Many entries may report into the same slide-container (chunk
+        // plus its absolute children); deduplicate before recomputing.
+        const containers = new Set();
         for (const entry of entries) {
           const container = entry.target.closest(".slide-container");
-          if (!container) continue;
+          if (container) containers.add(container);
+        }
+        for (const container of containers) {
           const slideId = container.dataset.id;
           const cfg = this._config[slideId];
           if (!cfg || cfg.scrollRange !== null) continue;
           const subcanvas = container.querySelector(".subcanvas");
           const chunk = container.querySelector(".chunk");
           if (!subcanvas || !chunk) continue;
-          const range = Math.max(0, chunk.scrollHeight - subcanvas.clientHeight);
+          const range = Math.max(0, ScrollManager.measureContentHeight(chunk) - subcanvas.clientHeight);
           this.setRange(slideId, range);
         }
       });
@@ -457,12 +462,33 @@
         if (cfg.scrollRange === null) {
           this._positions.set(slideId, initial);
           const chunk = container.querySelector(".chunk");
-          if (chunk) this._observer.observe(chunk);
+          if (!chunk) return;
+          // The chunk itself rarely resizes (it tracks the slide-container),
+          // but its absolute-positioned children — including markdown
+          // elements with content-driven height — do. Observe both so a
+          // resize on any contributing element re-triggers the range
+          // computation.
+          this._observer.observe(chunk);
+          chunk.querySelectorAll(".scrollimation-element").forEach((el) => {
+            this._observer.observe(el);
+          });
         } else {
           this.setRange(slideId, cfg.scrollRange);
           this.setPosition(slideId, initial);
         }
       });
+    }
+
+    static measureContentHeight(chunk) {
+      // `scrollHeight` covers any in-flow content the chunk hosts; absolute
+      // children are out of flow and don't contribute, so walk them and
+      // take the lowest bottom edge into account separately.
+      let bottom = chunk.scrollHeight;
+      chunk.querySelectorAll(".scrollimation-element").forEach((el) => {
+        const elBottom = el.offsetTop + el.offsetHeight;
+        if (elBottom > bottom) bottom = elBottom;
+      });
+      return bottom;
     }
 
     startDrag(e, selectedSlide) {

@@ -14,13 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** the three slide types (`static`, `scrollimation`, `storyboard`) are unified into a single `slide` type with the `.slide.json` source suffix.
+
 ### Deprecated
 
 ### Removed
 
+- **Breaking:** the `.static.md`, `.scrollimation.json`, and `.storyboard.json` source formats. Convert each slide to `.slide.json` — markdown bodies become a `markdown` element, scrollimation contents move under the new top-level shape, and storyboard scenes become elements with explicit opacity keyframes.
+
 ### Fixed
 
 - Builds are now byte-reproducible across runs.
+- Slides containing an iframe are now selectable by clicking anywhere on them in deck view.
 
 ### Security
 

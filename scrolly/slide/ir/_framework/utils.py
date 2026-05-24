@@ -6,12 +6,11 @@ from pathlib import Path
 from typing import TypeVar
 
 import json5
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from scrolly.errors import SlideSourceError
-from scrolly.slide.ir._framework.base import SlideIR
 
-T = TypeVar("T", bound=SlideIR)
+T = TypeVar("T", bound=BaseModel)
 
 _FILE_FIELD_MAP: dict[str, str] = {
     "markdown_file": "markdown",
@@ -22,9 +21,9 @@ _FILE_FIELD_MAP: dict[str, str] = {
 
 
 def parse_json5_ir(source_path: Path, ir_cls: type[T], label: str) -> T:
-    """Read a JSON5 file and validate against a ``SlideIR`` subclass.
+    """Read a JSON5 file and validate against a pydantic model class.
 
-    ``label`` is used in error messages (e.g. ``"scrollimation"``).
+    ``label`` is used in error messages (e.g. ``"slide"``).
     """
     try:
         text = source_path.read_text(encoding="utf-8")

@@ -286,6 +286,53 @@ body {
    * no compositor surprises since translate is GPU-accelerated. */
 }
 
+/* ---- Slide content wrapper ---------------------------------------------
+ *
+ * Each chunk contains one .slide-type-slide-json wrapper that holds the
+ * authored elements. The wrapper fills the chunk and acts as the
+ * containing block for the .scrollimation-element children (each is
+ * position:absolute within it). These rules used to be emitted per-slide
+ * in the renderer's scoped_css, but every slide produced byte-identical
+ * rules under the same selector — and the per-slide blocks then
+ * cascaded with each other for properties that varied (e.g. transform
+ * for animation mode), which broke physical-scroll content-driven
+ * slides because the cascade carried a stray transform across all
+ * wrappers regardless of mode. Hoisting the wrapper rules here gives
+ * every slide a deterministic baseline; mode-specific behaviour is
+ * opted into via the `scroll-mode-animation` class.
+ */
+.slide-type-slide-json {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-type-slide-json .scrollimation-element {
+  position: absolute;
+  overflow: hidden;
+}
+
+/* Animation-driven slides (numeric scroll_range) counter-translate the
+ * chunk's scroll-driven translateY so content stays visually stationary
+ * while --scroll-position drives the calc()-based keyframe expressions
+ * on each element. Content-driven slides (scroll_range "auto") omit
+ * this class, so the chunk's translation reaches their content
+ * unobstructed and the slide physically scrolls. */
+.slide-type-slide-json.scroll-mode-animation {
+  transform: translateY(calc(1px * var(--scroll-position, 0)));
+}
+
+/* In deck view, iframe content captures pointer events before they
+ * reach the slide-container's click-to-select handler — making the
+ * iframe-covered region of a slide unclickable. Disable pointer events
+ * on iframes here so clicks fall through to the slide. Slide view
+ * (the default) re-enables interaction inside the iframe. */
+body.view-deck .slide-type-slide-json iframe {
+  pointer-events: none;
+}
+
 /* ---- Edge glows (no-target + disambiguation) -------------------------- */
 
 /* Two side-edge glow effects share shape, size, and animation: the red

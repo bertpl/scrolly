@@ -1,0 +1,8 @@
+{
+  "title": "Details",
+  "elements": [
+    {
+      "markdown": "# Details\n\nThe details slide. Press **Down** for the appendix, or **Left** to return.\n\n- point one\n- point two\n- point three"
+    }
+  ]
+}

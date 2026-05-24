@@ -35,22 +35,28 @@ class SlideElement(ElementIR, frozen=True):
         description="Optional human-readable label. Used in error messages only, not for rendering.",
     )
     position: AnimatedVec2 = Field(
+        default=AnimatedVec2((5.0, 5.0)),
         description=(
             "Element position as [x%, y%] of the slide viewport, or animated via keyframes. "
-            "[0, 0] = top-left corner, [100, 100] = bottom-right corner. "
-            "The anchor point of the element is placed at this position."
+            "Default [5, 5] — a 5%-inset top-left. [0, 0] = exact top-left, "
+            "[100, 100] = bottom-right corner. The anchor point of the element is placed "
+            "at this position."
         ),
     )
     width: AnimatedSizeDim = Field(
+        default=AnimatedSizeDim(90.0),
         description=(
             'Element width as % of slide viewport, "auto", or animated via keyframes. '
+            "Default 90, pairing with position [5, 5] for a centred 90%-wide column. "
             'Use "auto" to preserve aspect ratio (images) or size to content (text).'
         ),
     )
     height: AnimatedSizeDim = Field(
+        default=AnimatedSizeDim("auto"),
         description=(
             'Element height as % of slide viewport, "auto", or animated via keyframes. '
-            'Use "auto" to preserve aspect ratio (images) or size to content (text).'
+            'Default "auto" — content-driven height. Set to a number to fix the height, '
+            "or animate via keyframes."
         ),
     )
     anchor: AnimatedVec2 = Field(
@@ -309,8 +315,8 @@ class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
 
     markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
     color: str = Field(
-        default="#808080",
-        description="CSS color value for the rendered text.",
+        default="inherit",
+        description="CSS color value for the rendered text. Default 'inherit' picks up the slide-level body colour.",
     )
     text_align: Literal["left", "center", "right"] = Field(
         default="left",

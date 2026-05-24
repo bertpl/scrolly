@@ -127,20 +127,19 @@ _INIT_DECK = """\
 {
   title: "My Deck",
   slides: [
-    { id: "intro", position: [0, 0], source: "slides/intro.static.md" },
+    { id: "intro", position: [0, 0], source: "slides/intro.slide.json" },
   ],
   edges: [],
 }
 """
 
 _INIT_SLIDE = """\
----
-initial_scroll_position: 0
----
-
-# My Deck
-
-Welcome to your new presentation.
+{
+  title: "My Deck",
+  elements: [
+    { markdown: "# My Deck\\n\\nWelcome to your new presentation." },
+  ],
+}
 """
 
 
@@ -156,6 +155,6 @@ def init(dir_path: Path) -> None:
     slides_dir.mkdir(parents=True, exist_ok=True)
 
     (dir_path / "deck.deck.json").write_text(_INIT_DECK)
-    (slides_dir / "intro.static.md").write_text(_INIT_SLIDE)
+    (slides_dir / "intro.slide.json").write_text(_INIT_SLIDE)
 
     click.echo(f"Created deck in {dir_path}")
