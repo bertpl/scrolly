@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `scrolly introspect slides|elements|assets` commands for inspecting a resolved deck.
 - New `scrolly introspect snaps|timeline|snapshot` commands for inspecting scroll-driven element behavior.
 - New `scrolly introspect dom` command for inspecting rendered per-element HTML and scoped CSS.
+- New `scrolly schema --list-types` flag for scripting (bare type names, one per line).
 
 ### Changed
 
