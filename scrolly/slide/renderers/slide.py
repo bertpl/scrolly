@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from scrolly.errors import SlideSourceError
 from scrolly.slide.element_ir import (
     RenderContext,
+    RenderedElement,
     compile_to_primitives,
     find_element_renderer,
 )
@@ -61,7 +62,6 @@ class SlideRenderer(Renderer):
             The rendered ``SlideHTML``.
         """
         assert isinstance(ir, SlideIR)
-        prefix = f"{css_namespace}-" if css_namespace else ""
         slide_type = ir.slide_type
         ns = f".slide-type-{slide_type}"
 
@@ -78,36 +78,16 @@ class SlideRenderer(Renderer):
         is_content_driven = not (isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0)
         mode_class = "" if is_content_driven else " scroll-mode-animation"
 
-        element_htmls: list[str] = []
-        css_rules: list[str] = []
+        rendered_elements = self.render_elements(ir, css_namespace=css_namespace, bundler=bundler)
+
+        element_htmls = [e.html for e in rendered_elements]
+        css_rules = [e.scoped_css for e in rendered_elements if e.scoped_css]
         asset_paths: list[Path] = []
         has_mermaid = False
-
-        for i, el in enumerate(ir.elements):
-            eid = f"{prefix}{i}"
-            selector_prefix = f'{ns} [data-element-id="{eid}"]'
-            ctx = RenderContext(
-                eid=eid,
-                index=i,
-                selector_prefix=selector_prefix,
-                bundler=bundler,
-            )
-
-            primitives = compile_to_primitives(el)
-            for prim in primitives:
-                renderer = find_element_renderer(prim)
-                if renderer is None:
-                    raise SlideSourceError(
-                        code="E601",
-                        message=(f"no element renderer registered for {type(prim).__name__} (slide element index {i})"),
-                    )
-                rendered = renderer.render(prim, ctx=ctx)
-                element_htmls.append(rendered.html)
-                if rendered.scoped_css:
-                    css_rules.append(rendered.scoped_css)
-                asset_paths.extend(rendered.assets)
-                if rendered.has_mermaid:
-                    has_mermaid = True
+        for e in rendered_elements:
+            asset_paths.extend(e.assets)
+            if e.has_mermaid:
+                has_mermaid = True
 
         if has_mermaid:
             css_rules.append(f"{ns} .mermaid svg {{\n  width: 100%;\n  height: 100%;\n}}")
@@ -137,3 +117,77 @@ class SlideRenderer(Renderer):
             reverse=ir.reverse,
             has_mermaid=has_mermaid,
         )
+
+    def render_elements(
+        self,
+        ir: SlideIR,
+        css_namespace: str = "",
+        *,
+        bundler: PayloadBundler | None = None,
+    ) -> list[RenderedElement]:
+        """Render each authored element to a ``RenderedElement``, in authored order.
+
+        Sibling to :meth:`render`. ``render`` aggregates the per-element
+        pieces into a single ``SlideHTML``; this helper returns the per-
+        element pieces directly, which is what ``scrolly introspect dom``
+        consumes.
+
+        For the current 1:1 authored→primitive mapping (no element
+        compilers are registered today, all built-in elements are
+        primitives), each authored element produces one primitive and
+        thus one ``RenderedElement``. If a future element compiler
+        expands an authored element to multiple primitives, the
+        primitives' ``html``, ``scoped_css``, ``assets`` and
+        ``has_mermaid`` are merged into a single ``RenderedElement`` per
+        authored element — preserving the one-entry-per-author-visible-
+        element view that ``introspect dom`` and consumers like it
+        depend on.
+
+        Args:
+            ir: The slide IR to render.
+            css_namespace: Slide id used to scope element CSS rules.
+            bundler: Optional payload bundler, threaded through to each
+                primitive renderer via the ``RenderContext``.
+
+        Returns:
+            One ``RenderedElement`` per authored element, in order.
+        """
+        prefix = f"{css_namespace}-" if css_namespace else ""
+        ns = f".slide-type-{ir.slide_type}"
+
+        results: list[RenderedElement] = []
+        for i, el in enumerate(ir.elements):
+            eid = f"{prefix}{i}"
+            selector_prefix = f'{ns} [data-element-id="{eid}"]'
+            ctx = RenderContext(eid=eid, index=i, selector_prefix=selector_prefix, bundler=bundler)
+
+            primitives = compile_to_primitives(el)
+            htmls: list[str] = []
+            csss: list[str] = []
+            assets: list[Path] = []
+            has_mermaid = False
+            for prim in primitives:
+                element_renderer = find_element_renderer(prim)
+                if element_renderer is None:
+                    raise SlideSourceError(
+                        code="E601",
+                        message=(f"no element renderer registered for {type(prim).__name__} (slide element index {i})"),
+                    )
+                rendered = element_renderer.render(prim, ctx=ctx)
+                htmls.append(rendered.html)
+                if rendered.scoped_css:
+                    csss.append(rendered.scoped_css)
+                assets.extend(rendered.assets)
+                if rendered.has_mermaid:
+                    has_mermaid = True
+
+            results.append(
+                RenderedElement(
+                    html="\n".join(htmls),
+                    scoped_css="\n\n".join(csss),
+                    assets=tuple(assets),
+                    has_mermaid=has_mermaid,
+                )
+            )
+
+        return results

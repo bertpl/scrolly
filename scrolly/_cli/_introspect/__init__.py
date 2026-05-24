@@ -24,6 +24,7 @@ from __future__ import annotations
 import click
 
 from scrolly._cli._introspect._assets import assets_command
+from scrolly._cli._introspect._dom import dom_command
 from scrolly._cli._introspect._elements import elements_command
 from scrolly._cli._introspect._slides import slides_command
 from scrolly._cli._introspect._snaps import snaps_command
@@ -41,4 +42,5 @@ introspect.add_command(elements_command)
 introspect.add_command(snaps_command)
 introspect.add_command(timeline_command)
 introspect.add_command(snapshot_command)
+introspect.add_command(dom_command)
 introspect.add_command(assets_command)
