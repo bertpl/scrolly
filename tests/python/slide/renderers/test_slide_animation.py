@@ -1,4 +1,4 @@
-"""Tests for scrollimation ramp_expr CSS expression generation."""
+"""Tests for ramp_expr CSS expression generation."""
 
 from __future__ import annotations
 

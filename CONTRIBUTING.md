@@ -65,10 +65,10 @@ Subject line uses the same short-form prefixes as branches:
 Examples:
 
 ```
-feat: add storyboard slide type
+feat: add code element with syntax highlighting
 fix: handle empty group in deck build
 chore: bump click to 8.3
-docs: clarify scrollimation config
+docs: clarify scroll_range semantics
 ```
 
 The body (optional) explains *why*, not *what*. Wrap at ~72 characters.

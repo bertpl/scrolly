@@ -1,12 +1,10 @@
 """Shared CSS-expression helpers used by every primitive renderer.
 
-These mirror the helpers that previously lived in the monolithic
-``scrolly.slide.renderers.scrollimation`` module. ``substrate_css``
-builds the per-element substrate rule (position, size, transform,
-opacity, z-index, ``will-change``) plus any renderer-supplied extras;
-``wrap_element`` builds the standard ``.scrollimation-element`` wrapper
-``<div>`` (including the ``data-opacity-keyframes`` attribute when the
-element's opacity is animated).
+``substrate_css`` builds the per-element substrate rule (position, size,
+transform, opacity, z-index, ``will-change``) plus any renderer-supplied
+extras; ``wrap_element`` builds the standard element wrapper ``<div>``
+(including the ``data-opacity-keyframes`` attribute when the element's
+opacity is animated).
 """
 
 from __future__ import annotations

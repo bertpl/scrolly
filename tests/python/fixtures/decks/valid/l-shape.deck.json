@@ -1,9 +1,9 @@
 {
   title: "L-shape",
   slides: [
-    { id: "intro",    position: [0, 0], source: "slides/intro.static.md" },
-    { id: "details",  position: [1, 0], source: "slides/details.static.md" },
-    { id: "appendix", position: [1, 1], source: "slides/appendix.static.md" },
+    { id: "intro",    position: [0, 0], source: "slides/intro.slide.json" },
+    { id: "details",  position: [1, 0], source: "slides/details.slide.json" },
+    { id: "appendix", position: [1, 1], source: "slides/appendix.slide.json" },
   ],
   edges: [
     ["intro|right", "details|left"],

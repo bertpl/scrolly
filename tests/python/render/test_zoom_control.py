@@ -21,7 +21,7 @@ from scrolly.render.zoom_control import (
 # ==================================================================================================
 def _slide(id_: str, x: int, y: int) -> Slide:
     """Build a Slide at (x, y) with a dummy static-markdown source path."""
-    return Slide(id=id_, position=Position(x, y), source=Path(f"/{id_}.static.md"))
+    return Slide(id=id_, position=Position(x, y), source=Path(f"/{id_}.slide.json"))
 
 
 def _deck(*slides: Slide) -> Deck:

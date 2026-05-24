@@ -1,4 +1,4 @@
-"""Tests for the scrollimation renderer — HTML emission + metadata."""
+"""Tests for the slide renderer — HTML emission + metadata."""
 
 from __future__ import annotations
 

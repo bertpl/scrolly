@@ -1,8 +1,7 @@
 """``MarkdownRenderer`` — renders a ``MarkdownElement`` primitive.
 
-In v0.2.0 this is the single home of markdown-to-HTML conversion in the
-scrollimation path. (The legacy ``static`` slide-type renderer still
-runs its own conversion; that path is removed in a later collapsing PR.)
+The single home of markdown-to-HTML conversion: runs ``markdown.markdown``
+at render time and wraps the result in the standard element wrapper.
 """
 
 from __future__ import annotations
