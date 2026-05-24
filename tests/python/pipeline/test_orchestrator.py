@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import ScrollyError
-from scrolly.pipeline.orchestrator import build_deck, validate_deck_sources
+from scrolly.pipeline.loader import load_deck
+from scrolly.pipeline.orchestrator import build_deck
 from tests.python.conftest import PROJECT_ROOT
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
@@ -155,39 +156,41 @@ def test_worked_example_long_bg_slide_is_content_driven(tmp_path):
     assert data["slides"]["long-bg"]["scroll_speed"] == 1.0
 
 
-# ---------------------------------------------------------------------------
-# validate_deck_sources
-# ---------------------------------------------------------------------------
-def test_validate_deck_sources_on_worked_example():
+# ==================================================================================================
+#  load_deck
+# ==================================================================================================
+def test_load_deck_on_worked_example():
     deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
-    deck = validate_deck_sources(deck_file)
+    deck, slide_irs = load_deck(deck_file)
     assert len(deck.slides) == 18
     assert len(deck.edges) == 21
+    assert set(slide_irs.keys()) == {s.id for s in deck.slides}
 
 
-def test_validate_deck_sources_on_minimal_deck(tmp_path):
+def test_load_deck_on_minimal_deck(tmp_path):
     slide = tmp_path / "only.slide.json"
     slide.write_text(_markdown_slide("Only", "# Only"))
     deck_file = tmp_path / "deck.deck.json"
     deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
-    deck = validate_deck_sources(deck_file)
+    deck, slide_irs = load_deck(deck_file)
     assert len(deck.slides) == 1
+    assert list(slide_irs.keys()) == ["only"]
 
 
-def test_validate_deck_sources_rejects_missing_slide(tmp_path):
+def test_load_deck_rejects_missing_slide(tmp_path):
     deck_file = tmp_path / "deck.deck.json"
     deck_file.write_text('{ slides: [{ id: "gone", position: [0, 0], source: "nonexistent.slide.json" }], edges: [] }')
     with pytest.raises(ScrollyError):
-        validate_deck_sources(deck_file)
+        load_deck(deck_file)
 
 
-def test_validate_deck_sources_rejects_invalid_slide_content(tmp_path):
+def test_load_deck_rejects_invalid_slide_content(tmp_path):
     slide = tmp_path / "bad.slide.json"
     slide.write_text("this is not JSON5")
     deck_file = tmp_path / "deck.deck.json"
     deck_file.write_text('{ slides: [{ id: "bad", position: [0, 0], source: "bad.slide.json" }], edges: [] }')
     with pytest.raises(ScrollyError):
-        validate_deck_sources(deck_file)
+        load_deck(deck_file)
 
 
 def test_build_force_overwrites_non_empty_out_dir(tmp_path):

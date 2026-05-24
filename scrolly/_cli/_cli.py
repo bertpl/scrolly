@@ -7,7 +7,7 @@ from rich.console import Console
 
 from scrolly import __version__
 from scrolly.errors import ScrollyError
-from scrolly.pipeline import build_deck, validate_deck_sources
+from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
 
 _err_console = Console(stderr=True, highlight=False)
@@ -105,7 +105,7 @@ def schema(type_name: str | None) -> None:
 def validate(deck_path: Path, strict: bool) -> None:
     """Validate a deck and all its slide sources without building."""
     try:
-        deck = validate_deck_sources(deck_path)
+        deck, _ = load_deck(deck_path)
     except ScrollyError as e:
         _err_console.print(f"[red]error:[/red] {e}")
         sys.exit(1)

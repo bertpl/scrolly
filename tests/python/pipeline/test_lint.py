@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.pipeline.lint import Diagnostic, lint_deck
-from scrolly.pipeline.orchestrator import validate_deck_sources
+from scrolly.pipeline.loader import load_deck
 
 # --------------------------------------------------------------------------
 #  Helpers
@@ -31,7 +31,8 @@ def _make_deck(tmp_path: Path, slide_content: str, slide_name: str = "s.slide.js
   edges: [],
 }}"""
     _write(tmp_path / "deck.deck.json", deck_json)
-    return validate_deck_sources(tmp_path / "deck.deck.json")
+    deck, _ = load_deck(tmp_path / "deck.deck.json")
+    return deck
 
 
 # --------------------------------------------------------------------------
@@ -189,7 +190,7 @@ class TestOutOfRangeKeyframes:
 
     def test_no_warnings_on_worked_example(self) -> None:
         # --- arrange ----------------------
-        deck = validate_deck_sources(EXAMPLES_DIR / "worked-example" / "deck.deck.json")
+        deck, _ = load_deck(EXAMPLES_DIR / "worked-example" / "deck.deck.json")
 
         # --- act --------------------------
         diagnostics = lint_deck(deck)
