@@ -74,12 +74,30 @@ def build(
 
 @cli.command()
 @click.argument("type_name", required=False)
-def schema(type_name: str | None) -> None:
-    """Show source file schemas. Lists types when called without an argument."""
+@click.option(
+    "--list-types",
+    "list_types",
+    is_flag=True,
+    help="Print bare type names one per line (no descriptions) for scripting use.",
+)
+def schema(type_name: str | None, list_types: bool) -> None:
+    """Show source file schemas.
+
+    \b
+    scrolly schema              → formatted index of available types
+    scrolly schema <type>       → JSON Schema for <type>
+    scrolly schema --list-types → bare type names, one per line (agent / scripting)
+    """
     from scrolly.deck import deck_source_schema
     from scrolly.slide import registered_ir_types
 
     ir_types = registered_ir_types()
+    all_type_names = sorted(["deck", *ir_types])
+
+    if list_types:
+        for name in all_type_names:
+            click.echo(name)
+        return
 
     if type_name is None:
         click.echo("Available schemas:\n")
@@ -94,8 +112,7 @@ def schema(type_name: str | None) -> None:
         return
 
     if type_name not in ir_types:
-        known = ", ".join(sorted(["deck", *ir_types]))
-        _err_console.print(f"[red]error:[/red] unknown type '{type_name}' (known: {known})")
+        _err_console.print(f"[red]error:[/red] unknown type '{type_name}' (known: {', '.join(all_type_names)})")
         sys.exit(1)
 
     click.echo(json.dumps(ir_types[type_name].source_schema(), indent=2))

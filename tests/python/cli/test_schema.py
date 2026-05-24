@@ -54,3 +54,28 @@ def test_schema_unknown_type_exits_1():
     result = runner.invoke(cli, ["schema", "bogus"])
     assert result.exit_code == 1
     assert "unknown type" in result.output
+
+
+def test_schema_list_types_emits_one_per_line():
+    # --- arrange / act ----------------
+    result = runner.invoke(cli, ["schema", "--list-types"])
+
+    # --- assert -----------------------
+    assert result.exit_code == 0
+    lines = [line for line in result.output.splitlines() if line]
+    # Every line is a bare type name with no extra formatting.
+    for line in lines:
+        assert line == line.strip()
+        assert " " not in line
+    # Includes at least 'deck' and 'slide'.
+    assert "deck" in lines
+    assert "slide" in lines
+
+
+def test_schema_list_types_is_sorted():
+    # --- arrange / act ----------------
+    result = runner.invoke(cli, ["schema", "--list-types"])
+
+    # --- assert -----------------------
+    lines = [line for line in result.output.splitlines() if line]
+    assert lines == sorted(lines)
