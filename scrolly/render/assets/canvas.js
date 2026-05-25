@@ -1959,6 +1959,7 @@
         '<tr class="help-indent"><td>Unique</td><td>' + uniqueLine + '</td></tr>' +
         '<tr class="help-indent"><td>Compressed</td><td>' + compressedLine + '</td></tr>' +
         '<tr class="help-indent"><td>Space saved</td><td>' + savedLine + '</td></tr>' +
+        (s.mermaid_version ? '<tr><td>Mermaid.js</td><td>' + s.mermaid_version + '</td></tr>' : '') +
         '<tr><td>File size</td><td>' + formatBytes(s.file_size) + '</td></tr>' +
         '</table>';
     }

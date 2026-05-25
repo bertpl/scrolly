@@ -12,6 +12,7 @@ from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.loader import load_deck
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
+from scrolly.render.bundled_assets import MermaidAsset, mermaid_asset
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
 from scrolly.slide.registry import find_renderer
@@ -25,8 +26,28 @@ def build_deck(
     inline: bool = True,
     simplified_zoom_control: bool = False,
     compress: bool = True,
+    offline: bool = False,
 ) -> Deck:
-    """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`."""
+    """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`.
+
+    Args:
+        deck_path: Path to the ``.deck.json`` source.
+        out_dir: Destination directory for ``index.html`` (and bundled
+            assets when ``inline=False``).
+        force: Allow overwriting a non-empty ``out_dir``.
+        inline: Inline CSS/JS/mermaid into ``index.html`` (default) vs.
+            emit separate files.
+        simplified_zoom_control: Use the legacy single-icon zoom-out
+            control instead of the default deck mini-map.
+        compress: Emit the combined-payload gzip+base64 bundle when the
+            ≥5% savings gate passes.
+        offline: Skip the mermaid CDN download and use the
+            wheel-bundled mermaid instead. Honored together with the
+            ``SCROLLY_OFFLINE`` environment variable.
+
+    Returns:
+        The fully-resolved ``Deck``.
+    """
     deck, slide_irs = load_deck(deck_path)
 
     # Bundler is the canonical "compressible payload tracker" whenever
@@ -56,6 +77,13 @@ def build_deck(
             if fallback:
                 chunks = _substitute_fallback(chunks, fallback)
 
+    # Resolve mermaid once when any chunk needs it — threaded into both
+    # assemble (for inlined content + help-screen version) and write_output
+    # (for the standalone-file emission under `inline=False`).
+    mermaid: MermaidAsset | None = None
+    if any(chunk.has_mermaid for chunk in chunks.values()):
+        mermaid = mermaid_asset(offline=offline)
+
     html = assemble(
         deck,
         chunks,
@@ -63,10 +91,10 @@ def build_deck(
         simplified_zoom_control=simplified_zoom_control,
         compressed_payload_json=compressed_payload_json,
         bundle_stats=bundle_stats,
+        mermaid=mermaid,
     )
-    has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
 
-    write_output(out_dir, html, force=force, has_mermaid=has_mermaid, inline=inline)
+    write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline)
     if not inline:
         copy_assets(chunks, out_dir)
 
