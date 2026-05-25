@@ -1,0 +1,18 @@
+flowchart TB
+    SSHD["sshd<br/>(OpenSSH server)"]
+    PAM[libpam]
+    SYSTEMD["libsystemd.so.0<br/>(socket activation)"]
+    LZMA["liblzma.so.5<br/>(linked indirectly via libsystemd)"]
+    PAYLOAD["xz utils backdoor<br/>5.6.0 / 5.6.1"]
+    RSA["RSA_public_decrypt<br/>(hijacked symbol)"]
+    AUTH[Auth bypass + RCE]
+
+    SSHD --> PAM
+    SSHD -.->|"only on systemd-init distros<br/>where sshd is patched to link libsystemd"| SYSTEMD
+    SYSTEMD --> LZMA
+    LZMA --> PAYLOAD
+    PAYLOAD -.->|"IFUNC resolver swaps the symbol<br/>at dynamic-link time"| RSA
+    RSA --> AUTH
+
+    classDef hijacked fill:#f9d3d3,stroke:#c0392b,stroke-width:2px
+    class PAYLOAD,RSA,AUTH hijacked

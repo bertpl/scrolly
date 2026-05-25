@@ -1,0 +1,26 @@
+// The build-time staging — how the payload bytes became executable code.
+// Exercises: mermaid element (via mermaid_file).
+{
+  title: "Build-time staging",
+  scroll_range: 800,
+  snap_positions: [0, 400, 800],
+  elements: [
+    {
+      name: "caption",
+      markdown: "## The autoconf trojan\n\nThe payload was assembled at `./configure` time by a modified `build-to-host.m4` macro that decoded bytes from the test fixtures and stitched them into the compiled library.",
+      position: [50, 5], anchor: [50, 0],
+      width: 90, height: "auto",
+      text_align: "center",
+      color: "#5a2c2c",
+    },
+    {
+      name: "flow",
+      mermaid_file: "../build-trojan.mmd",
+      position: [50, 30], anchor: [50, 0],
+      width: 70, height: 65,
+      // Fade in over the first half of the scroll — gives scroll_range
+      // visual purpose so the snap positions land on real intermediate states.
+      opacity: { keyframes: [[0, 0], [400, 1]] },
+    },
+  ],
+}

@@ -1,0 +1,37 @@
+// Quiet interlude — 9 months of routine maintenance with nothing visibly amiss.
+// Exercises: image_sequence with `""` blank slots between the two AVIF
+// context cards. Demonstrates the "deliberately blank" image_sequence
+// feature + the AVIF asset format.
+{
+  title: "Quiet preparation",
+  scroll_range: 1800,
+  elements: [
+    {
+      name: "caption",
+      markdown: "## Nine months of quiet\n\nBetween the handover and the payload release, the project ran on routine cleanups and refactors — nothing visibly amiss to anyone watching.",
+      position: [50, 5], anchor: [50, 0],
+      width: 80, height: "auto",
+      text_align: "center",
+      color: "#2c3e50",
+    },
+    // image_sequence with blank middle slots representing months of
+    // routine activity between two AVIF context cards.
+    {
+      name: "cards",
+      image_sequence: [
+        "../blank-card-before.avif",
+        "",
+        "",
+        "../blank-card-after.avif",
+      ],
+      compositing: "blend",
+      frame_distance: 350,
+      hold: 180,
+      fade_in: 100,
+      fade_out: 150,
+      scroll_offset: 200,
+      position: [50, 28], anchor: [50, 0],
+      width: 50, height: "auto",
+    },
+  ],
+}

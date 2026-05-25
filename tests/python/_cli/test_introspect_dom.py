@@ -18,12 +18,12 @@ def test_dom_returns_per_element_html_and_css() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "setup"])
+    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "reference"])
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    el = payload["slides"]["setup"]["elements"][0]
+    el = payload["slides"]["reference"]["elements"][0]
     assert set(el.keys()) == {"index", "name", "type", "html", "scoped_css"}
     assert el["type"] == "MarkdownElement"
     assert "<h1>" in el["html"]
@@ -35,11 +35,11 @@ def test_dom_filter_restricts_to_named_slides() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "intro"])
+    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "title"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    assert set(payload["slides"].keys()) == {"intro"}
+    assert set(payload["slides"].keys()) == {"title"}
 
 
 def test_dom_unfiltered_returns_every_slide() -> None:
@@ -52,7 +52,7 @@ def test_dom_unfiltered_returns_every_slide() -> None:
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    assert len(payload["slides"]) == 18
+    assert len(payload["slides"]) == 17
 
 
 def test_dom_unknown_slide_exits_with_error() -> None:
@@ -74,11 +74,11 @@ def test_dom_omits_deck_level_chrome() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "setup"])
+    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "reference"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    html = payload["slides"]["setup"]["elements"][0]["html"]
+    html = payload["slides"]["reference"]["elements"][0]["html"]
     # Per-element html is just the element fragment, no slide-type wrapper.
     assert not html.startswith('<div class="slide-type-')
     # No deck-level chrome strings.

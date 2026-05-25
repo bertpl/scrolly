@@ -1,0 +1,41 @@
+// The 2022 push for co-maintainership on the public xz-devel list.
+// Exercises: image element (PNG email-list mock) + iframe with
+// border + shadow + internal scrollbar (overflow content).
+// Scroll reveals the PNG first, then the iframe panel — gives the
+// scroll_range visual purpose instead of being inert.
+{
+  title: "Pressure on xz-devel",
+  scroll_range: 800,
+  snap_positions: [0, 400, 800],
+  elements: [
+    // Caption — always visible.
+    {
+      name: "caption",
+      markdown: "## Public pressure for a co-maintainer\n\nThroughout 2022, previously-unknown accounts urged Lasse Collin on the public `xz-devel` list to grant co-maintainership. Lasse pushed back, then acquiesced.",
+      position: [3, 5], anchor: [0, 0],
+      width: 94, height: "auto",
+      color: "#2c3e50",
+    },
+    // PNG: mail-list view (left half). Fades in over the first 400 scroll units.
+    {
+      name: "maillist",
+      image: "../pressure-email.png",
+      position: [3, 30], anchor: [0, 0],
+      width: 46, height: "auto",
+      opacity: { keyframes: [[0, 0], [200, 1]] },
+    },
+    // Iframe: full thread (right half) with border + shadow + internal scrollbar.
+    // Fades in later (400 → 600) so the eye lands on the mail-list first.
+    {
+      name: "thread",
+      iframe_html_file: "../pressure-thread.html",
+      position: [51, 30], anchor: [0, 0],
+      width: 46, height: 65,
+      border_width: 2,
+      border_color: "#5a6675",
+      shadow_size: 12,
+      shadow_color: "#a8b8c8",
+      opacity: { keyframes: [[300, 0], [600, 1]] },
+    },
+  ],
+}

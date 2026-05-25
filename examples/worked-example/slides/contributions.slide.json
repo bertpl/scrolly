@@ -1,0 +1,35 @@
+// THE tall-asset showcase. The timeline.svg is ~2800px tall; we render
+// it at width:80 height:"auto" so it overflows the viewport, then pan
+// it top-to-bottom via animated `anchor` keyframes as the reader scrolls.
+// Exercises: image element + oversized-element vertical pan via
+// animated anchor + dense snap_positions (one per event mark in the SVG).
+{
+  title: "Three years on the spine",
+  scroll_range: 2200,
+  // Snap positions roughly aligned with the event markers in
+  // timeline.svg (Jan 2021 through Mar 29 2024).
+  snap_positions: [0, 100, 300, 600, 900, 1200, 1500, 1700, 1900, 2050, 2200],
+  elements: [
+    // Caption pinned to the right.
+    {
+      name: "caption",
+      markdown: "Scroll to walk the timeline.\n\nFrom Jia Tan's first commits in 2021 to the March 2024 disclosure.",
+      position: [86, 5], anchor: [0, 0],
+      width: 14, height: "auto",
+      color: "#2c3e50",
+      opacity: { keyframes: [[0, 1], [200, 0.6], [2000, 0.6], [2200, 1]] },
+    },
+    // The tall SVG, panned via combined animated position + anchor.
+    // Start: top of image at 5% from slide top (anchor [50, 0] +
+    // position.y = 5). End: bottom of image at 95% (anchor [50, 100] +
+    // position.y = 95). Both percentages, so it adapts to any
+    // viewport size without overshooting or leaving gaps.
+    {
+      name: "timeline",
+      image: "../timeline.svg",
+      position: { keyframes: [[0, [40, 5]], [2200, [40, 95]]] },
+      anchor: { keyframes: [[0, [50, 0]], [2200, [50, 100]]] },
+      width: 70, height: "auto",
+    },
+  ],
+}

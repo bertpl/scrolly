@@ -1,0 +1,38 @@
+// What the backdoor could actually do, once activated.
+// Exercises: markdown + animated `scale` AND animated `angle` on the
+// key glyph — the two animation features that previously had no
+// worked-example slot. Also non-default scroll_speed for pacing.
+{
+  title: "What it enabled",
+  scroll_range: 1200,
+  scroll_speed: 0.7,
+  snap_positions: [0, 400, 800, 1200],
+  elements: [
+    {
+      name: "caption",
+      markdown: "## Auth bypass + RCE\n\nThe backdoor checked every incoming SSH connection's certificate signature against an attacker-controlled **Ed448 public key**. A match would skip authentication and pass the payload to a code-execution sink.",
+      position: [8, 15], anchor: [0, 0],
+      width: 55, height: "auto",
+      color: "#5a2c2c",
+    },
+    // The key glyph — animated scale + animated angle as scroll
+    // progresses (zooms in and rotates).
+    {
+      name: "key",
+      image: "../key-glyph.svg",
+      position: [80, 55], anchor: [50, 50],
+      width: 20, height: "auto",
+      scale: { keyframes: [[0, 0.5], [600, 1.0], [1200, 1.4]] },
+      angle: { keyframes: [[0, -30], [600, 0], [1200, 25]] },
+      opacity: { keyframes: [[0, 0.3], [400, 1]] },
+    },
+    {
+      name: "footnote",
+      markdown: "*Only the holder of the matching Ed448 private key could trigger the bypass — i.e. the attackers themselves.*",
+      position: [8, 75], anchor: [0, 0],
+      width: 55, height: "auto",
+      color: "#7a4c4c",
+      opacity: { keyframes: [[600, 0], [900, 1]] },
+    },
+  ],
+}

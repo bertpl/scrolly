@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" font-family="Helvetica, Arial, sans-serif">
+  <rect width="600" height="800" fill="#f7eeef"/>
+  <circle cx="300" cy="260" r="120" fill="#a06070" opacity="0.25"/>
+  <circle cx="300" cy="260" r="80" fill="none" stroke="#8a4a5a" stroke-width="3" stroke-dasharray="6 6"/>
+  <text x="300" y="280" font-size="56" font-weight="bold" fill="#8a4a5a" text-anchor="middle">JT</text>
+  <text x="300" y="450" font-size="36" font-weight="bold" fill="#2c3e50" text-anchor="middle">"Jia Tan"</text>
+  <text x="300" y="490" font-size="22" fill="#5a6675" text-anchor="middle">pseudonymous contributor</text>
+  <text x="300" y="525" font-size="22" fill="#5a6675" text-anchor="middle">2021 — 2024</text>
+  <text x="300" y="610" font-size="18" fill="#7a8a9a" text-anchor="middle">Identity unknown. Became co-maintainer</text>
+  <text x="300" y="640" font-size="18" fill="#7a8a9a" text-anchor="middle">in early 2023 after multiple new accounts</text>
+  <text x="300" y="670" font-size="18" fill="#7a8a9a" text-anchor="middle">urged the change on xz-devel.</text>
+</svg>

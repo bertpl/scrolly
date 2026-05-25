@@ -18,12 +18,12 @@ def test_snaps_returns_per_slide_split() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "filmstrip"])
+    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "cast"])
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    entry = payload["slides"]["filmstrip"]
+    entry = payload["slides"]["cast"]
     assert {"author_snap_positions", "derived_snap_positions", "merged"} <= set(entry.keys())
 
 
@@ -33,11 +33,11 @@ def test_snaps_derived_carries_structured_source() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "filmstrip"])
+    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "cast"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    derived = payload["slides"]["filmstrip"]["derived_snap_positions"]
+    derived = payload["slides"]["cast"]["derived_snap_positions"]
     assert len(derived) > 0
     for entry in derived:
         assert "value" in entry
@@ -51,11 +51,11 @@ def test_snaps_merged_is_sorted_and_includes_both_sources() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "filmstrip"])
+    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "cast"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    entry = payload["slides"]["filmstrip"]
+    entry = payload["slides"]["cast"]
     merged = entry["merged"]
     assert merged == sorted(merged)
     derived_values = {d["value"] for d in entry["derived_snap_positions"]}

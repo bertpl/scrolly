@@ -1,0 +1,25 @@
+// The other tall asset — a mermaid dependency graph showing the
+// liblzma -> libsystemd -> sshd indirect-linkage chain. Scrolly pans
+// the rendered SVG via animated anchor (same mechanic as
+// `contributions`, but with a `mermaid` element instead of `image`).
+// Exercises: mermaid element + oversized-element vertical pan.
+{
+  title: "How it reached sshd",
+  scroll_range: 1500,
+  snap_positions: [0, 300, 700, 1100, 1500],
+  elements: [
+    {
+      name: "caption",
+      markdown: "Scroll to walk the linkage chain.",
+      position: [86, 5], anchor: [0, 0],
+      width: 14, height: "auto",
+      color: "#5a2c2c",
+    },
+    {
+      name: "graph",
+      mermaid_file: "../ssh-hijack.mmd",
+      position: [40, 50], anchor: { keyframes: [[0, [50, 0]], [1500, [50, 90]]] },
+      width: 60, height: 200,
+    },
+  ],
+}

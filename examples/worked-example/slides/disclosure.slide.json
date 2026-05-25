@@ -1,0 +1,62 @@
+// March 29, 2024 — CVE-2024-3094 disclosed; packages pulled.
+// Exercises: `reverse: true` (scroll-up advances) + animated `scale`
+// on the banner + animated `width` AND `height` on a small progress
+// indicator + opacity reveals.
+//
+// Note on the progress bar styling: Chrome's compositor uses sub-
+// pixel edge determination when re-rasterising an element whose
+// width/height changes continuously, which leaves visible artifacts
+// at the painted edge on every scroll tick. Workaround pattern: keep
+// a few pixels of transparent border around the visible content
+// (here via `border:4px solid transparent` + `background-clip:padding-
+// box`) so the sub-pixel edge calculation lands inside the transparent
+// border zone, invisibly, rather than at the visible-fill edge.
+{
+  title: "Disclosure",
+  scroll_range: 1000,
+  reverse: true,
+  snap_positions: [0, 500, 1000],
+  elements: [
+    {
+      name: "headline",
+      markdown: "## March 29, 2024\n\nCVE-2024-3094 published. Distros pulled the affected packages within hours.",
+      position: [50, 15], anchor: [50, 0],
+      width: 80, height: "auto",
+      text_align: "center",
+      color: "#2c4d2c",
+    },
+    // The CVE banner — animated `scale` (CSS transform, GPU-accelerated,
+    // no layout-induced rendering artifacts) + opacity for the reveal.
+    // Static width / height keeps the layout stable.
+    {
+      name: "banner",
+      html: "<div style=\"display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#c0392b;color:white;font:bold 1.4em -apple-system,sans-serif;text-align:center;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.2)\">CVE-2024-3094<br/>backdoor in upstream xz/liblzma</div>",
+      position: [50, 50], anchor: [50, 50],
+      width: 70, height: 22,
+      scale: { keyframes: [[0, 0.3], [500, 1.0], [1000, 1.0]] },
+      opacity: { keyframes: [[0, 0], [400, 1]] },
+    },
+    // Status bar carrying the animated `width` + `height` feature.
+    // The outer HTML element has the animated dimensions; the inner
+    // visible rect is inset 4 px on every side via a transparent
+    // border, so the painted edge never coincides with the bounding-
+    // box edge that the browser re-layouts on each scroll tick. Stale
+    // compositor pixels happen in the transparent border, invisibly.
+    {
+      name: "progress",
+      html: "<div style=\"width:100%;height:100%;background:#7a3a3a;border:4px solid transparent;box-sizing:border-box;background-clip:padding-box\"></div>",
+      position: [50, 80], anchor: [50, 50],
+      width: { keyframes: [[0, 4], [500, 30], [1000, 60]] },
+      height: { keyframes: [[0, 1.5], [500, 2.5], [1000, 3.5]] },
+    },
+    {
+      name: "footnote",
+      markdown: "*Scroll **up** to walk the timeline backwards — `reverse: true` flips the scrollbar direction.*",
+      position: [50, 90], anchor: [50, 50],
+      width: 70, height: "auto",
+      text_align: "center",
+      color: "#5a6675",
+      opacity: { keyframes: [[0, 0.5], [500, 1]] },
+    },
+  ],
+}

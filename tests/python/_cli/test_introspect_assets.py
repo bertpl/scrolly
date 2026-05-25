@@ -53,7 +53,7 @@ def test_assets_filter_scopes_to_named_slide() -> None:
     # --- act --------------------------
     result_filtered = runner.invoke(
         cli,
-        ["introspect", "assets", str(WORKED_EXAMPLE), "--slide", "parallax"],
+        ["introspect", "assets", str(WORKED_EXAMPLE), "--slide", "capability"],
     )
     result_all = runner.invoke(cli, ["introspect", "assets", str(WORKED_EXAMPLE)])
 
@@ -66,7 +66,7 @@ def test_assets_filter_scopes_to_named_slide() -> None:
     assert filtered_paths.issubset(full_paths)
     # Every "referenced_by" in the filtered output mentions only the named slide.
     for asset in filtered["assets"]:
-        assert asset["referenced_by"] == ["parallax"]
+        assert asset["referenced_by"] == ["capability"]
 
 
 def test_assets_unknown_slide_exits_with_error() -> None:

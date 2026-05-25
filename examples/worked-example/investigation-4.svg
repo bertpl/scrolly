@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" font-family="Menlo, Consolas, monospace">
+  <rect width="800" height="500" fill="#0d1117"/>
+  <text x="30" y="40" font-size="16" font-weight="bold" fill="#c9d1d9">Step 4 — the disclosure</text>
+  <g font-size="14" fill="#c9d1d9">
+    <text x="30" y="100">From: Andres Freund &lt;andres@anarazel.de&gt;</text>
+    <text x="30" y="120">To: oss-security@lists.openwall.com</text>
+    <text x="30" y="140">Subject: backdoor in upstream xz/liblzma leading to ssh server</text>
+    <text x="30" y="160">        compromise</text>
+    <text x="30" y="180">Date: Fri, 29 Mar 2024 08:51:26 -0700</text>
+    <text x="30" y="245" fill="#7ee787">"After observing a few odd symptoms around liblzma</text>
+    <text x="30" y="265" fill="#7ee787">(part of the xz package) on Debian sid installations</text>
+    <text x="30" y="285" fill="#7ee787">over the last weeks (logins with ssh taking a lot of</text>
+    <text x="30" y="305" fill="#7ee787">CPU, valgrind errors) I figured out the answer..."</text>
+  </g>
+  <text x="30" y="400" font-size="16" fill="#a8b8c8">// CVE-2024-3094 published the same day.</text>
+  <text x="30" y="425" font-size="16" fill="#a8b8c8">// Distro packages pulled within hours.</text>
+</svg>

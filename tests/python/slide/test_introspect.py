@@ -104,41 +104,42 @@ def test_visibility_auto_range_held_constant_positive_at_end() -> None:
 # --------------------------------------------------------------------------
 #  Helpers operating on the worked example
 # --------------------------------------------------------------------------
-def test_snaps_filmstrip_includes_derived_hold_centres() -> None:
-    """``filmstrip`` slide's image_sequence contributes derived snap positions."""
+def test_snaps_cast_includes_derived_hold_centres() -> None:
+    """``cast`` slide's image_sequence contributes derived snap positions."""
     # --- arrange ----------------------
     deck, slide_irs = load_deck(WORKED_EXAMPLE)
 
     # --- act --------------------------
-    result = snaps_to_json(deck, slide_irs, ("filmstrip",))
+    result = snaps_to_json(deck, slide_irs, ("cast",))
 
     # --- assert -----------------------
-    filmstrip = result["slides"]["filmstrip"]
-    assert "author_snap_positions" in filmstrip
-    assert "derived_snap_positions" in filmstrip
-    assert "merged" in filmstrip
+    cast = result["slides"]["cast"]
+    assert "author_snap_positions" in cast
+    assert "derived_snap_positions" in cast
+    assert "merged" in cast
     # At least one derived entry from the image_sequence element.
-    assert len(filmstrip["derived_snap_positions"]) > 0
+    assert len(cast["derived_snap_positions"]) > 0
     # Each derived entry has a structured source.
-    for entry in filmstrip["derived_snap_positions"]:
+    for entry in cast["derived_snap_positions"]:
         assert {"element_index", "element_name", "frame_index"} <= set(entry["source"].keys())
 
 
-def test_timeline_parallax_has_animated_properties_and_intervals() -> None:
-    """``parallax`` slide's bg element is animated → timeline surfaces keyframes + intervals."""
+def test_timeline_contributions_has_animated_properties_and_intervals() -> None:
+    """``contributions`` slide's timeline image is animated → timeline surfaces keyframes + intervals."""
     # --- arrange ----------------------
     deck, slide_irs = load_deck(WORKED_EXAMPLE)
 
     # --- act --------------------------
-    result = timeline_to_json(deck, slide_irs, ("parallax",))
+    result = timeline_to_json(deck, slide_irs, ("contributions",))
 
     # --- assert -----------------------
-    bg = result["slides"]["parallax"]["elements"][0]
-    assert bg["name"] == "bg"
-    # Position is animated on bg.
-    assert "position" in bg["animated_properties"]
-    # Visibility intervals are non-empty (bg is fully opaque throughout).
-    assert len(bg["visibility_intervals"]) >= 1
+    # elements[1] is the tall timeline image with animated `anchor`.
+    el = result["slides"]["contributions"]["elements"][1]
+    assert el["name"] == "timeline"
+    # anchor is animated on the timeline image.
+    assert "anchor" in el["animated_properties"]
+    # Visibility intervals are non-empty (timeline image is fully opaque throughout).
+    assert len(el["visibility_intervals"]) >= 1
 
 
 def test_dom_returns_one_entry_per_authored_element() -> None:
@@ -147,12 +148,12 @@ def test_dom_returns_one_entry_per_authored_element() -> None:
     deck, slide_irs = load_deck(WORKED_EXAMPLE)
 
     # --- act --------------------------
-    result = dom_to_json(deck, slide_irs, ("parallax",))
+    result = dom_to_json(deck, slide_irs, ("capability",))
 
     # --- assert -----------------------
-    parallax_view = result["slides"]["parallax"]
-    parallax_ir = slide_irs["parallax"]
-    assert len(parallax_view["elements"]) == len(parallax_ir.elements)
+    capability_view = result["slides"]["capability"]
+    capability_ir = slide_irs["capability"]
+    assert len(capability_view["elements"]) == len(capability_ir.elements)
 
 
 def test_dom_includes_scoped_css_with_eid_selector() -> None:
@@ -161,27 +162,28 @@ def test_dom_includes_scoped_css_with_eid_selector() -> None:
     deck, slide_irs = load_deck(WORKED_EXAMPLE)
 
     # --- act --------------------------
-    result = dom_to_json(deck, slide_irs, ("setup",))
+    result = dom_to_json(deck, slide_irs, ("reference",))
 
     # --- assert -----------------------
-    el = result["slides"]["setup"]["elements"][0]
-    # Element ids are ``<slide_id>-<index>``; setup has one element at index 0.
-    assert 'data-element-id="setup-0"' in el["html"]
-    assert "setup-0" in el["scoped_css"]
+    el = result["slides"]["reference"]["elements"][0]
+    # Element ids are ``<slide_id>-<index>``; reference has one element at index 0.
+    assert 'data-element-id="reference-0"' in el["html"]
+    assert "reference-0" in el["scoped_css"]
 
 
 def test_snapshot_resolves_animated_properties_at_scroll() -> None:
-    """Snapshot on a slide with animated position returns numeric values per scroll."""
+    """Snapshot on a slide with animated properties returns numeric values per scroll."""
     # --- arrange ----------------------
     deck, slide_irs = load_deck(WORKED_EXAMPLE)
 
     # --- act --------------------------
-    result = snapshot_to_json(deck, slide_irs, "parallax", (0.0, 750.0, 1500.0))
+    # capability's scroll_range is 1200; pick three values inside that range.
+    result = snapshot_to_json(deck, slide_irs, "capability", (0.0, 600.0, 1200.0))
 
     # --- assert -----------------------
-    snapshots = result["slides"]["parallax"]["snapshots"]
+    snapshots = result["slides"]["capability"]["snapshots"]
     assert len(snapshots) == 3
-    assert [s["scroll"] for s in snapshots] == [0.0, 750.0, 1500.0]
+    assert [s["scroll"] for s in snapshots] == [0.0, 600.0, 1200.0]
     # Every snapshot includes the visible flag derived from opacity > 0.
     for snap in snapshots:
         for el in snap["elements"]:

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600" font-family="Menlo, Consolas, monospace">
+  <rect width="900" height="600" fill="#1e2230"/>
+  <text x="40" y="50" font-size="20" font-weight="bold" fill="#a8b8c8">tests/files/bad-3-corrupt_lzma2.xz</text>
+  <text x="40" y="80" font-size="14" fill="#7a8a9a">— pristine before xz 5.6.0</text>
+  <g font-size="13" fill="#d0d8e0">
+    <text x="40" y="130">00000000  fd 37 7a 58 5a 00 00 04  e6 d6 b4 46 02 00 21 01</text>
+    <text x="40" y="150">00000010  16 00 00 00 74 2f e5 a3  e0 01 ff 00 5d 00 39 19</text>
+    <text x="40" y="170">00000020  49 dd a0 18 51 b3 76 30  c0 a4 e1 fe 75 13 b2 1a</text>
+    <text x="40" y="190">00000030  3c 0c b4 dc dd b9 e7 8b  2a a3 5f 4d 7c 21 84 18</text>
+    <text x="40" y="210">00000040  d9 28 4f cf 5a 4d 8b 6d  9d a0 fe c0 c9 a4 e5 db</text>
+    <text x="40" y="230">00000050  7a 06 19 5f 8e 4f 6b 1b  21 c4 8b 4a 32 14 7e 96</text>
+    <text x="40" y="250">00000060  73 b8 51 d8 5a 71 7b 92  ee 16 02 c8 4f 19 e0 ad</text>
+    <text x="40" y="270">00000080  c5 51 dc 88 9a c4 5f 8b  e7 31 c1 5d 4f 60 a3 e7</text>
+    <text x="40" y="290">000000a0  d5 8f 7a 0e 11 7c 03 92  3a 5c b7 d1 0e 88 14 22</text>
+    <text x="40" y="310">000000c0  72 1d 8b 0a 19 6d 5f 47  c1 80 7e c0 49 f5 8b 52</text>
+  </g>
+  <text x="40" y="370" font-size="16" fill="#7ad07a">// 1 KiB of test fixture, intentionally malformed for decoder test</text>
+  <text x="40" y="395" font-size="16" fill="#7ad07a">// Used as input to the lzma2 corrupt-archive parser test</text>
+  <text x="40" y="460" font-size="14" fill="#5a6675">SHA-256: a82d7f8c12cbe0bce4f6f47d80…</text>
+</svg>
