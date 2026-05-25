@@ -1,17 +1,49 @@
-"""Bundled static assets (canvas.css, canvas.js) shipped with the output."""
+"""Bundled static assets shipped with the output (canvas.css, canvas.js, mermaid.min.js).
+
+Mermaid uses a two-tier resolution chain: try jsdelivr first
+(``mermaid@11`` major-version pin) for freshness, fall back to the
+wheel-bundled copy when the network is unreachable or when the user
+forces offline mode via ``--offline`` / ``SCROLLY_OFFLINE=1``.
+"""
 
 from __future__ import annotations
 
+import os
+import re
+import sys
+import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from importlib.resources import files
-from pathlib import Path
 
 _BUNDLED_ASSET_NAMES: tuple[str, ...] = ("canvas.css", "canvas.js")
 
-_MERMAID_VERSION = "11.4.1"
-_MERMAID_URL = f"https://cdn.jsdelivr.net/npm/mermaid@{_MERMAID_VERSION}/dist/mermaid.min.js"
-_MERMAID_CACHE_DIR = Path.home() / ".cache" / "scrolly"
-_MERMAID_CACHE_PATH = _MERMAID_CACHE_DIR / f"mermaid-{_MERMAID_VERSION}.min.js"
+# Major-version pin so users on the network get mermaid 11.x patches and
+# minor releases automatically; the bundled file is the offline-safe
+# baseline. Bumps to mermaid@12 (or whatever the next major is) require
+# deliberate scrolly action: update this URL + regenerate the bundled
+# file from the new major.
+_MERMAID_CDN_URL = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+_MERMAID_CDN_TIMEOUT_SECONDS = 5.0
+
+# Mermaid embeds its version exactly once in the minified bundle as
+# ``version:"X.Y.Z"`` (verified against 11.15.0). Match three numeric
+# components; if the format ever changes, the help-screen reports
+# "unknown" rather than crashing the build.
+_MERMAID_VERSION_RE = re.compile(rb'version:"(\d+\.\d+\.\d+)"')
+
+_OFFLINE_ENV_VAR = "SCROLLY_OFFLINE"
+_OFFLINE_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+@dataclass(frozen=True, slots=True)
+class MermaidAsset:
+    """A resolved mermaid asset, ready to inline or write to disk."""
+
+    name: str
+    content: bytes
+    version: str
+    source: str  # "cdn" | "bundled"
 
 
 def iter_assets() -> list[tuple[str, bytes]]:
@@ -32,24 +64,84 @@ def bundled_js() -> str:
     return base.joinpath("canvas.js").read_text(encoding="utf-8")
 
 
-def mermaid_js() -> str:
-    """Return the mermaid JS content as a string, downloading if needed."""
-    _, content = mermaid_asset()
-    return content.decode("utf-8")
+def mermaid_asset(*, offline: bool = False) -> MermaidAsset:
+    """Resolve mermaid.js via CDN-first-with-bundled-fallback.
+
+    Tries jsdelivr first (``mermaid@11`` major-version pin); on network
+    failure (or when offline mode is requested), falls back to the
+    wheel-bundled copy and emits a one-line stderr notice.
+
+    Args:
+        offline: ``True`` to skip the CDN entirely. The
+            ``SCROLLY_OFFLINE`` environment variable
+            (``1``/``true``/``yes``/``on``, case-insensitive) is
+            honored independently — set either to force offline mode.
+
+    Returns:
+        ``MermaidAsset`` with the resolved content, version string,
+        and which tier of the fallback chain served it
+        (``source="cdn"`` or ``source="bundled"``).
+    """
+    if offline or _offline_via_env():
+        return _load_bundled()
+
+    try:
+        content = _fetch_cdn()
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        bundled = _load_bundled()
+        sys.stderr.write(
+            f"scrolly: mermaid CDN unreachable ({type(exc).__name__}); using bundled mermaid {bundled.version}\n"
+        )
+        return bundled
+
+    return MermaidAsset(
+        name="mermaid.min.js",
+        content=content,
+        version=_extract_version(content),
+        source="cdn",
+    )
 
 
-def mermaid_asset() -> tuple[str, bytes]:
-    """Return the mermaid.js asset, downloading and caching on first use."""
-    if not _MERMAID_CACHE_PATH.exists():
-        _MERMAID_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        try:
-            urllib.request.urlretrieve(_MERMAID_URL, _MERMAID_CACHE_PATH)
-        except Exception as exc:
-            _MERMAID_CACHE_PATH.unlink(missing_ok=True)
-            raise RuntimeError(
-                f"Failed to download mermaid.js v{_MERMAID_VERSION} from {_MERMAID_URL}: {exc}\n"
-                f"Mermaid.js is required because this deck uses MermaidElement. "
-                f"Check your internet connection, or manually place the file at:\n"
-                f"  {_MERMAID_CACHE_PATH}"
-            ) from exc
-    return ("mermaid.min.js", _MERMAID_CACHE_PATH.read_bytes())
+def _offline_via_env() -> bool:
+    """Return ``True`` when ``SCROLLY_OFFLINE`` is set to a truthy value."""
+    return os.environ.get(_OFFLINE_ENV_VAR, "").lower() in _OFFLINE_TRUTHY
+
+
+def _fetch_cdn() -> bytes:
+    """Download mermaid.min.js from the CDN.
+
+    Raises:
+        urllib.error.URLError: Network failure (connection refused,
+            DNS failure, etc.).
+        TimeoutError: Request exceeded ``_MERMAID_CDN_TIMEOUT_SECONDS``.
+        OSError: Lower-level socket error.
+    """
+    with urllib.request.urlopen(_MERMAID_CDN_URL, timeout=_MERMAID_CDN_TIMEOUT_SECONDS) as resp:
+        return resp.read()
+
+
+def _load_bundled() -> MermaidAsset:
+    """Load the wheel-bundled mermaid.min.js."""
+    base = files("scrolly.render").joinpath("assets")
+    content = base.joinpath("mermaid.min.js").read_bytes()
+    return MermaidAsset(
+        name="mermaid.min.js",
+        content=content,
+        version=_extract_version(content),
+        source="bundled",
+    )
+
+
+def _extract_version(content: bytes) -> str:
+    """Extract mermaid's version string from the minified blob.
+
+    Args:
+        content: Raw bytes of ``mermaid.min.js``.
+
+    Returns:
+        Version string like ``"11.15.0"``, or ``"unknown"`` if the
+        embedded pattern isn't found (defensive — should not happen
+        for a well-formed mermaid build).
+    """
+    match = _MERMAID_VERSION_RE.search(content)
+    return match.group(1).decode("ascii") if match else "unknown"

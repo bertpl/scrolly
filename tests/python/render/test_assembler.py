@@ -452,3 +452,26 @@ def test_help_modal_in_output(inline):
     # --- assert ------------------------------
     assert 'class="help-modal"' in html
     assert 'class="help-modal-ok"' in html
+
+
+def test_meta_mermaid_version_null_when_no_mermaid(inline):
+    # --- arrange / act ----------------------
+    deck, chunks = _single("x", "")
+    meta = _extract_meta(assemble(deck, chunks, inline=inline))
+
+    # --- assert ------------------------------
+    assert meta["stats"]["mermaid_version"] is None
+
+
+def test_meta_mermaid_version_populated_when_mermaid_provided(inline):
+    # --- arrange ----------------------------
+    from scrolly.render.bundled_assets import MermaidAsset
+
+    deck, chunks = _single("x", "")
+    mermaid = MermaidAsset(name="mermaid.min.js", content=b"<<bytes>>", version="11.15.0", source="bundled")
+
+    # --- act --------------------------------
+    meta = _extract_meta(assemble(deck, chunks, inline=inline, mermaid=mermaid))
+
+    # --- assert ------------------------------
+    assert meta["stats"]["mermaid_version"] == "11.15.0"

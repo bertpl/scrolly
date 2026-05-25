@@ -43,6 +43,14 @@ def cli() -> None:
     is_flag=True,
     help="Disable gzip compression of inlined assets.",
 )
+@click.option(
+    "--offline",
+    is_flag=True,
+    help=(
+        "Skip the mermaid CDN download and use the wheel-bundled mermaid for "
+        "byte-reproducibility. SCROLLY_OFFLINE=1 in the environment is equivalent."
+    ),
+)
 def build(
     deck_path: Path,
     out_dir: Path,
@@ -51,6 +59,7 @@ def build(
     strict: bool,
     simplified_zoom_control: bool,
     no_compress: bool,
+    offline: bool,
 ) -> None:
     """Build a deck into a self-contained HTML presentation."""
     try:
@@ -61,6 +70,7 @@ def build(
             inline=not no_inline,
             simplified_zoom_control=simplified_zoom_control,
             compress=not no_compress,
+            offline=offline,
         )
     except ScrollyError as e:
         _err_console.print(f"[red]error:[/red] {e}")

@@ -2,6 +2,7 @@ import pytest
 
 from scrolly.errors import OutputError
 from scrolly.pipeline.writer import write_output
+from scrolly.render.bundled_assets import MermaidAsset
 
 
 def test_writes_to_new_directory(tmp_path):
@@ -60,3 +61,37 @@ def test_no_inline_copies_bundled_assets(tmp_path):
     assert (out / "canvas.css").exists()
     assert (out / "canvas.js").exists()
     assert ".canvas" in (out / "canvas.css").read_text()
+
+
+def test_no_inline_writes_mermaid_when_present(tmp_path):
+    # --- arrange ----------------------
+    out = tmp_path / "dist"
+    mermaid = MermaidAsset(name="mermaid.min.js", content=b"// mermaid bytes", version="11.0.0", source="bundled")
+
+    # --- act --------------------------
+    write_output(out, "<html></html>", inline=False, mermaid=mermaid)
+
+    # --- assert -----------------------
+    assert (out / "mermaid.min.js").read_bytes() == b"// mermaid bytes"
+
+
+def test_no_inline_skips_mermaid_when_absent(tmp_path):
+    # --- arrange / act ----------------
+    out = tmp_path / "dist"
+    write_output(out, "<html></html>", inline=False)  # mermaid=None default
+
+    # --- assert -----------------------
+    assert not (out / "mermaid.min.js").exists()
+
+
+def test_inline_does_not_write_mermaid_even_when_present(tmp_path):
+    # --- arrange ----------------------
+    out = tmp_path / "dist"
+    mermaid = MermaidAsset(name="mermaid.min.js", content=b"// inlined", version="11.0.0", source="bundled")
+
+    # --- act --------------------------
+    # inline=True (default) means mermaid is in the HTML, not a separate file.
+    write_output(out, "<html></html>", mermaid=mermaid)
+
+    # --- assert -----------------------
+    assert not (out / "mermaid.min.js").exists()

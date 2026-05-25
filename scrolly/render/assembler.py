@@ -15,7 +15,7 @@ from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescap
 from scrolly import __version__
 from scrolly.deck import Deck
 from scrolly.pipeline._bundler import BundleStats
-from scrolly.render.bundled_assets import bundled_css, bundled_js, mermaid_js
+from scrolly.render.bundled_assets import MermaidAsset, bundled_css, bundled_js
 from scrolly.render.nav_data import build_nav_data
 from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
 from scrolly.slide import SlideHTML
@@ -43,6 +43,7 @@ def assemble(
     simplified_zoom_control: bool = False,
     compressed_payload_json: str | None = None,
     bundle_stats: BundleStats | None = None,
+    mermaid: MermaidAsset | None = None,
 ) -> str:
     """Render the deck and its chunks into a single HTML string.
 
@@ -59,6 +60,10 @@ def assemble(
         bundle_stats: Stats from the bundler's ``build()``, used to
             populate the help-screen statistics. ``None`` when no bundle
             was emitted.
+        mermaid: Resolved mermaid asset (content + version + source
+            tier), or ``None`` when the deck has no mermaid elements.
+            Inlined into the page when ``inline=True`` and present;
+            its version always lands in the help-screen meta.
 
     Returns:
         The rendered HTML page as a single string.
@@ -66,16 +71,16 @@ def assemble(
     template = _env().get_template("index.html.j2")
     nav_data = build_nav_data(deck, chunks)
     scoped_css_blocks = _collect_scoped_css(deck, chunks)
-    has_mermaid = any(chunk.has_mermaid for chunk in chunks.values())
+    has_mermaid = mermaid is not None
     minimap: MinimapGeometry | None = None if simplified_zoom_control else compute_minimap_geometry(deck)
-    meta = _build_meta(deck, chunks, bundle_stats=bundle_stats)
+    meta = _build_meta(deck, chunks, bundle_stats=bundle_stats, mermaid=mermaid)
 
     inline_vars = {}
     if inline:
         inline_vars["bundled_css"] = bundled_css()
         inline_vars["bundled_js"] = bundled_js()
-        if has_mermaid:
-            inline_vars["mermaid_js_content"] = mermaid_js()
+        if mermaid is not None:
+            inline_vars["mermaid_js_content"] = mermaid.content.decode("utf-8")
 
     html = template.render(
         title=deck.title or "scrolly",
@@ -100,8 +105,21 @@ def _build_meta(
     chunks: dict[str, SlideHTML],
     *,
     bundle_stats: BundleStats | None = None,
+    mermaid: MermaidAsset | None = None,
 ) -> dict[str, Any]:
-    """Build the metadata dict injected into the HTML for the help screen."""
+    """Build the metadata dict injected into the HTML for the help screen.
+
+    Args:
+        deck: The fully-resolved deck.
+        chunks: Rendered per-slide HTML chunks.
+        bundle_stats: Bundler snapshot for the payload-stats section.
+        mermaid: Resolved mermaid asset, whose version is surfaced in
+            the help-screen statistics. ``None`` for decks without
+            mermaid elements.
+
+    Returns:
+        Help-screen metadata dict.
+    """
     return {
         "version": __version__,
         "author": "Bert Pluymers",
@@ -110,6 +128,7 @@ def _build_meta(
             "slides": len(deck.slides),
             "edges": len(deck.edges),
             "payloads": _payload_stats(bundle_stats),
+            "mermaid_version": mermaid.version if mermaid is not None else None,
             "file_size": "__FILE_SIZE_PLACEHOLDER__",
         },
     }
