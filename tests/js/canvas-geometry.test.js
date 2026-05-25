@@ -369,6 +369,76 @@ describe("CanvasGeometry", () => {
     });
   });
 
+  // ---- overlayBounds ------------------------------------------------------
+
+  describe("overlayBounds", () => {
+    function _geoWithGroup(slides, groups) {
+      return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
+    }
+
+    it("equals deckBounds when margin is 0", () => {
+      const g = _geo({ a: [2, 1], b: [3, 1] });
+      g.refresh(1000, 1000);
+      const b = g.deckBounds();
+      const o = g.overlayBounds(0);
+      expect(o.left).toBeCloseTo(b.left);
+      expect(o.top).toBeCloseTo(b.top);
+      expect(o.width).toBeCloseTo(b.right - b.left);
+      expect(o.height).toBeCloseTo(b.bottom - b.top);
+    });
+
+    it("inflates by `margin` on every side", () => {
+      const g = _geo({ a: [0, 0], b: [1, 0] });
+      g.refresh(1000, 1000);
+      const b = g.deckBounds();
+      const o = g.overlayBounds(2);
+      expect(o.left).toBeCloseTo(b.left - 2);
+      expect(o.top).toBeCloseTo(b.top - 2);
+      expect(o.width).toBeCloseTo((b.right - b.left) + 4);
+      expect(o.height).toBeCloseTo((b.bottom - b.top) + 4);
+    });
+
+    it("viewBox string carries the same numbers", () => {
+      const g = _geo({ a: [0, 0], b: [1, 0] });
+      g.refresh(1000, 1000);
+      const o = g.overlayBounds(2);
+      expect(o.viewBox).toBe(
+        o.left + " " + o.top + " " + o.width + " " + o.height,
+      );
+    });
+
+    it("tracks the deck origin — off-origin decks shift correspondingly", () => {
+      // Same shape, different origin. The overlay box should track the
+      // deck's bounding box; the size stays the same.
+      const atOrigin = _geo({ a: [0, 0], b: [1, 0] });
+      atOrigin.refresh(1000, 1000);
+      const shifted = _geo({ a: [3, 2], b: [4, 2] });
+      shifted.refresh(1000, 1000);
+      const oOrigin = atOrigin.overlayBounds(2);
+      const oShift = shifted.overlayBounds(2);
+      expect(oShift.width).toBeCloseTo(oOrigin.width);
+      expect(oShift.height).toBeCloseTo(oOrigin.height);
+      expect(oShift.left).toBeGreaterThan(oOrigin.left);
+      expect(oShift.top).toBeGreaterThan(oOrigin.top);
+    });
+
+    it("inherits the LABEL_EXTRA top-row tab from deckBounds", () => {
+      // Group on the topmost row → deckBounds adds LABEL_EXTRA to bottom;
+      // overlayBounds inherits the taller box.
+      const noLabel = _geoWithGroup({ a: [0, 0], b: [1, 0] }, []);
+      noLabel.refresh(1000, 1000);
+      const labelled = _geoWithGroup(
+        { a: [0, 0], b: [1, 0] },
+        [{ label: "G", slide_ids: ["a", "b"] }],
+      );
+      labelled.refresh(1000, 1000);
+      const oNo = noLabel.overlayBounds(2);
+      const oLab = labelled.overlayBounds(2);
+      expect(oLab.top).toBeCloseTo(oNo.top);
+      expect(oLab.height - oNo.height).toBeCloseTo(0.04);  // LABEL_EXTRA = 4 dvmax
+    });
+  });
+
   describe("deckCenter", () => {
     it("centers on the effective grid", () => {
       const g = _geo({ a: [0, 0], b: [1, 0] });
@@ -753,7 +823,7 @@ describe("EdgeArrows.computeArrowData", () => {
 // ---- BezierOverlay.computePaths -----------------------------------------
 
 describe("BezierOverlay.computePaths", () => {
-  it("returns path strings and viewBox for all edges", () => {
+  it("returns SVG box + viewBox + path strings for a deck at origin", () => {
     const geo = new CanvasGeometry({
       slides: { a: [0, 0], b: [1, 0] },
       edges: [{
@@ -765,12 +835,45 @@ describe("BezierOverlay.computePaths", () => {
     geo.refresh(1000, 1000);
     const overlay = new BezierOverlay(geo, null);
     const result = overlay.computePaths();
-    expect(result.viewBox).toBe("0 0 2.1 1");
-    expect(result.width).toBe("210dvw");
-    expect(result.height).toBe("100dvh");
+    // deckBounds {left:0, top:0, right:2.1, bottom:1}; MARGIN=2 expands on all sides.
+    expect(result.viewBox).toBe("-2 -2 6.1 5");
+    expect(result.left).toBe("-200dvw");
+    expect(result.top).toBe("-200dvh");
+    expect(result.width).toBe("610dvw");
+    expect(result.height).toBe("500dvh");
     expect(result.paths).toHaveLength(1);
     expect(result.paths[0]).toContain("M ");
     expect(result.paths[0]).toContain(" C ");
+  });
+
+  it("shifts the SVG box and viewBox to enclose an off-origin deck", () => {
+    // The bug this fix addresses: when the deck doesn't start at (0, 0)
+    // the overlay must shift its CSS box and viewBox so absolute-coord
+    // paths near the right/bottom slides stay inside the clipping box.
+    const geo = new CanvasGeometry({
+      slides: { a: [2, 1], b: [3, 1] },
+      edges: [{
+        a_slide: "a", a_side: "right", a_fan_index: 0, a_fan_size: 1,
+        b_slide: "b", b_side: "left", b_fan_index: 0, b_fan_size: 1,
+      }],
+      fanSpacingFactor: 0.1,
+    });
+    geo.refresh(1000, 1000);
+    const result = new BezierOverlay(geo, null).computePaths();
+    // deckBounds: left = 2*1.1 = 2.2; right = 3*1.1 + 1 = 4.3; cols = 2.1.
+    // top = 1 + cumRowGap(1)*0.01 = 1.1; bottom = 2.1; rows = 1.
+    // MARGIN=2 → SVG left=0.2, top=-0.9, width=6.1, height=5.
+    expect(result.viewBox).toBe("0.2 -0.9 6.1 5");
+    expect(result.left).toBe("20dvw");
+    expect(result.top).toBe("-90dvh");
+    expect(result.width).toBe("610dvw");
+    expect(result.height).toBe("500dvh");
+    // Path endpoints stay in absolute-grid coords; under the new viewBox
+    // they fall inside the SVG's clipping box.
+    const m = result.paths[0].match(/^M ([\d.-]+) ([\d.-]+) .* ([\d.-]+) ([\d.-]+)$/);
+    const [, mx, my, , ] = m;
+    expect(Number(mx)).toBeCloseTo(3.2);  // gridX=2 + colGap*2 + 1.0
+    expect(Number(my)).toBeCloseTo(1.6);  // gridY=1 + cumRowGap(1)*0.01 + fanOff=0.5
   });
 
   it("skips edges with unknown slides", () => {

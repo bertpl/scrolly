@@ -18,6 +18,14 @@
 (function (exports) {
   "use strict";
 
+  function _fmt(n) {
+    // Strip floating-point round-off (e.g. 2.2 - 2 = 0.20000000000000018)
+    // before serialising to CSS / SVG attribute strings, so downstream
+    // values stay legible without changing geometry at any meaningful
+    // precision.
+    return parseFloat(n.toFixed(4)).toString();
+  }
+
   // ---- CanvasGeometry (pure — no DOM access) --------------------------------
   //
   // Coordinate systems used throughout this class. Mixing them is the
@@ -156,6 +164,27 @@
     deckCenter() {
       const b = this.deckBounds();
       return { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 };
+    }
+
+    overlayBounds(margin) {
+      // Box that fully encloses the deck plus `margin` abstract-grid units
+      // on every side, in the same coord system as `deckBounds()`. Used by
+      // `BezierOverlay` and `DebugGrid` to size + position their overlay
+      // SVGs so paths/rects drawn in absolute-grid coords stay inside the
+      // element's clipping box (default `overflow: hidden` for SVG) and
+      // still map to the correct canvas pixels via the viewBox.
+      const b = this.deckBounds();
+      const left = b.left - margin;
+      const top = b.top - margin;
+      const width = (b.right - b.left) + 2 * margin;
+      const height = (b.bottom - b.top) + 2 * margin;
+      return {
+        left,
+        top,
+        width,
+        height,
+        viewBox: _fmt(left) + " " + _fmt(top) + " " + _fmt(width) + " " + _fmt(height),
+      };
     }
 
     fanOffset(side, fanIndex, fanSize) {
@@ -1195,6 +1224,12 @@
   // ---- BezierOverlay --------------------------------------------------------
 
   class BezierOverlay {
+    // Abstract-grid units of breathing room around the deck bbox. Bezier
+    // control points sit at most `CanvasGeometry.CONTROL_MAX` (1.0) units
+    // outside their attachment point; 2 units is comfortable headroom so
+    // overshoot near corners never clips against the SVG's overflow box.
+    static MARGIN = 2;
+
     constructor(geo, svgContainer) {
       this._geometry = geo;
       this._svg = svgContainer;
@@ -1204,11 +1239,13 @@
     computePaths() {
       const geo = this._geometry;
       if (geo.cols === 0 || geo.rows === 0) return null;
-      const { cols, rows } = geo.effectiveGridSize();
+      const o = geo.overlayBounds(BezierOverlay.MARGIN);
       return {
-        viewBox: "0 0 " + cols + " " + rows,
-        width: (cols * 100) + "dvw",
-        height: (rows * 100) + "dvh",
+        left: _fmt(o.left * 100) + "dvw",
+        top: _fmt(o.top * 100) + "dvh",
+        width: _fmt(o.width * 100) + "dvw",
+        height: _fmt(o.height * 100) + "dvh",
+        viewBox: o.viewBox,
         paths: geo.edges.map((edge) => geo.buildPath(edge)).filter(Boolean),
       };
     }
@@ -1223,6 +1260,8 @@
       if (!data) return;
 
       this._svg.setAttribute("viewBox", data.viewBox);
+      this._svg.style.left = data.left;
+      this._svg.style.top = data.top;
       this._svg.style.width = data.width;
       this._svg.style.height = data.height;
 
@@ -1264,9 +1303,12 @@
 
       const bbox = this._geo.bbox();
       const { cols, rows } = this._geo.effectiveGridSize();
-      this._svg.setAttribute("viewBox", "0 0 " + cols + " " + rows);
-      this._svg.style.width = (cols * 100) + "dvw";
-      this._svg.style.height = (rows * 100) + "dvh";
+      const o = this._geo.overlayBounds(0);
+      this._svg.setAttribute("viewBox", o.viewBox);
+      this._svg.style.left = _fmt(o.left * 100) + "dvw";
+      this._svg.style.top = _fmt(o.top * 100) + "dvh";
+      this._svg.style.width = _fmt(o.width * 100) + "dvw";
+      this._svg.style.height = _fmt(o.height * 100) + "dvh";
 
       const padding = { top: 0, side: 0, bottom: 0 };
       const vw = this._geo.vw;
