@@ -1,8 +1,0 @@
-{
-  "title": "Far Down",
-  "elements": [
-    {
-      "markdown": "# Far Down\n\nThis slide is at grid position **(0, 6)** \u2014 far below the rest.\n\nThe bezier curve connecting it to **Parallax** at (0, 3) should be\nvisible in deck view."
-    }
-  ]
-}

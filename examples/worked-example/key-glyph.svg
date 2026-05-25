@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
+  <!-- Stylised key glyph — animated `scale` + `angle` keyframes on the
+       `capability` slide reveal it as the auth-bypass mechanism. -->
+  <circle cx="80" cy="110" r="48" fill="none" stroke="#c0392b" stroke-width="6"/>
+  <circle cx="80" cy="110" r="12" fill="#c0392b"/>
+  <rect x="125" y="100" width="80" height="20" fill="#c0392b"/>
+  <rect x="170" y="120" width="14" height="22" fill="#c0392b"/>
+  <rect x="190" y="120" width="14" height="22" fill="#c0392b"/>
+</svg>

@@ -131,29 +131,29 @@ def test_build_refuses_to_clobber_without_force(tmp_path):
         build_deck(deck_file, out)
 
 
-def test_worked_example_long_bg_slide_is_content_driven(tmp_path):
-    # The long-bg slide added in v0.0.5 M4 exercises content-driven scroll
-    # end-to-end: its rendered chunk content reaches the HTML, and the
-    # embedded nav-data marks scroll_range: null so canvas.js's
-    # ResizeObserver path activates.
+def test_worked_example_reference_slide_is_content_driven(tmp_path):
+    # The reference slide exercises content-driven scroll end-to-end:
+    # its rendered chunk content reaches the HTML, and the embedded
+    # nav-data marks scroll_range: null so canvas.js's ResizeObserver
+    # path activates.
     deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
     out = tmp_path / "dist"
     deck = build_deck(deck_file, out)
 
-    assert any(s.id == "long-bg" for s in deck.slides)
+    assert any(s.id == "reference" for s in deck.slides)
 
     html = (out / "index.html").read_text()
-    # A line of body content from long-bg should land in the rendered HTML.
-    assert "Why content-driven scroll" in html
-    # And the nav-data entry for long-bg carries a null scroll_range.
+    # A line of body content from the reference slide should land in the rendered HTML.
+    assert "Every factual claim" in html
+    # And the nav-data entry for reference carries a null scroll_range.
     import json
 
     start = html.index('<script type="application/json" id="scrolly-deck">')
     end = html.index("</script>", start)
     blob = html[start:end].split(">", 1)[1]
     data = json.loads(blob)
-    assert data["slides"]["long-bg"]["scroll_range"] is None
-    assert data["slides"]["long-bg"]["scroll_speed"] == 1.0
+    assert data["slides"]["reference"]["scroll_range"] is None
+    assert data["slides"]["reference"]["scroll_speed"] == 1.0
 
 
 # ==================================================================================================
@@ -162,8 +162,8 @@ def test_worked_example_long_bg_slide_is_content_driven(tmp_path):
 def test_load_deck_on_worked_example():
     deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
     deck, slide_irs = load_deck(deck_file)
-    assert len(deck.slides) == 18
-    assert len(deck.edges) == 21
+    assert len(deck.slides) == 17
+    assert len(deck.edges) == 17
     assert set(slide_irs.keys()) == {s.id for s in deck.slides}
 
 

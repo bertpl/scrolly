@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" font-family="Menlo, Consolas, monospace">
+  <rect width="800" height="500" fill="#0d1117"/>
+  <text x="30" y="40" font-size="16" font-weight="bold" fill="#c9d1d9">Step 2 — valgrind</text>
+  <g font-size="14" fill="#c9d1d9">
+    <text x="30" y="100">$ valgrind --error-exitcode=1 sshd -t</text>
+    <text x="30" y="135" fill="#f97583">==12345== Invalid read of size 8</text>
+    <text x="30" y="155" fill="#f97583">==12345==    at 0x...: lzma_index_init (in liblzma.so.5)</text>
+    <text x="30" y="175" fill="#f97583">==12345==    by 0x...: lzma_get_progress</text>
+    <text x="30" y="195" fill="#f97583">==12345==    by 0x...: (within /usr/sbin/sshd)</text>
+    <text x="30" y="215" fill="#f97583">==12345== Address 0x... is 8 bytes after a block of size 256</text>
+    <text x="30" y="295">$ ldd /usr/sbin/sshd | grep -E 'systemd|lzma'</text>
+    <text x="30" y="315" fill="#7ee787">    libsystemd.so.0 => /lib/.../libsystemd.so.0</text>
+    <text x="30" y="335" fill="#7ee787">    liblzma.so.5    => /lib/.../liblzma.so.5</text>
+  </g>
+  <text x="30" y="430" font-size="16" fill="#ff9b6a">// liblzma symbols inside sshd? That's not normal.</text>
+</svg>

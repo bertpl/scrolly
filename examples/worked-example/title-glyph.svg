@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" font-family="Helvetica, Arial, sans-serif">
+  <!-- Stylised shield carrying the CVE label — security-incident visual
+       cue, no ambiguous symbolism. -->
+  <path d="M120 20 L210 60 L210 130 Q210 200 120 230 Q30 200 30 130 L30 60 Z"
+        fill="#3b4a5e" stroke="#a8b8c8" stroke-width="3" opacity="0.85"/>
+  <text x="120" y="155" font-size="56" font-weight="bold" fill="#f0e8e0"
+        text-anchor="middle" letter-spacing="4">CVE</text>
+</svg>

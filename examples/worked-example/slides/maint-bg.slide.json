@@ -1,0 +1,44 @@
+// Three facts about xz utils' role + its maintainership history,
+// revealed sequentially as the reader scrolls.
+// Exercises: full-bleed JPG background, animated opacity keyframes
+// for sequential reveals, markdown with custom color.
+{
+  title: "Background",
+  scroll_range: 1200,
+  snap_positions: [0, 400, 800, 1200],
+  elements: [
+    // Ambient JPG background — full-bleed.
+    {
+      name: "ambient",
+      image: "../ambient-bg.jpg",
+      position: [50, 50], anchor: [50, 50],
+      width: 100, height: 100,
+      object_fit: "cover",
+    },
+    // Three sequential reveals.
+    {
+      name: "fact-1",
+      markdown: "## xz utils\n\nA data-compression library bundled with virtually every Linux distribution.",
+      position: [10, 25], anchor: [0, 50],
+      width: 50, height: "auto",
+      color: "#e0e8f0",
+      opacity: { keyframes: [[0, 0], [200, 1], [800, 1], [1000, 0.5]] },
+    },
+    {
+      name: "fact-2",
+      markdown: "## One maintainer\n\nLasse Collin had been the sole maintainer for over a decade.",
+      position: [10, 50], anchor: [0, 50],
+      width: 50, height: "auto",
+      color: "#e0e8f0",
+      opacity: { keyframes: [[300, 0], [500, 1], [1000, 1], [1200, 0.7]] },
+    },
+    {
+      name: "fact-3",
+      markdown: "## What changed\n\nIn 2021 a new contributor — \"Jia Tan\" — began submitting patches.",
+      position: [10, 75], anchor: [0, 50],
+      width: 50, height: "auto",
+      color: "#e0e8f0",
+      opacity: { keyframes: [[700, 0], [900, 1], [1200, 1]] },
+    },
+  ],
+}

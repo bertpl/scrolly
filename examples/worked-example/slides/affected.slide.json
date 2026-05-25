@@ -1,0 +1,31 @@
+// Distros that briefly shipped xz 5.6.0 / 5.6.1.
+// Exercises: off-grid position (col 5, row 0 — far right of the deck),
+// WebP image (distro-logos composite), markdown table.
+{
+  title: "Who shipped it",
+  scroll_range: 600,
+  snap_positions: [0, 600],
+  elements: [
+    {
+      name: "heading",
+      markdown: "## Distros that briefly shipped 5.6.0 / 5.6.1\n\nNone reached a stable channel; all were pulled within hours of disclosure.",
+      position: [5, 8], anchor: [0, 0],
+      width: 90, height: "auto",
+      color: "#2c3e50",
+    },
+    // WebP composite of distro logos.
+    {
+      name: "logos",
+      image: "../distro-logos.webp",
+      position: [50, 35], anchor: [50, 0],
+      width: 90, height: "auto",
+    },
+    {
+      name: "table",
+      markdown: "| Distribution     | Status                              |\n|------------------|-------------------------------------|\n| Debian sid       | Affected; pulled 2024-03-29         |\n| Fedora 41 beta   | Affected; pulled 2024-03-29         |\n| openSUSE Tumbleweed | Affected; pulled 2024-03-29     |\n| Kali Linux       | Affected; pulled 2024-03-30         |\n| Arch Linux       | Shipped but inert — sshd not linked against libsystemd |",
+      position: [5, 70], anchor: [0, 0],
+      width: 90, height: "auto",
+      color: "#444",
+    },
+  ],
+}

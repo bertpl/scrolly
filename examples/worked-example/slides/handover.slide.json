@@ -1,0 +1,36 @@
+// The turning point — co-maintainership granted in early 2023.
+// Exercises: markdown, animated `position` (date callout sliding in),
+// non-default scroll_speed for deliberate pacing.
+{
+  title: "Co-maintainership",
+  scroll_range: 1000,
+  scroll_speed: 0.6,
+  snap_positions: [0, 500, 1000],
+  elements: [
+    {
+      name: "headline",
+      markdown: "## In early 2023, Jia Tan gained commit access.",
+      position: [50, 30], anchor: [50, 50],
+      width: 70, height: "auto",
+      text_align: "center",
+      color: "#2c3e50",
+    },
+    // Date callout slides in from the left as the reader scrolls.
+    {
+      name: "date-callout",
+      html: "<div style=\"background:#f5cba7;padding:1em 2em;border-radius:8px;font:bold 1.4em -apple-system,sans-serif;color:#5a3a1a;text-align:center\">January 7, 2023</div>",
+      position: { keyframes: [[0, [-30, 55]], [800, [50, 55]], [1000, [50, 55]]] },
+      anchor: [50, 50],
+      width: 30, height: "auto",
+    },
+    {
+      name: "context",
+      markdown: "*Effective co-maintainership followed within months. From there, the project carried on with what looked like routine maintenance.*",
+      position: [50, 80], anchor: [50, 50],
+      width: 70, height: "auto",
+      text_align: "center",
+      color: "#5a6675",
+      opacity: { keyframes: [[500, 0], [800, 1], [1000, 1]] },
+    },
+  ],
+}

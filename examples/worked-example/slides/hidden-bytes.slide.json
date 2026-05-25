@@ -1,0 +1,36 @@
+// The payload, disguised as corrupted test fixtures.
+// Exercises: image_sequence with compositing:"overlay" (opaque
+// crossfade between clean / altered / clean hex dumps) + frame
+// deduplication (hidden-clean.svg referenced twice for the
+// "back to baseline" closing frame).
+{
+  title: "Hidden in plain sight",
+  scroll_range: 1400,
+  elements: [
+    {
+      name: "caption",
+      markdown: "## The payload disguised as a test fixture\n\nIn xz 5.6.0, ~80 bytes of a \"corrupt\" test file were replaced with the stage-1 payload. Scroll between the pristine and altered hex dumps.",
+      position: [50, 5], anchor: [50, 0],
+      width: 90, height: "auto",
+      text_align: "center",
+      color: "#5a2c2c",
+    },
+    // image_sequence: clean -> altered -> clean (frame dedup: hidden-clean.svg twice)
+    {
+      name: "hex-dump",
+      image_sequence: [
+        "../hidden-clean.svg",
+        "../hidden-altered.svg",
+        "../hidden-clean.svg",
+      ],
+      compositing: "overlay",
+      frame_distance: 400,
+      hold: 200,
+      fade_in: 100,
+      fade_out: 150,
+      scroll_offset: 100,
+      position: [50, 28], anchor: [50, 0],
+      width: 75, height: "auto",
+    },
+  ],
+}

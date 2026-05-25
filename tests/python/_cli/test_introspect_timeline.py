@@ -18,18 +18,21 @@ def test_timeline_element_carries_animated_properties_and_intervals() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "parallax"])
+    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "contributions"])
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    bg = payload["slides"]["parallax"]["elements"][0]
-    assert "animated_properties" in bg
-    assert "visibility_intervals" in bg
-    # bg has animated position
-    assert "position" in bg["animated_properties"]
-    # Static properties (e.g. opacity = 1.0 on bg) should NOT appear in animated_properties
-    assert "opacity" not in bg["animated_properties"]
+    # elements[1] is the timeline image with animated `anchor` + `position`;
+    # width/height/opacity are static.
+    el = payload["slides"]["contributions"]["elements"][1]
+    assert "animated_properties" in el
+    assert "visibility_intervals" in el
+    # anchor is animated on the timeline image.
+    assert "anchor" in el["animated_properties"]
+    # Static properties (e.g. width, opacity) should NOT appear in animated_properties.
+    assert "width" not in el["animated_properties"]
+    assert "opacity" not in el["animated_properties"]
 
 
 def test_timeline_filter_restricts_to_slide() -> None:
@@ -38,11 +41,11 @@ def test_timeline_filter_restricts_to_slide() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "intro"])
+    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "title"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    assert set(payload["slides"].keys()) == {"intro"}
+    assert set(payload["slides"].keys()) == {"title"}
 
 
 def test_timeline_unknown_slide_exits_with_error() -> None:

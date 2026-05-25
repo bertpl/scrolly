@@ -20,13 +20,13 @@ def test_snapshot_returns_resolved_substrate_properties() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "parallax", "--scroll", "500"],
+        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "500"],
     )
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    snap = payload["slides"]["parallax"]["snapshots"][0]
+    snap = payload["slides"]["capability"]["snapshots"][0]
     assert snap["scroll"] == 500.0
     el = snap["elements"][0]
     expected_keys = {
@@ -58,7 +58,7 @@ def test_snapshot_multiple_scrolls_returns_one_snapshot_per_value() -> None:
             "snapshot",
             str(WORKED_EXAMPLE),
             "--slide",
-            "parallax",
+            "capability",
             "--scroll",
             "0",
             "--scroll",
@@ -68,7 +68,7 @@ def test_snapshot_multiple_scrolls_returns_one_snapshot_per_value() -> None:
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    snaps = payload["slides"]["parallax"]["snapshots"]
+    snaps = payload["slides"]["capability"]["snapshots"]
     assert [s["scroll"] for s in snaps] == [0.0, 750.0]
 
 
@@ -91,7 +91,7 @@ def test_snapshot_missing_scroll_arg_errors() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "parallax"])
+    result = runner.invoke(cli, ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability"])
 
     # --- assert -----------------------
     assert result.exit_code != 0
@@ -106,7 +106,7 @@ def test_snapshot_scroll_beyond_range_rejected() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "parallax", "--scroll", "99999"],
+        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "99999"],
     )
 
     # --- assert -----------------------
@@ -123,7 +123,7 @@ def test_snapshot_negative_scroll_rejected() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "parallax", "--scroll", "-10"],
+        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "-10"],
     )
 
     # --- assert -----------------------
@@ -155,11 +155,11 @@ def test_snapshot_visible_flag_tracks_opacity() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "parallax", "--scroll", "0"],
+        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "0"],
     )
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    for snap in payload["slides"]["parallax"]["snapshots"]:
+    for snap in payload["slides"]["capability"]["snapshots"]:
         for el in snap["elements"]:
             assert el["visible"] == (el["opacity"] > 0)

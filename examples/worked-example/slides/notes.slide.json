@@ -1,9 +1,0 @@
-{
-  "title": "Notes",
-  "font_scale": 1.4,
-  "elements": [
-    {
-      "markdown": "# Notes\n\nSide notes and extra context.\n\nPress **Left** to return to `details`. Pressing **Down** here jumps to\n`appendix` via a non-adjacent edge \u2014 in overview mode that edge renders\nas a curved bezier rather than a flat gutter segment."
-    }
-  ]
-}

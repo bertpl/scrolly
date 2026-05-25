@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" font-family="Menlo, Consolas, monospace">
+  <rect width="800" height="500" fill="#0d1117"/>
+  <text x="30" y="40" font-size="16" font-weight="bold" fill="#c9d1d9">Step 3 — the IFUNC trail</text>
+  <g font-size="14" fill="#c9d1d9">
+    <text x="30" y="100">$ objdump -d /lib/.../liblzma.so.5 | grep -A2 ifunc</text>
+    <text x="30" y="135" fill="#ff9b6a">  0x...&lt;_get_cpuid&gt;:</text>
+    <text x="30" y="155" fill="#ff9b6a">    mov     rax, [rip + check_table]</text>
+    <text x="30" y="175" fill="#ff9b6a">    call    qword ptr [rax]</text>
+    <text x="30" y="195" fill="#ff9b6a">    ; check_table points into the test-fixture data</text>
+    <text x="30" y="270">$ readelf --syms liblzma.so.5 | grep RSA</text>
+    <text x="30" y="295" fill="#f97583">    0x...  RSA_public_decrypt    (HIJACKED via IFUNC resolver)</text>
+  </g>
+  <text x="30" y="380" font-size="16" fill="#ff9b6a">// IFUNC resolver decrypts payload from "bad-3-corrupt_lzma2.xz"</text>
+  <text x="30" y="405" font-size="16" fill="#ff9b6a">// and replaces sshd's RSA_public_decrypt with an attacker hook.</text>
+</svg>

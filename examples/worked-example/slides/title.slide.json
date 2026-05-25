@@ -1,0 +1,48 @@
+// Hero card opening the deck.
+// Exercises: markdown + text_align:center + non-default font_scale,
+// image element layered behind the title, animated `scale` on the glyph
+// (one of our new scale-animation demos), multi-element z-order.
+{
+  title: "Title",
+  scroll_range: 600,
+  font_scale: 1.4,
+  snap_positions: [0, 600],
+  elements: [
+    // 1) Background tint (full-bleed).
+    {
+      name: "bg",
+      html: "<div style=\"width:100%;height:100%;background:linear-gradient(160deg,#0a0a14,#1a2a3a)\"></div>",
+      position: [0, 0], anchor: [0, 0],
+      width: 100, height: 100,
+    },
+    // 2) Decorative shield glyph behind the title. Animated `scale`
+    //    zooms it in as scroll progresses — covers the scale-animation
+    //    feature that previously had no worked-example slot.
+    {
+      name: "glyph",
+      image: "../title-glyph.svg",
+      position: [50, 55], anchor: [50, 50],
+      width: 30, height: "auto",
+      opacity: { keyframes: [[0, 0.35], [600, 0.7]] },
+      scale: { keyframes: [[0, 0.6], [600, 1.2]] },
+    },
+    // 3) Title text (top layer, z-order via array position).
+    {
+      name: "title",
+      markdown: "# CVE-2024-3094\n\nA retrospective on the xz utils backdoor.",
+      position: [50, 35], anchor: [50, 50],
+      width: 80, height: "auto",
+      text_align: "center",
+      color: "#f0f4fa",
+    },
+    {
+      name: "hint",
+      markdown: "*scroll to explore*",
+      position: [50, 90], anchor: [50, 50],
+      width: 60, height: "auto",
+      text_align: "center",
+      color: "#a8b8c8",
+      opacity: { keyframes: [[0, 0.4], [300, 0.9], [600, 0.4]] },
+    },
+  ],
+}

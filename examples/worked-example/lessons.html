@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+  body { font: 14px/1.5 -apple-system, system-ui, sans-serif; margin: 0; padding: 20px; color: #222; background: #fff; }
+  h2 { font-size: 18px; margin: 0 0 16px; color: #333; }
+  .takeaway { margin: 0 0 16px; padding: 12px 14px; background: #f4f6f9; border-left: 4px solid #5a7a9a; }
+  .takeaway h3 { margin: 0 0 4px; font-size: 14px; color: #2c3e50; }
+  .takeaway p { margin: 0; font-size: 13px; color: #444; }
+  .footer { font-size: 11px; color: #888; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<h2>Five takeaways for OSS supply-chain hygiene</h2>
+
+<div class="takeaway">
+  <h3>1. Solo-maintainership is a structural risk.</h3>
+  <p>A project with one trusted contact is a single point of failure
+  for both burnout and trust escalation.</p>
+</div>
+
+<div class="takeaway">
+  <h3>2. Review build-system changes with the same care as code changes.</h3>
+  <p>The xz payload was hidden in <code>build-to-host.m4</code> and
+  test fixtures &mdash; surfaces that often escape review.</p>
+</div>
+
+<div class="takeaway">
+  <h3>3. Behavioral anomaly detection works.</h3>
+  <p>A 500&nbsp;ms SSH latency anomaly noticed by a careful engineer
+  was the entire detection signal.</p>
+</div>
+
+<div class="takeaway">
+  <h3>4. Reproducible builds expose tampering.</h3>
+  <p>Build outputs that differ between the upstream tarball and the
+  git tag are an immediate flag for investigation.</p>
+</div>
+
+<div class="takeaway">
+  <h3>5. Sandbox untrusted contributors.</h3>
+  <p>Long-tail commit access should require independent review of
+  build-system + binary-asset changes.</p>
+</div>
+
+<p class="footer">Sources: en.wikipedia.org/wiki/XZ_Utils_backdoor
+&middot; gist.github.com/thesamesam &middot; research.swtch.com/xz-timeline</p>
+
+</body>
+</html>

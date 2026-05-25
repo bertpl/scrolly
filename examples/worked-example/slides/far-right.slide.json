@@ -1,8 +1,0 @@
-{
-  "title": "Far Right",
-  "elements": [
-    {
-      "markdown": "# Far Right\n\nThis slide is at grid position **(6, 1)** \u2014 far to the right.\n\nThe bezier curve connecting it to **Long BG** at (3, 1) should be\nvisible in deck view."
-    }
-  ]
-}

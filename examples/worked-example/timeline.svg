@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="2800" viewBox="0 0 600 2800" font-family="Helvetica, Arial, sans-serif">
+<defs><linearGradient id="spineGrad" gradientUnits="userSpaceOnUse" x1="290" y1="120.0" x2="290" y2="2700.0"><stop offset="0.00%" stop-color="#7a8a9a"/><stop offset="29.15%" stop-color="#7a8a9a"/><stop offset="33.37%" stop-color="#d68910"/><stop offset="79.26%" stop-color="#d68910"/><stop offset="80.62%" stop-color="#c0392b"/><stop offset="96.90%" stop-color="#c0392b"/><stop offset="100.00%" stop-color="#27ae60"/><stop offset="100.00%" stop-color="#27ae60"/></linearGradient></defs>
+<rect width="600" height="2800" fill="#f7f8fa"/>
+<rect x="287.0" y="120.0" width="6" height="2580.0" rx="3.0" fill="url(#spineGrad)"/>
+<text x="40" y="132.0" font-size="36" font-weight="bold" fill="#5a6675">2021</text>
+<text x="40" y="708.6666666666666" font-size="36" font-weight="bold" fill="#5a6675">2022</text>
+<text x="40" y="1285.3333333333333" font-size="36" font-weight="bold" fill="#5a6675">2023</text>
+<text x="40" y="1862.0" font-size="36" font-weight="bold" fill="#5a6675">2024</text>
+<circle cx="290" cy="142.11872146118722" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="315" y="132.11872146118722" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="start">Jan 15, 2021</text>
+<text x="315" y="152.11872146118722" font-size="14" fill="#5a6675" text-anchor="start">Jia Tan begins contributing</text>
+<text x="315" y="170.11872146118722" font-size="14" fill="#5a6675" text-anchor="start">to xz utils</text>
+<circle cx="290" cy="405.9634703196347" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="265" y="395.9634703196347" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="end">Jul 1, 2021</text>
+<text x="265" y="415.9634703196347" font-size="14" fill="#5a6675" text-anchor="end">First patches accepted</text>
+<circle cx="290" cy="872.0365296803653" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="265" y="862.0365296803653" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="end">Apr 22, 2022</text>
+<text x="265" y="882.0365296803653" font-size="14" fill="#5a6675" text-anchor="end">First push on xz-devel:</text>
+<text x="265" y="900.0365296803653" font-size="14" fill="#5a6675" text-anchor="end">"add a co-maintainer"</text>
+<circle cx="290" cy="976.3105022831049" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="315" y="966.3105022831049" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="start">Jun 27, 2022</text>
+<text x="315" y="986.3105022831049" font-size="14" fill="#5a6675" text-anchor="start">Sustained pressure from</text>
+<text x="315" y="1004.3105022831049" font-size="14" fill="#5a6675" text-anchor="start">"Jigar Kumar", "Dennis Ens"</text>
+<circle cx="290" cy="1282.8127853881278" r="14" fill="white" stroke="#2c3e50" stroke-width="3"/>
+<text x="322" y="1272.8127853881278" font-size="13" font-weight="bold" fill="#2c3e50" text-anchor="start">Jan 7, 2023</text>
+<text x="322" y="1292.8127853881278" font-size="18" fill="#2c3e50" text-anchor="start">Jia Tan gains commit access</text>
+<circle cx="290" cy="1366.5479452054794" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="265" y="1356.5479452054794" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="end">Mar 1, 2023</text>
+<text x="265" y="1376.5479452054794" font-size="14" fill="#5a6675" text-anchor="end">Becomes effective co-maintainer</text>
+<circle cx="290" cy="1559.296803652968" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="265" y="1549.296803652968" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="end">Jul 1, 2023</text>
+<text x="265" y="1569.296803652968" font-size="14" fill="#5a6675" text-anchor="end">Routine maintenance</text>
+<circle cx="290" cy="2165.0" r="14" fill="white" stroke="#2c3e50" stroke-width="3"/>
+<text x="322" y="2155.0" font-size="13" font-weight="bold" fill="#2c3e50" text-anchor="start">Feb 24, 2024</text>
+<text x="322" y="2175.0" font-size="18" fill="#2c3e50" text-anchor="start">xz 5.6.0 released —</text>
+<text x="322" y="2197.0" font-size="18" fill="#2c3e50" text-anchor="start">contains payload</text>
+<circle cx="290" cy="2288.8888888888887" r="7" fill="white" stroke="#5a6675" stroke-width="3"/>
+<text x="265" y="2278.8888888888887" font-size="13" font-weight="bold" fill="#5a6675" text-anchor="end">Mar 9, 2024</text>
+<text x="265" y="2298.8888888888887" font-size="14" fill="#5a6675" text-anchor="end">xz 5.6.1 —</text>
+<text x="265" y="2316.8888888888887" font-size="14" fill="#5a6675" text-anchor="end">"valgrind fix"</text>
+<circle cx="290" cy="2500.0" r="14" fill="white" stroke="#2c3e50" stroke-width="3"/>
+<text x="322" y="2490.0" font-size="13" font-weight="bold" fill="#2c3e50" text-anchor="start">Mar 28, 2024</text>
+<text x="322" y="2510.0" font-size="18" fill="#2c3e50" text-anchor="start">Andres Freund notices</text>
+<text x="322" y="2532.0" font-size="18" fill="#2c3e50" text-anchor="start">500 ms SSH anomaly</text>
+<circle cx="290" cy="2620.0" r="14" fill="white" stroke="#2c3e50" stroke-width="3"/>
+<text x="258" y="2610.0" font-size="13" font-weight="bold" fill="#2c3e50" text-anchor="end">Mar 29, 2024</text>
+<text x="258" y="2630.0" font-size="18" fill="#2c3e50" text-anchor="end">CVE-2024-3094 disclosed</text>
+<text x="258" y="2652.0" font-size="18" fill="#2c3e50" text-anchor="end">Packages pulled within hours</text>
+</svg>

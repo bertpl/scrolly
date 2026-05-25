@@ -1,0 +1,32 @@
+// Five concrete takeaways — rendered as a self-contained HTML
+// checklist inside an iframe with border + shadow decorations.
+// Exercises: iframe with border_width + shadow_size + internal
+// scrollbar (the lessons HTML is taller than the viewport, so the
+// iframe's own scrollbar appears); off-grid position (col 2, row 5).
+{
+  title: "Five takeaways",
+  scroll_range: 600,
+  snap_positions: [0, 600],
+  elements: [
+    {
+      name: "heading",
+      markdown: "## Five takeaways\n\nFor OSS supply-chain hygiene. Scroll within the panel to read all five.",
+      position: [50, 5], anchor: [50, 0],
+      width: 80, height: "auto",
+      text_align: "center",
+      color: "#2c3e50",
+    },
+    // The iframe: lessons.html overflows internally, so the iframe's
+    // own scrollbar appears. Border + shadow decorate the panel.
+    {
+      name: "takeaways-panel",
+      iframe_html_file: "../lessons.html",
+      position: [50, 25], anchor: [50, 0],
+      width: 70, height: 65,
+      border_width: 3,
+      border_color: "#5a7a9a",
+      shadow_size: 16,
+      shadow_color: "#a8b8c8",
+    },
+  ],
+}

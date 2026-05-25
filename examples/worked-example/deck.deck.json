@@ -1,56 +1,75 @@
 {
-  title: "Worked Example",
+  title: "CVE-2024-3094 — xz utils retrospective",
+  // Note: every slide position is offset by (+1, +2) from the grid
+  // origin. The deck has no slide at (0, 0); deck view's bounding-box
+  // centering (v0.1.10) correctly handles this.
   slides: [
     {
       group: "Setup", color: "#a8d8ea",
       slides: [
-        { id: "setup",    position: [0, 0], source: "slides/setup.slide.json" },
-        { id: "overview", position: [1, 0], source: "slides/overview.slide.json" },
+        { id: "title",     position: [1, 2], source: "slides/title.slide.json" },
+        { id: "maint-bg",  position: [1, 3], source: "slides/maint-bg.slide.json" },
+        { id: "cast",      position: [1, 4], source: "slides/cast.slide.json" },
       ],
     },
-    { id: "intro",    position: [0, 1], source: "slides/intro.slide.json" },
     {
-      group: "Content", color: "#f5cba7",
+      group: "Infiltration", color: "#f5cba7",
       slides: [
-        { id: "details",  position: [1, 1], source: "slides/details.slide.json" },
-        { id: "notes",    position: [2, 1], source: "slides/notes.slide.json" },
-        { id: "long-bg",  position: [3, 1], source: "slides/long-bg.slide.json" },
-        { id: "appendix", position: [1, 2], source: "slides/appendix.slide.json" },
+        { id: "contributions", position: [2, 2], source: "slides/contributions.slide.json" },
+        { id: "pressure",      position: [2, 3], source: "slides/pressure.slide.json" },
+        { id: "handover",      position: [2, 4], source: "slides/handover.slide.json" },
       ],
     },
-    { id: "parallax",   position: [0, 3], source: "slides/parallax.slide.json" },
-    { id: "scenes",    position: [1, 3], source: "slides/scenes.slide.json" },
-    { id: "many-snaps", position: [2, 3], source: "slides/many-snaps.slide.json" },
-    { id: "filmstrip",  position: [3, 3], source: "slides/filmstrip.slide.json" },
-    { id: "filmstrip-overlay", position: [4, 3], source: "slides/filmstrip-overlay.slide.json" },
-    { id: "filmstrip-incremental", position: [5, 3], source: "slides/filmstrip-incremental.slide.json" },
-    { id: "reverse",    position: [6, 3], source: "slides/reverse-stack.slide.json" },
-    { id: "blank-frames", position: [7, 3], source: "slides/blank-frames.slide.json" },
-    { id: "iframe",    position: [8, 3], source: "slides/iframe.slide.json" },
-    { id: "far-right", position: [6, 1], source: "slides/far-right.slide.json" },
-    { id: "far-down",  position: [0, 6], source: "slides/far-down.slide.json" },
+    { id: "blank-gap", position: [2, 5], source: "slides/blank-gap.slide.json" },
+    {
+      group: "Backdoor", color: "#e8b3b3",
+      slides: [
+        { id: "hidden-bytes", position: [3, 2], source: "slides/hidden-bytes.slide.json" },
+        { id: "build-trojan", position: [3, 3], source: "slides/build-trojan.slide.json" },
+        { id: "ssh-hijack",   position: [3, 4], source: "slides/ssh-hijack.slide.json" },
+        { id: "capability",   position: [3, 5], source: "slides/capability.slide.json" },
+      ],
+    },
+    {
+      group: "Discovery", color: "#a8d8b3",
+      slides: [
+        { id: "anomaly",       position: [4, 2], source: "slides/anomaly.slide.json" },
+        { id: "investigation", position: [4, 3], source: "slides/investigation.slide.json" },
+        { id: "disclosure",    position: [4, 4], source: "slides/disclosure.slide.json" },
+      ],
+    },
+    { id: "affected",  position: [6, 2], source: "slides/affected.slide.json" },
+    { id: "lessons",   position: [3, 7], source: "slides/lessons.slide.json" },
+    { id: "reference", position: [6, 7], source: "slides/reference.slide.json" },
   ],
   edges: [
-    ["setup", "overview"],
-    ["setup|bottom", "intro|top"],
-    ["overview|bottom", "details|top"],
-    ["intro|right", "details|left"],
-    ["details", "appendix"],
-    ["details", "notes"],
-    ["notes|bottom", "appendix|right"],
-    ["intro|right", "appendix|left"],
-    ["notes", "long-bg"],
-    ["intro", "parallax"],
-    ["parallax", "scenes"],
-    ["scenes", "many-snaps"],
-    ["many-snaps", "filmstrip"],
-    ["filmstrip", "filmstrip-overlay"],
-    ["filmstrip-overlay", "filmstrip-incremental"],
-    ["filmstrip-incremental", "reverse"],
-    ["reverse", "blank-frames"],
-    ["blank-frames", "iframe"],
-    ["appendix", "scenes"],
-    ["long-bg", "far-right"],
-    ["parallax|bottom", "far-down|top"],
+    // Setup column
+    ["title", "maint-bg"],
+    ["maint-bg", "cast"],
+    // Setup -> Infiltration
+    ["cast|right", "contributions|left"],
+    // Infiltration column
+    ["contributions", "pressure"],
+    ["pressure", "handover"],
+    // Infiltration -> interlude
+    ["handover", "blank-gap"],
+    // Interlude -> Backdoor
+    ["blank-gap|right", "hidden-bytes|left"],
+    // Backdoor column
+    ["hidden-bytes", "build-trojan"],
+    ["build-trojan", "ssh-hijack"],
+    ["ssh-hijack", "capability"],
+    // Backdoor -> Discovery
+    ["capability|right", "anomaly|left"],
+    // Discovery column
+    ["anomaly", "investigation"],
+    ["investigation", "disclosure"],
+    // Discovery -> off-grid (long beziers exercising bounding-box geometry)
+    ["disclosure|right", "affected|left"],
+    ["disclosure|bottom", "lessons|top"],
+    // Lessons -> reference (horizontal right-edge link to bottom-right corner)
+    ["lessons|right", "reference|left"],
+    // Discovery -> reference (additional shortcut from disclosure's right edge)
+    ["disclosure|right", "reference|left"],
   ],
 }

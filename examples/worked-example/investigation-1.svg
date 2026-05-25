@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" font-family="Menlo, Consolas, monospace">
+  <rect width="800" height="500" fill="#0d1117"/>
+  <text x="30" y="40" font-size="16" font-weight="bold" fill="#c9d1d9">Step 1 — the anomaly</text>
+  <g font-size="14" fill="#c9d1d9">
+    <text x="30" y="100">$ time ssh remote-host /bin/true</text>
+    <text x="30" y="125" fill="#7ee787">real    0m0.500s</text>
+    <text x="30" y="145" fill="#7ee787">user    0m0.010s</text>
+    <text x="30" y="165" fill="#7ee787">sys     0m0.005s</text>
+    <text x="30" y="220">$ time ssh other-host /bin/true</text>
+    <text x="30" y="245" fill="#7ee787">real    0m0.045s</text>
+    <text x="30" y="265" fill="#7ee787">user    0m0.008s</text>
+    <text x="30" y="285" fill="#7ee787">sys     0m0.004s</text>
+  </g>
+  <text x="30" y="360" font-size="16" fill="#ff9b6a">// ~500 ms latency on Debian sid; ~45 ms elsewhere.</text>
+  <text x="30" y="385" font-size="16" fill="#ff9b6a">// Same hardware. Same network. Different distro.</text>
+</svg>

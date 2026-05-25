@@ -23,7 +23,7 @@ def test_elements_returns_resolved_tree_for_all_slides() -> None:
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert len(payload["slides"]) == 18  # all worked-example slides present
+    assert len(payload["slides"]) == 17  # all worked-example slides present
 
 
 def test_elements_filter_restricts_to_named_slides() -> None:
@@ -34,13 +34,13 @@ def test_elements_filter_restricts_to_named_slides() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "intro", "--slide", "setup"],
+        ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "title", "--slide", "reference"],
     )
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload["slides"].keys()) == {"intro", "setup"}
+    assert set(payload["slides"].keys()) == {"title", "reference"}
 
 
 def test_elements_unknown_slide_exits_with_error() -> None:
@@ -63,11 +63,11 @@ def test_elements_entries_carry_type_and_index() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "setup"])
+    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "reference"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    elements = payload["slides"]["setup"]["elements"]
+    elements = payload["slides"]["reference"]["elements"]
     for el in elements:
         assert "type" in el and el["type"].endswith("Element")
         assert "index" in el and isinstance(el["index"], int)
@@ -79,15 +79,15 @@ def test_elements_animated_value_serializes_as_keyframes() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    # "parallax" slide is documented in the worked example as exercising animated
+    # "capability" slide is documented in the worked example as exercising animated
     # properties; the test verifies SOMETHING animated shows up as a keyframe dict
     # rather than asserting on specific values (which would couple the test to the
     # example deck's exact contents).
-    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "parallax"])
+    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "capability"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    elements = payload["slides"]["parallax"]["elements"]
+    elements = payload["slides"]["capability"]["elements"]
 
     def _has_keyframes(value: object) -> bool:
         return isinstance(value, dict) and "keyframes" in value
