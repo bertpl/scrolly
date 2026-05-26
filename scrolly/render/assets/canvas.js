@@ -1569,6 +1569,31 @@
     });
   }
 
+  // ---- buildAutomationHook (pure — no DOM access) --------------------------
+  //
+  // Factory for the four-method `window.__scrolly` surface attached in the
+  // DOM section below when `?scrolly-automation=1` is present. Pure so
+  // vitest can construct one against mock viewState / scrollManager and
+  // exercise its behaviour without a DOM. `isAnimating` is injected so the
+  // factory itself stays free of `document` access; the DOM call site
+  // wires it to the `view-transitioning` body class, which is canvas.js's
+  // existing authoritative "transition in flight" signal (it already
+  // short-circuits the keydown / click / wheel handlers).
+  function buildAutomationHook({ viewState, scrollManager, isAnimating }) {
+    return {
+      selectSlide(id) {
+        viewState.setView({ selectedSlide: id });
+      },
+      setView(view) {
+        viewState.setView({ zoomLevel: view === "deck" ? 0 : 1 });
+      },
+      setScroll(position) {
+        scrollManager.setPosition(viewState.selectedSlide, position);
+      },
+      isAnimating,
+    };
+  }
+
   // ---- Exports (for Node.js / Vitest testing) -------------------------------
 
   if (typeof exports !== "undefined") {
@@ -1584,6 +1609,7 @@
     exports.ViewState = ViewState;
     exports.resolveTarget = resolveTarget;
     exports.decompressBundle = decompressBundle;
+    exports.buildAutomationHook = buildAutomationHook;
   }
 
   // ---- DOM code (skipped in Node.js) ----------------------------------------
@@ -2105,5 +2131,21 @@
     );
     scrollUiTimer.reset();
     hoverUiTimer.reset();
+  }
+
+  // ---- Automation hook ----------------------------------------------------
+  //
+  // Conditional `window.__scrolly` attachment driven by the
+  // `?scrolly-automation=1` URL parameter. Inert by default — without the
+  // param the hook is not attached at all, so production builds carry only
+  // the small factory plus this if-block. Not a documented public API; the
+  // hero-GIF capture pipeline is the sole intended caller.
+  if (new URLSearchParams(window.location.search).get("scrolly-automation") === "1") {
+    window.__scrolly = buildAutomationHook({
+      viewState,
+      scrollManager,
+      isAnimating: () => document.body.classList.contains("view-transitioning"),
+    });
+    console.log("scrolly automation hook active");
   }
 })(typeof module !== "undefined" ? module.exports : {});
