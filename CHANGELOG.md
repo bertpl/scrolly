@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mermaid builds no longer require network access.
 - New `--offline` flag on `scrolly build` (and `SCROLLY_OFFLINE=1` env var) skips the mermaid CDN download for byte-reproducible builds.
 - Help screen shows the mermaid version used in the build.
+- Automation hook for capturing animations.
 
 ### Changed
 
