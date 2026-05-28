@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="600.0" height="413.5" viewBox="0 0 600.0 413.5">
+<defs>
+</defs>
+<rect x="0" y="0" width="600.0" height="413.5" fill="#e8e8e8" />
+<path d="M100.0,12.5 L100.0,387.5" stroke="#b8b8b8" stroke-width="0.7" stroke-dasharray="4,4" />
+<path d="M100.0,375.0 L100.0,275.0" stroke="#5c6370" stroke-width="2" stroke-linecap="round" />
+<rect x="80.2580575" y="390.5" width="39.483885" height="19.0" rx="4" ry="4" fill="#5c6370" opacity="0.85" />
+<text x="100.0" y="400.0" font-size="11.0" text-anchor="middle" dominant-baseline="middle" fill="white" font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="500">main</text>
+<circle cx="100.0" cy="375.0" r="5" fill="#5c6370" stroke="white" stroke-width="1.5" />
+<circle cx="100.0" cy="325.0" r="5" fill="#5c6370" stroke="white" stroke-width="1.5" />
+<circle cx="100.0" cy="275.0" r="5" fill="#5c6370" stroke="white" stroke-width="1.5" />
+<text x="88.0" y="375.0" font-size="9.0" text-anchor="end" dominant-baseline="middle" fill="#707070" font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="400">fda2b44</text>
+<text x="88.0" y="325.0" font-size="9.0" text-anchor="end" dominant-baseline="middle" fill="#707070" font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="400">44eadda</text>
+<text x="88.0" y="275.0" font-size="9.0" text-anchor="end" dominant-baseline="middle" fill="#707070" font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="400">3ffc5d0</text>
+</svg>

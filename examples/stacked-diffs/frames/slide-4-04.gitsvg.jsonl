@@ -1,0 +1,9 @@
+{"op":"import","path":"slide-4-03.gitsvg.jsonl"}
+{"op":"remove","pull_requests":["pr-3","pr-4"]}
+{"op":"remove","branches":["feat/part-4","feat/part-3"]}
+{"op":"branch","name":"feat/part-3","from_branch":"feat/part-2","label_side":"before"}
+{"op":"commit","branch":"feat/part-3","id":"p3c1r","msg":"part 3","hash":"auto"}
+{"op":"branch","name":"feat/part-4","from_branch":"feat/part-3","label_side":"before"}
+{"op":"commit","branch":"feat/part-4","id":"p4c1r","msg":"part 4","hash":"auto"}
+{"op":"pull_request","id":"pr-3","from":"feat/part-3","into":"feat/part-2","title":"PR 3"}
+{"op":"pull_request","id":"pr-4","from":"feat/part-4","into":"feat/part-3","title":"PR 4"}

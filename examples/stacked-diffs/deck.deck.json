@@ -1,0 +1,43 @@
+{
+  title: "Stacked Diffs",
+  slides: [
+    {
+      group: "Introduction",
+      slides: [
+        { id: "title",    position: [0, 0], source: "slides/title.slide.json" },
+        { id: "overview", position: [0, 1], source: "slides/overview.slide.json" },
+      ],
+    },
+    {
+      group: "Main Content", color: "#9DBAD2",
+      slides: [
+        { id: "slide-4",  position: [2, 0], source: "slides/slide-4.slide.json" },
+        { id: "slide-3",  position: [2, 1], source: "slides/slide-3.slide.json" },
+        { id: "slide-2",  position: [2, 2], source: "slides/slide-2.slide.json" },
+        { id: "slide-1",  position: [2, 3], source: "slides/slide-1.slide.json" },
+      ],
+    },
+    {
+      group: "Details", color: "#4AA56F",
+      slides: [
+        { id: "detail-4", position: [3, 0], source: "slides/detail-4.slide.json" },
+        { id: "detail-3", position: [3, 1], source: "slides/detail-3.slide.json" },
+        { id: "detail-2", position: [3, 2], source: "slides/detail-2.slide.json" },
+        { id: "detail-1", position: [3, 3], source: "slides/detail-1.slide.json" },
+        { id: "detail-1b", position: [4, 3], source: "slides/detail-1b.slide.json" },
+      ],
+    },
+  ],
+  edges: [
+    ["title", "overview"],
+    ["overview|right", "slide-1|left"],
+    ["slide-1", "slide-2"],
+    ["slide-2", "slide-3"],
+    ["slide-3", "slide-4"],
+    ["slide-1|right", "detail-1|left"],
+    ["slide-2|right", "detail-2|left"],
+    ["slide-3|right", "detail-3|left"],
+    ["slide-4|right", "detail-4|left"],
+    ["detail-1|right", "detail-1b|left"],
+  ],
+}

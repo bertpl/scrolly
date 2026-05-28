@@ -1,0 +1,22 @@
+{
+  title: "Title",
+  elements: [
+    {
+      name: "banner",
+      html: "<div style=\"width:100%;height:100%;background:#4A6FA5\"></div>",
+      position: [0, 30], anchor: [0, 0],
+      width: 100, height: 40,
+    },
+    {
+      name: "label",
+      markdown: "# working with<br>\
+**stacked branches**<br>\
+&<br>\
+**git-machete**",
+      position: [50, 50], anchor: [50, 50],
+      width: 80, height: "auto",
+      text_align: "center",
+      color: "#ffffff",
+    },
+  ],
+}

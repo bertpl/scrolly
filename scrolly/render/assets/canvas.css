@@ -314,6 +314,48 @@ body {
   overflow: hidden;
 }
 
+/* ---- Mixed-font typography inside slide content ------------------------
+ *
+ * Slides routinely mix the body sans-serif with inline `<code>`, `<kbd>`,
+ * `<samp>` and `<pre>` blocks. By default the browser pairs `system-ui`
+ * (SF Pro / Segoe UI / Roboto) with the user's preferred generic
+ * `monospace` (Menlo / Consolas / Courier) — fonts not designed to share
+ * metrics — which makes inline `<code>` glyphs sit visibly higher or
+ * lower than adjacent sans-serif text whenever a layout depends on
+ * vertical alignment between lines.
+ *
+ * Two corrections, narrow scope (slide content only — UI chrome keeps
+ * its explicit per-component fonts):
+ *
+ *   1. Pin monospace to `ui-monospace` and OS-native pairs. `ui-monospace`
+ *      picks the platform partner of `system-ui` (SF Mono on macOS,
+ *      Cascadia Mono on Windows), drawn by the same designer to share
+ *      metrics with the sans-serif.
+ *
+ *   2. Set `font-size-adjust: from-font` on the slide-element wrapper.
+ *      The browser computes the body sans-serif's x-height ratio and
+ *      inherits it down; when a `<code>` descendant falls back to its
+ *      monospace family, the monospace font is rescaled so its x-height
+ *      matches the sans-serif's. The visible "weight" of glyphs aligns
+ *      across fonts even though their natural metrics differ.
+ *
+ * Together these reduce the residual mismatch to where it's no longer
+ * visible in normal slide layouts. The structural fix — a layout
+ * primitive that owns vertical pitch independently of font metrics —
+ * would supersede this CSS defaulting.
+ */
+.slide-type-slide-json .slide-element {
+  font-size-adjust: from-font;
+}
+
+.slide-type-slide-json .slide-element code,
+.slide-type-slide-json .slide-element kbd,
+.slide-type-slide-json .slide-element samp,
+.slide-type-slide-json .slide-element pre {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono",
+               Menlo, Consolas, monospace;
+}
+
 /* Animation-driven slides (numeric scroll_range) counter-translate the
  * chunk's scroll-driven translateY so content stays visually stationary
  * while --scroll-position drives the calc()-based keyframe expressions

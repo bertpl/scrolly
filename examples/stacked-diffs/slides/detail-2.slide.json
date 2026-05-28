@@ -1,0 +1,36 @@
+{
+  title: "Rebase: stack behind main — details",
+  elements: [
+    {
+      name: "banner",
+      html: "<div style=\"width:100%;height:100%;background:#73BB96\"></div>",
+      position: [0, 5], anchor: [0, 0],
+      width: 100, height: 15,
+    },
+    {
+      name: "title",
+      markdown: "## Rebase: stack behind main",
+      position: [5, 10], anchor: [0, 50],
+      width: 80, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "subtitle",
+      markdown: "### Details",
+      position: [5, 15], anchor: [0, 50],
+      width: 80, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "body",
+      markdown: "## Notes\n\
+\n\
+* `git machete traverse` fully orchestrates rebase of entire stack\n\
+* when a rebase conflict occurs, git-machete bails out with detailed error message\n\
+* conflict can then be resolved manually or using e.g. Claude Code / Codex\n\
+* Agentic coding assistants excel at robustly executing full stack traverse using git-machete while resolving any rebase conflicts correctly along the way",
+      position: [10, 25], anchor: [0, 0],
+      width: 80, height: "auto",
+    },
+  ],
+}

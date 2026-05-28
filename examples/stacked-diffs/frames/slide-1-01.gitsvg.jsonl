@@ -1,0 +1,6 @@
+{"op":"theme","name":"default","orientation":"bt","background_color":"#e8e8e8"}
+{"op":"grid","n_commits":8,"n_branches":5}
+{"op":"branch","name":"main","label_side":"before"}
+{"op":"commit","branch":"main","hash":"auto"}
+{"op":"commit","branch":"main","hash":"auto"}
+{"op":"commit","branch":"main","hash":"auto"}

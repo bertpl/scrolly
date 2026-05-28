@@ -1,0 +1,5 @@
+{"op":"import","path":"slide-1-05.gitsvg.jsonl"}
+{"op":"pull_request","id":"pr-1","from":"feat/part-1","into":"main","title":"PR 1"}
+{"op":"pull_request","id":"pr-2","from":"feat/part-2","into":"feat/part-1","title":"PR 2"}
+{"op":"pull_request","id":"pr-3","from":"feat/part-3","into":"feat/part-2","title":"PR 3"}
+{"op":"pull_request","id":"pr-4","from":"feat/part-4","into":"feat/part-3","title":"PR 4"}
