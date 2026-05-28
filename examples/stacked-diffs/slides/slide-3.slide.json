@@ -1,0 +1,223 @@
+{
+  title: "Slide 3",
+  scroll_range: 2900,
+  reverse: true,
+  // Hand-mirrored from `scrolly introspect snaps`'s `merged` list:
+  // endpoints + each image-sequence frame's hold-centre. Renderer does
+  // not currently merge element-derived snaps automatically.
+  snap_positions: [0, 550, 750, 950, 1150, 1350, 1550, 1750, 1950, 2150, 2700, 2900],
+  elements: [
+    {
+      name: "background-band",
+      html: "<div style=\"width:100%;height:100%;background:#e8e8e8\"></div>",
+      position: [5, 0], anchor: [0, 0],
+      width: 50, height: 100,
+    },
+    {
+      name: "gitgraph",
+      image_sequence: [
+        "../frames/slide-3-01.svg",
+        "../frames/slide-3-02.svg",
+        "../frames/slide-3-03.svg",
+        "../frames/slide-3-04.svg",
+        "../frames/slide-3-04.svg",
+        "../frames/slide-3-04.svg",
+        "../frames/slide-3-05.svg",
+        "../frames/slide-3-06.svg",
+        "../frames/slide-3-07.svg",
+      ],
+      frame_distance: 200,
+      hold: 100,
+      scroll_offset: 500,
+      fade_in: 500,
+      fade_out: 500,
+      compositing: "overlay",
+      // Image-sequence height is left to the SVG's natural size; the
+      // element grows to fit the rendered graph. Position + anchor are
+      // animated so the visible portion pans from bottom-of-graph at
+      // the start of the sequence to top-of-graph by the time the
+      // final frame settles, revealing newly added commits as the
+      // reader scrolls.
+      position: { keyframes: [[550, [5, 95]], [1550, [5, 95]], [2150, [5, 5]]] },
+      anchor: { keyframes: [[550, [0, 100]], [1550, [0, 100]], [2150, [0, 0]]] },
+      width: 50, height: "auto",
+    },
+    // Step elements use a ghost-stack body: every step renders all
+    // six rows in block flow with `visibility: hidden` on every row
+    // except its own. The vertical pitch is set by line-height in
+    // `_gen/build_step_elements.py` (not hand-baked `padding-top`),
+    // so a row that wraps to multiple lines shifts every other
+    // step's visible row by the same amount and they stay aligned.
+    // === BEGIN GENERATED: step elements ===
+    {
+      name: "step-1",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[600, 0], [700, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-2",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[800, 0], [900, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-3",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1000, 0], [1100, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-4",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1200, 0], [1300, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-5",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1400, 0], [1500, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-6",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1600, 0], [1700, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-7",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1800, 0], [1900, 1], [2150, 1], [2700, 0]] },
+    },
+    {
+      name: "step-8",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase&nbsp;<code>feat/part-4</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-3</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase&nbsp;<code>feat/part-2</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">downstream branches don't see new upstream commits</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">tweaks</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">copilot fixes</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">add tests</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[2000, 0], [2100, 1], [2150, 1], [2700, 0]] },
+    },
+    // === END GENERATED ===
+    {
+      name: "banner",
+      html: "<div style=\"width:100%;height:100%;background:#88A8C6\"></div>",
+      position: { keyframes: [[0, [0, 50]], [500, [0, 150]]] }, anchor: [0, 50],
+      width: 100, height: 40,
+    },
+    {
+      name: "label",
+      markdown: "# Rebase: new commits across the stack",
+      position: { keyframes: [[0, [10, 50]], [500, [10, 150]]] }, anchor: [0, 50],
+      width: 80, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "closing-banner",
+      html: "<div style=\"width:100%;height:100%;background:#88A8C6\"></div>",
+      position: { keyframes: [[2200, [0, -50]], [2700, [0, 50]]] }, anchor: [0, 50],
+      width: 100, height: 40,
+    },
+    {
+      name: "closing-label",
+      markdown: "# Conclusions\n\
+\n\
+* PR feedback can land on any branch in the stack\n\
+* cascading rebases re-stack the chain in order\n\
+* `git machete traverse` automates the cascade",
+      position: { keyframes: [[2200, [10, -50]], [2700, [10, 50]]] }, anchor: [0, 50],
+      width: 45, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "references",
+      html: "<div style=\"background:rgba(255,255,255,0.9);border-radius:1em;\
+padding:1em;box-sizing:border-box\">\
+<h3 style=\"margin:0 0 0.2em;color:#88A8C6\">References</h3>\
+<ul style=\"margin:0;padding-left:1.2em;color:#88A8C6\">\
+<li><a href=\"https://github.com/VirtusLab/git-machete/blob/master/docs/tutorial/09-automating-workflow-with-traverse.md\" target=\"_blank\" rel=\"noopener\" style=\"color:#88A8C6\">git-machete Tutorial - traverse</a></li>\
+</ul></div>",
+      position: { keyframes: [[2700, [105, 50]], [2900, [60, 50]]] }, anchor: [0, 50],
+      width: 60, height: "auto",
+    },
+  ],
+}

@@ -1,0 +1,245 @@
+{
+  title: "Slide 2",
+  scroll_range: 3100,
+  reverse: true,
+  // Hand-mirrored from `scrolly introspect snaps`'s `merged` list:
+  // endpoints + each image-sequence frame's hold-centre. Renderer does
+  // not currently merge element-derived snaps automatically.
+  snap_positions: [0, 550, 750, 950, 1150, 1350, 1550, 1750, 1950, 2150, 2350, 2900, 3100],
+  elements: [
+    {
+      name: "background-band",
+      html: "<div style=\"width:100%;height:100%;background:#e8e8e8\"></div>",
+      position: [5, 0], anchor: [0, 0],
+      width: 50, height: 100,
+    },
+    {
+      name: "gitgraph",
+      image_sequence: [
+        "../frames/slide-2-01.svg",
+        "../frames/slide-2-02.svg",
+        "../frames/slide-2-02.svg",
+        "../frames/slide-2-03.svg",
+        "../frames/slide-2-04.svg",
+        "../frames/slide-2-05.svg",
+        "../frames/slide-2-06.svg",
+        "../frames/slide-2-07.svg",
+        "../frames/slide-2-08.svg",
+        "../frames/slide-2-08.svg",
+      ],
+      frame_distance: 200,
+      hold: 100,
+      scroll_offset: 500,
+      fade_in: 500,
+      fade_out: 500,
+      compositing: "overlay",
+      object_fit: "contain",
+      position: [5, 50], anchor: [0, 50],
+      width: 50, height: 100,
+    },
+    // Step elements use a ghost-stack body: every step renders all
+    // six rows in block flow with `visibility: hidden` on every row
+    // except its own. The vertical pitch is set by line-height in
+    // `_gen/build_step_elements.py` (not hand-baked `padding-top`),
+    // so a row that wraps to multiple lines shifts every other
+    // step's visible row by the same amount and they stay aligned.
+    // === BEGIN GENERATED: step elements ===
+    {
+      name: "step-1",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[600, 0], [700, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-2",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[800, 0], [900, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-3",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1000, 0], [1100, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-4",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1200, 0], [1300, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-5",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1400, 0], [1500, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-6",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1600, 0], [1700, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-7",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1800, 0], [1900, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-8",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[2000, 0], [2100, 1], [2350, 1], [2900, 0]] },
+    },
+    {
+      name: "step-9",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">4 original commits now fully orphaned</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">original commit, still part of branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebased commit, new hash</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">rebase part 1</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete traverse</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">main gets a new commit</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[2200, 0], [2300, 1], [2350, 1], [2900, 0]] },
+    },
+    // === END GENERATED ===
+    {
+      name: "banner",
+      html: "<div style=\"width:100%;height:100%;background:#7396BB\"></div>",
+      position: { keyframes: [[0, [0, 50]], [500, [0, 150]]] }, anchor: [0, 50],
+      width: 100, height: 40,
+    },
+    {
+      name: "label",
+      markdown: "# Rebase: stack behind main",
+      position: { keyframes: [[0, [10, 50]], [500, [10, 150]]] }, anchor: [0, 50],
+      width: 80, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "closing-banner",
+      html: "<div style=\"width:100%;height:100%;background:#7396BB\"></div>",
+      position: { keyframes: [[2400, [0, -50]], [2900, [0, 50]]] }, anchor: [0, 50],
+      width: 100, height: 40,
+    },
+    {
+      name: "closing-label",
+      markdown: "# Conclusions\n\
+\n\
+* rebase produces new commit hashes\n\
+* `git machete traverse` automates the cascade\n\
+* old commits remain anchored until all branches are rebased",
+      position: { keyframes: [[2400, [10, -50]], [2900, [10, 50]]] }, anchor: [0, 50],
+      width: 45, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "references",
+      html: "<div style=\"background:rgba(255,255,255,0.9);border-radius:1em;\
+padding:1em;box-sizing:border-box\">\
+<h3 style=\"margin:0 0 0.2em;color:#7396BB\">References</h3>\
+<ul style=\"margin:0;padding-left:1.2em;color:#7396BB\">\
+<li><a href=\"https://git-scm.com/book/en/v2/Git-Branching-Rebasing\" target=\"_blank\" rel=\"noopener\" style=\"color:#7396BB\">git rebase</a></li>\
+<li><a href=\"https://git-machete.readthedocs.io/en/stable/#status\" target=\"_blank\" rel=\"noopener\" style=\"color:#7396BB\">git machete status</a></li>\
+<li><a href=\"https://git-machete.readthedocs.io/en/stable/#traverse\" target=\"_blank\" rel=\"noopener\" style=\"color:#7396BB\">git machete traverse</a></li>\
+</ul></div>",
+      position: { keyframes: [[2900, [105, 50]], [3100, [60, 50]]] }, anchor: [0, 50],
+      width: 60, height: "auto",
+    },
+  ],
+}

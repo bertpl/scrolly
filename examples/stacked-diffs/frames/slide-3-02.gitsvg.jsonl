@@ -1,0 +1,5 @@
+{"op":"import","path":"slide-3-01.gitsvg.jsonl"}
+{"op":"commit","branch":"feat/part-1","id":"p1ct","msg":"add tests","hash":"auto"}
+{"op":"commit","branch":"feat/part-2","id":"p2ct","msg":"add tests","hash":"auto"}
+{"op":"commit","branch":"feat/part-3","id":"p3ct","msg":"add tests","hash":"auto"}
+{"op":"commit","branch":"feat/part-4","id":"p4ct","msg":"add tests","hash":"auto"}

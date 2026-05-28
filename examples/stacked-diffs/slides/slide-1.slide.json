@@ -1,0 +1,181 @@
+{
+  title: "Slide 1",
+  scroll_range: 2500,
+  reverse: true,
+  // Hand-mirrored from `scrolly introspect snaps`'s `merged` list:
+  // endpoints + each image-sequence frame's hold-centre. Renderer does
+  // not currently merge element-derived snaps automatically.
+  snap_positions: [0, 550, 750, 950, 1150, 1350, 1550, 1750, 2300, 2500],
+  elements: [
+    {
+      name: "background-band",
+      html: "<div style=\"width:100%;height:100%;background:#e8e8e8\"></div>",
+      position: [5, 0], anchor: [0, 0],
+      width: 50, height: 100,
+    },
+    {
+      name: "gitgraph",
+      image_sequence: [
+        "../frames/slide-1-01.svg",
+        "../frames/slide-1-02.svg",
+        "../frames/slide-1-03.svg",
+        "../frames/slide-1-04.svg",
+        "../frames/slide-1-05.svg",
+        "../frames/slide-1-05.svg",
+        "../frames/slide-1-06.svg",
+      ],
+      frame_distance: 200,
+      hold: 100,
+      scroll_offset: 500,
+      fade_in: 500,
+      fade_out: 500,
+      compositing: "overlay",
+      object_fit: "contain",
+      position: [5, 50], anchor: [0, 50],
+      width: 50, height: 100,
+    },
+    {
+      name: "machete-screenshot",
+      image: "../machete-terminal.svg",
+      position: [60, 5], anchor: [0, 0],
+      width: 35, height: 25,
+      object_fit: "contain",
+      opacity: { keyframes: [[1400, 0], [1500, 1], [1750, 1], [2300, 0]] },
+    },
+    // Step elements use a ghost-stack body: every step renders all
+    // six rows in block flow with `visibility: hidden` on every row
+    // except its own. The vertical pitch is set by line-height in
+    // `_gen/build_step_elements.py` (not hand-baked `padding-top`),
+    // so a row that wraps to multiple lines shifts every other
+    // step's visible row by the same amount and they stay aligned.
+    // === BEGIN GENERATED: step elements ===
+    {
+      name: "step-1",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete github create-pr</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create&nbsp;<code>.git/machete</code>&nbsp;file</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">create branch 1</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[600, 0], [700, 1], [1750, 1], [2300, 0]] },
+    },
+    {
+      name: "step-2",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete github create-pr</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create&nbsp;<code>.git/machete</code>&nbsp;file</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">create branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 1</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[800, 0], [900, 1], [1750, 1], [2300, 0]] },
+    },
+    {
+      name: "step-3",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete github create-pr</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create&nbsp;<code>.git/machete</code>&nbsp;file</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">create branch 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 1</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1000, 0], [1100, 1], [1750, 1], [2300, 0]] },
+    },
+    {
+      name: "step-4",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete github create-pr</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create&nbsp;<code>.git/machete</code>&nbsp;file</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">create branch 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 1</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1200, 0], [1300, 1], [1750, 1], [2300, 0]] },
+    },
+    {
+      name: "step-5",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\"><code>git machete github create-pr</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em\">create&nbsp;<code>.git/machete</code>&nbsp;file</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 1</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1400, 0], [1500, 1], [1750, 1], [2300, 0]] },
+    },
+    {
+      name: "step-6",
+      html: "<div style=\"font-size:1.3em;line-height:1.0\">\
+<div style=\"display:flex;align-items:center;min-height:2.25em\"><code>git machete github create-pr</code></div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create&nbsp;<code>.git/machete</code>&nbsp;file</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 4</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 3</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 2</div>\
+<div style=\"display:flex;align-items:center;min-height:2.25em;visibility:hidden\">create branch 1</div>\
+</div>",
+      position: [60, 90], anchor: [0, 100],
+      width: 40, height: "auto",
+      opacity: { keyframes: [[1600, 0], [1700, 1], [1750, 1], [2300, 0]] },
+    },
+    // === END GENERATED ===
+    {
+      name: "banner",
+      html: "<div style=\"width:100%;height:100%;background:#5E83B0\"></div>",
+      position: { keyframes: [[0, [0, 50]], [500, [0, 150]]] }, anchor: [0, 50],
+      width: 100, height: 40,
+    },
+    {
+      name: "label",
+      markdown: "# Building the stack",
+      position: { keyframes: [[0, [10, 50]], [500, [10, 150]]] }, anchor: [0, 50],
+      width: 80, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "closing-banner",
+      html: "<div style=\"width:100%;height:100%;background:#5E83B0\"></div>",
+      position: { keyframes: [[1800, [0, -50]], [2300, [0, 50]]] }, anchor: [0, 50],
+      width: 100, height: 40,
+    },
+    {
+      name: "closing-label",
+      markdown: "# Conclusions\n\
+\n\
+* split feature in chunks using stacked branches\n\
+* git machete easily configured using <code>.git/machete</code>\n\
+* PRs point to parent branch instead of main",
+      position: { keyframes: [[1800, [10, -50]], [2300, [10, 50]]] }, anchor: [0, 50],
+      width: 45, height: "auto",
+      color: "#ffffff",
+    },
+    {
+      name: "references",
+      html: "<div style=\"background:rgba(255,255,255,0.9);border-radius:1em;\
+padding:1em;box-sizing:border-box\">\
+<h3 style=\"margin:0 0 0.2em;color:#5E83B0\">References</h3>\
+<ul style=\"margin:0;padding-left:1.2em;color:#5E83B0\">\
+<li><a href=\"https://git-machete.readthedocs.io/en/stable/\" target=\"_blank\" rel=\"noopener\" style=\"color:#5E83B0\">git-machete</a></li>\
+<li><a href=\"https://github.com/VirtusLab/git-machete/blob/master/docs/tutorial/README.md\" target=\"_blank\" rel=\"noopener\" style=\"color:#5E83B0\">git-machete Tutorial</a></li>\
+<li><a href=\"https://git-machete.readthedocs.io/en/stable/#github\" target=\"_blank\" rel=\"noopener\" style=\"color:#5E83B0\">git-machete GitHub integration</a></li>\
+</ul></div>",
+      position: { keyframes: [[2300, [105, 50]], [2500, [60, 50]]] }, anchor: [0, 50],
+      width: 60, height: "auto",
+    },
+  ],
+}

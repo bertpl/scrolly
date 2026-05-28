@@ -1,0 +1,3 @@
+{"op":"import","path":"slide-1-01.gitsvg.jsonl"}
+{"op":"branch","name":"feat/part-1","from_branch":"main","label_side":"before"}
+{"op":"commit","branch":"feat/part-1","id":"p1c1","msg":"part 1","hash":"auto"}

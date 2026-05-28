@@ -1,0 +1,18 @@
+{"op":"import","path":"slide-2-06.gitsvg.jsonl"}
+{"op":"remove","pull_requests":["pr-1","pr-2","pr-3","pr-4"]}
+{"op":"remove","branches":["feat/part-4","feat/part-3","feat/part-2","feat/part-1"]}
+{"op":"branch","name":"feat/part-1","from_branch":"main","label_side":"before"}
+{"op":"commit","branch":"feat/part-1","id":"p1c1r","msg":"part 1","hash":"auto"}
+{"op":"branch","name":"feat/part-2","from_branch":"feat/part-1","label_side":"before"}
+{"op":"commit","branch":"feat/part-2","id":"p2c1r","msg":"part 2","hash":"auto"}
+{"op":"branch","name":"feat/part-3","from_branch":"feat/part-2","label_side":"before"}
+{"op":"commit","branch":"feat/part-3","id":"p3c1r","msg":"part 3","hash":"auto"}
+{"op":"branch","name":"feat/part-4","from_commit":"_c3","label_side":"before"}
+{"op":"commit","branch":"feat/part-4","id":"p1c1","msg":"part 1","hash":"auto"}
+{"op":"commit","branch":"feat/part-4","id":"p2c1","msg":"part 2","hash":"auto"}
+{"op":"commit","branch":"feat/part-4","id":"p3c1","msg":"part 3","hash":"auto"}
+{"op":"commit","branch":"feat/part-4","id":"p4c1","msg":"part 4","hash":"auto"}
+{"op":"pull_request","id":"pr-1","from":"feat/part-1","into":"main","title":"PR 1"}
+{"op":"pull_request","id":"pr-2","from":"feat/part-2","into":"feat/part-1","title":"PR 2"}
+{"op":"pull_request","id":"pr-3","from":"feat/part-3","into":"feat/part-2","title":"PR 3"}
+{"op":"pull_request","id":"pr-4","from":"feat/part-4","into":"feat/part-3","title":"PR 4"}

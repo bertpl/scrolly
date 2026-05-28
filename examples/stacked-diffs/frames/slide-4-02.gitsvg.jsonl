@@ -1,0 +1,4 @@
+{"op":"import","path":"slide-4-01.gitsvg.jsonl"}
+{"op":"remove","pull_requests":["pr-1","pr-2"]}
+{"op":"merge","into":"main","from":"feat/part-1","as":"m1","hash":"auto"}
+{"op":"pull_request","id":"pr-2","from":"feat/part-2","into":"main","title":"PR 2"}

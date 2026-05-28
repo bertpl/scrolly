@@ -155,12 +155,34 @@ wheels = [
 ]
 
 [[package]]
+name = "drawsvg"
+version = "2.4.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/07/a2c3db84e6af6fa761de905b39109fe24eff2c8d52653c1bff968b6b965d/drawsvg-2.4.1-py3-none-any.whl", hash = "sha256:241ff024968e03542bc8685b41a285427303c17f81eae1933229d26bb65b7fda", size = 44067, upload-time = "2026-01-04T00:06:09.817Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.29.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b5/fe/997687a931ab51049acce6fa1f23e8f01216374ea81374ddee763c493db5/filelock-3.29.0.tar.gz", hash = "sha256:69974355e960702e789734cb4871f884ea6fe50bd8404051a3530bc07809cf90", size = 57571, upload-time = "2026-04-19T15:39:10.068Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/81/47/dd9a212ef6e343a6857485ffe25bba537304f1913bdbed446a23f7f592e1/filelock-3.29.0-py3-none-any.whl", hash = "sha256:96f5f6344709aa1572bbf631c640e4ebeeb519e08da902c39a001882f30ac258", size = 39812, upload-time = "2026-04-19T15:39:08.752Z" },
+]
+
+[[package]]
+name = "gitsvg"
+version = "0.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "drawsvg" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c9/ca/e4426dd41d1938aa951e051fb79fc897349a22b0569aa6008f64e7f29d41/gitsvg-0.2.2.tar.gz", hash = "sha256:54cac2c7a78dbc2307388e47f2a9070f32655ef6a92371eeab593d5fbef8a620", size = 109699, upload-time = "2026-05-19T07:32:19.441Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/7b/b188b54188e4d0ef2f9f90d99711da77c57c39cd8abdb1665e29c6e11797/gitsvg-0.2.2-py3-none-any.whl", hash = "sha256:ef455c3f029b77f5b04aef89c344b7cea635f921d5e81ebc961707393d92909c", size = 171522, upload-time = "2026-05-19T07:32:17.748Z" },
 ]
 
 [[package]]
@@ -636,6 +658,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "gitsvg" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -655,6 +678,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "gitsvg", specifier = "==0.2.2" },
     { name = "pre-commit", specifier = ">=4.0" },
     { name = "pytest", specifier = ">=9.0" },
     { name = "pytest-cov", specifier = ">=6.0" },

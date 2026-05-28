@@ -37,6 +37,10 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.14.0",
     "pre-commit>=4.0",
+    # Exact pin: gitsvg is pre-1.0 and its output schema can shift
+    # between releases. Used to regenerate the stacked-diffs example's
+    # gitsvg frames.
+    "gitsvg==0.2.2",
 ]
 
 [project.scripts]
