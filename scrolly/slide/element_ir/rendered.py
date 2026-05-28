@@ -33,6 +33,6 @@ class RenderedElement:
 
     html: str
     scoped_css: str = ""
-    snap_positions: tuple[int, ...] = ()
+    snap_positions: tuple[float, ...] = ()
     assets: tuple[Path, ...] = ()
     has_mermaid: bool = False

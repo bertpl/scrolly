@@ -89,7 +89,8 @@ def snaps_to_json(
     Element-derived snap positions come from ``ImageSequenceElement``
     hold-centres — every frame's hold period contributes one snap stop
     at its centre. The ``merged`` list is the deduplicated + sorted
-    union — the value the canvas runtime actually uses.
+    union the slide renderer threads into ``SlideHTML.snap_positions`` —
+    the value the canvas runtime actually uses.
 
     Args:
         deck: Fully-resolved deck.

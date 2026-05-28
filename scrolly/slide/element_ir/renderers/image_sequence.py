@@ -94,7 +94,11 @@ class ImageSequenceRenderer(ElementRenderer):
 
         assets = tuple(p for p in ir.image_sequence if p is not None)
 
-        return RenderedElement(html=html, scoped_css=scoped_css, assets=assets)
+        # Per-frame snap stops, the same values `scrolly introspect snaps`
+        # derives, so the rendered slide and introspect agree by construction.
+        snap_positions = tuple(ir.hold_centre_positions())
+
+        return RenderedElement(html=html, scoped_css=scoped_css, assets=assets, snap_positions=snap_positions)
 
 
 # ==================================================================================================

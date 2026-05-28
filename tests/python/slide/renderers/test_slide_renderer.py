@@ -978,6 +978,53 @@ class TestImageSequenceTimeline:
         ]
 
 
+class TestSnapPositionMerge:
+    """Element-derived snaps (image-sequence hold-centres) merge into the chunk."""
+
+    @staticmethod
+    def _image_seq_ir(scroll_range: int, snap_positions: tuple[int, ...] = ()) -> SlideIR:
+        return SlideIR(
+            title="T",
+            scroll_range=scroll_range,
+            snap_positions=list(snap_positions),
+            elements=[
+                {
+                    "image_sequence": ["a.svg", "b.svg", "c.svg"],
+                    "frame_distance": 400,
+                    "hold": 200,
+                    "scroll_offset": 0,
+                    "position": [0, 0],
+                    "width": 80,
+                    "height": "auto",
+                }
+            ],
+        )
+
+    def test_derived_snaps_merged_when_no_author_snaps(self) -> None:
+        # --- arrange / act ----------------
+        chunk = _renderer().render(self._image_seq_ir(scroll_range=1000))
+
+        # --- assert -----------------------
+        # hold-centres = scroll_offset + i*frame_distance + hold/2 → 100, 500, 900
+        assert chunk.snap_positions == (100.0, 500.0, 900.0)
+
+    def test_author_and_derived_snaps_merged_sorted(self) -> None:
+        # --- arrange / act ----------------
+        chunk = _renderer().render(self._image_seq_ir(scroll_range=1000, snap_positions=(0, 1000)))
+
+        # --- assert -----------------------
+        assert chunk.snap_positions == (0, 100.0, 500.0, 900.0, 1000)
+
+    def test_coinciding_author_snap_not_double_emitted(self) -> None:
+        # --- arrange / act ----------------
+        # Author 500 coincides with the middle frame's derived hold-centre.
+        chunk = _renderer().render(self._image_seq_ir(scroll_range=1000, snap_positions=(0, 500, 1000)))
+
+        # --- assert -----------------------
+        assert chunk.snap_positions == (0, 100.0, 500, 900.0, 1000)
+        assert len(chunk.snap_positions) == 5
+
+
 class TestImageSequenceCompositingModes:
     """Per-mode coverage of the trailing-edge keyframe shape.
 

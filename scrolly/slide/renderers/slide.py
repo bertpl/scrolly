@@ -83,9 +83,11 @@ class SlideRenderer(Renderer):
         element_htmls = [e.html for e in rendered_elements]
         css_rules = [e.scoped_css for e in rendered_elements if e.scoped_css]
         asset_paths: list[Path] = []
+        element_snaps: list[float] = []
         has_mermaid = False
         for e in rendered_elements:
             asset_paths.extend(e.assets)
+            element_snaps.extend(e.snap_positions)
             if e.has_mermaid:
                 has_mermaid = True
 
@@ -104,6 +106,11 @@ class SlideRenderer(Renderer):
             # content-driven height to the canvas runtime.
             slide_html_scroll_range = None
 
+        # Union author snap positions with element-derived ones (e.g.
+        # image-sequence frame snaps), sorted + deduplicated — the same set
+        # `scrolly introspect snaps` reports as `merged`.
+        merged_snaps = tuple(sorted(set(ir.snap_positions) | set(element_snaps)))
+
         return SlideHTML(
             title=ir.title,
             html=html,
@@ -113,7 +120,7 @@ class SlideRenderer(Renderer):
             scroll_speed=ir.scroll_speed,
             font_scale=ir.font_scale,
             assets=tuple(unique_assets),
-            snap_positions=ir.snap_positions,
+            snap_positions=merged_snaps,
             reverse=ir.reverse,
             has_mermaid=has_mermaid,
         )
@@ -165,6 +172,7 @@ class SlideRenderer(Renderer):
             htmls: list[str] = []
             csss: list[str] = []
             assets: list[Path] = []
+            snaps: list[float] = []
             has_mermaid = False
             for prim in primitives:
                 element_renderer = find_element_renderer(prim)
@@ -178,6 +186,7 @@ class SlideRenderer(Renderer):
                 if rendered.scoped_css:
                     csss.append(rendered.scoped_css)
                 assets.extend(rendered.assets)
+                snaps.extend(rendered.snap_positions)
                 if rendered.has_mermaid:
                     has_mermaid = True
 
@@ -186,6 +195,7 @@ class SlideRenderer(Renderer):
                     html="\n".join(htmls),
                     scoped_css="\n\n".join(csss),
                     assets=tuple(assets),
+                    snap_positions=tuple(snaps),
                     has_mermaid=has_mermaid,
                 )
             )
