@@ -6,7 +6,9 @@
   title: "What it enabled",
   scroll_range: 1200,
   scroll_speed: 0.7,
-  snap_positions: [0, 400, 800, 1200],
+  // Snap on the animation keyframes: key opaque @400, key upright @600,
+  // footnote revealed @900, plus start/end.
+  snap_positions: [0, 400, 600, 900, 1200],
   elements: [
     {
       name: "caption",
