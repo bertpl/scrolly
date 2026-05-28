@@ -22,7 +22,7 @@ class SlideHTML:
     scroll_speed: float = 1.0
     font_scale: float = 1.0
     assets: tuple[Path, ...] = ()
-    snap_positions: tuple[int, ...] = ()
+    snap_positions: tuple[float, ...] = ()
     reverse: bool = False
     has_mermaid: bool = False
 

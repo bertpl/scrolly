@@ -2,8 +2,8 @@
 // Exercises: mermaid element (via mermaid_file).
 {
   title: "Build-time staging",
-  scroll_range: 800,
-  snap_positions: [0, 400, 800],
+  scroll_range: 400,
+  snap_positions: [0, 400],
   elements: [
     {
       name: "caption",
@@ -18,8 +18,8 @@
       mermaid_file: "../build-trojan.mmd",
       position: [50, 30], anchor: [50, 0],
       width: 70, height: 65,
-      // Fade in over the first half of the scroll — gives scroll_range
-      // visual purpose so the snap positions land on real intermediate states.
+      // Fade in across the whole scroll — the diagram reveals as the reader
+      // scrolls; snaps land on start (invisible) and end (fully revealed).
       opacity: { keyframes: [[0, 0], [400, 1]] },
     },
   ],

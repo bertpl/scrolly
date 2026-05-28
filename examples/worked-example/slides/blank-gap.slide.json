@@ -5,6 +5,8 @@
 {
   title: "Quiet preparation",
   scroll_range: 1800,
+  // Start + end snap stops, merged with the image-sequence frame snaps.
+  snap_positions: [0, 1800],
   elements: [
     {
       name: "caption",
@@ -26,7 +28,7 @@
       ],
       compositing: "blend",
       frame_distance: 350,
-      hold: 180,
+      hold_fraction: 0.5,
       fade_in: 100,
       fade_out: 150,
       scroll_offset: 200,

@@ -6,7 +6,8 @@
 {
   title: "Pressure on xz-devel",
   scroll_range: 800,
-  snap_positions: [0, 400, 800],
+  // Snap on each reveal (mail-list @200, thread @600) plus start/end.
+  snap_positions: [0, 200, 600, 800],
   elements: [
     // Caption — always visible.
     {

@@ -212,7 +212,7 @@ class TestImageSequenceTimeline:
             "    {\n"
             '      image_sequence: ["a.svg", "b.svg"],\n'
             "      frame_distance: 400,\n"
-            "      hold: 200,\n"
+            "      hold_fraction: 0.5,\n"
             "      position: [0, 0],\n"
             "      width: 80,\n"
             '      height: "auto",\n'
@@ -256,8 +256,9 @@ class TestImageSequenceTimeline:
         diagnostics = lint_deck(deck)
 
         # --- assert -----------------------
-        # Timeline ends at 0 + 1*400 + 200 + 200 = 800, past scroll_range=500.
-        assert any("ends at 800" in d.message for d in diagnostics)
+        # Timeline ends at last_snap + fade_out = (0 + 1*400) + 200 = 600,
+        # past scroll_range=500.
+        assert any("ends at 600" in d.message for d in diagnostics)
 
 
 class TestDiagnosticDataclass:

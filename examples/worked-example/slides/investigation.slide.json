@@ -4,6 +4,8 @@
 {
   title: "Working backwards",
   scroll_range: 1800,
+  // Start + end snap stops, merged with the image-sequence frame snaps.
+  snap_positions: [0, 1800],
   elements: [
     {
       name: "caption",
@@ -25,7 +27,7 @@
       ],
       compositing: "incremental",
       frame_distance: 380,
-      hold: 150,
+      // hold_fraction omitted → uses the default (0.2).
       fade_in: 100,
       fade_out: 150,
       scroll_offset: 100,

@@ -4,9 +4,10 @@
 // font_scale for the pull-quote.
 {
   title: "The 500-ms anomaly",
-  scroll_range: 1000,
+  scroll_range: 500,
   font_scale: 1.1,
-  snap_positions: [0, 500, 1000],
+  // Pull-quote fades in across the whole slide; snap at start (hidden) and end (revealed).
+  snap_positions: [0, 500],
   elements: [
     {
       name: "caption",

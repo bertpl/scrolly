@@ -16,12 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** `image_sequence` timing — the absolute `hold` field is replaced by `hold_fraction` (a fraction of `frame_distance`, default `0.2`). Frames snap to the frame grid, and `fade_in` / `fade_out` now bound the timeline exactly.
+
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
+- Image-sequence slides now snap to each frame, not just the slide endpoints.
 - Slides positioned at negative row or column indices now render with correct gaps.
 - Bezier edge arrows no longer clip on decks whose top-left slide is not at the origin.
 - Inline `<code>` and `<pre>` now visually match the size of surrounding body text in slide content.

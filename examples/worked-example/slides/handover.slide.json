@@ -5,7 +5,8 @@
   title: "Co-maintainership",
   scroll_range: 1000,
   scroll_speed: 0.6,
-  snap_positions: [0, 500, 1000],
+  // Callout slide-in and context both settle at 800; plus start/end.
+  snap_positions: [0, 800, 1000],
   elements: [
     {
       name: "headline",

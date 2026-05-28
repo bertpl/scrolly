@@ -698,7 +698,7 @@ def _seq_slide(images: list[str], **extra: object) -> str:
         f'      name: "seq",\n'
         f"      image_sequence: {image_list},\n"
         f"      frame_distance: 400,\n"
-        f"      hold: 200,\n"
+        f"      hold_fraction: 0.5,\n"
         f"      position: [0, 0],\n"
         f"      width: 80,\n"
         f'      height: "auto",\n'
@@ -866,7 +866,7 @@ class TestImageSequenceTimeline:
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg"), Path("c.svg"), Path("d.svg")],
             frame_distance=400,
-            hold=200,
+            hold_fraction=0.5,
             scroll_offset=0,
             position=[0, 0],
             width=80,
@@ -874,14 +874,16 @@ class TestImageSequenceTimeline:
         )
         runs = _image_sequence_runs(list(el.image_sequence))
         assert len(runs) == 4
-        assert _image_sequence_run_keyframes(el, runs, 0) == [(0.0, 1.0), (200.0, 1.0), (400.0, 0.0)]
+        # Snaps at 0/400/800/1200; symmetric hold half-width = 0.5*400/2 = 100;
+        # crossfade = 400*(1-0.5) = 200.
+        assert _image_sequence_run_keyframes(el, runs, 0) == [(0.0, 1.0), (100.0, 1.0), (300.0, 0.0)]
         assert _image_sequence_run_keyframes(el, runs, 1) == [
-            (200.0, 0.0),
-            (400.0, 1.0),
-            (600.0, 1.0),
-            (800.0, 0.0),
+            (100.0, 0.0),
+            (300.0, 1.0),
+            (500.0, 1.0),
+            (700.0, 0.0),
         ]
-        assert _image_sequence_run_keyframes(el, runs, 3) == [(1000.0, 0.0), (1200.0, 1.0), (1400.0, 1.0)]
+        assert _image_sequence_run_keyframes(el, runs, 3) == [(900.0, 0.0), (1100.0, 1.0), (1200.0, 1.0)]
 
     def test_runs_group_consecutive_empty_slots(self) -> None:
         from pathlib import Path
@@ -904,7 +906,7 @@ class TestImageSequenceTimeline:
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), None, Path("b.svg")],
             frame_distance=400,
-            hold=200,
+            hold_fraction=0.5,
             scroll_offset=0,
             position=[0, 0],
             width=80,
@@ -912,10 +914,10 @@ class TestImageSequenceTimeline:
         )
         runs = _image_sequence_runs(list(el.image_sequence))
         # A (first, not last) fades out into the empty slot's hold window.
-        assert _image_sequence_run_keyframes(el, runs, 0) == [(0.0, 1.0), (200.0, 1.0), (400.0, 0.0)]
+        assert _image_sequence_run_keyframes(el, runs, 0) == [(0.0, 1.0), (100.0, 1.0), (300.0, 0.0)]
         # B (not first, last) fades in out of the empty slot's hold window.
-        assert _image_sequence_run_keyframes(el, runs, 2) == [(600.0, 0.0), (800.0, 1.0), (1000.0, 1.0)]
-        # The empty slot's hold [400, 600] sits cleanly between A's fade-out end and B's fade-in start.
+        assert _image_sequence_run_keyframes(el, runs, 2) == [(500.0, 0.0), (700.0, 1.0), (800.0, 1.0)]
+        # The empty slot's hold [300, 500] sits cleanly between A's fade-out end and B's fade-in start.
 
     def test_run_keyframes_with_repeats(self) -> None:
         from pathlib import Path
@@ -929,17 +931,17 @@ class TestImageSequenceTimeline:
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg"), Path("b.svg"), Path("c.svg")],
             frame_distance=400,
-            hold=200,
+            hold_fraction=0.5,
             scroll_offset=0,
             position=[0, 0],
             width=80,
             height="auto",
         )
         runs = _image_sequence_runs(list(el.image_sequence))
-        # b is run [1, 2]: hold from 400 to 1000 (covers slot 1 and slot 2)
+        # b is run [1, 2]: hold from 300 to 900 (snaps 400 and 800, each ±100)
         assert runs[1] == (Path("b.svg"), 1, 2)
         b_kfs = _image_sequence_run_keyframes(el, runs, 1)
-        assert b_kfs == [(200.0, 0.0), (400.0, 1.0), (1000.0, 1.0), (1200.0, 0.0)]
+        assert b_kfs == [(100.0, 0.0), (300.0, 1.0), (900.0, 1.0), (1100.0, 0.0)]
 
     def test_run_keyframes_with_fade_in_out(self) -> None:
         from pathlib import Path
@@ -953,7 +955,7 @@ class TestImageSequenceTimeline:
         el = ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg")],
             frame_distance=400,
-            hold=200,
+            hold_fraction=0.5,
             scroll_offset=500,
             fade_in=300,
             fade_out=150,
@@ -962,20 +964,69 @@ class TestImageSequenceTimeline:
             height="auto",
         )
         runs = _image_sequence_runs(list(el.image_sequence))
-        # First run: fade in from (500 - 300) = 200, hold 500 to 700, then crossfade to 0 at 900.
+        # First run (snap 500): fade-in side half = 0.5*300/2 = 75 → hold_lo 425;
+        # ramp from 500-300 = 200; interior side half = 100 → hold_hi 600; crossfade 200.
         assert _image_sequence_run_keyframes(el, runs, 0) == [
             (200.0, 0.0),
-            (500.0, 1.0),
-            (700.0, 1.0),
-            (900.0, 0.0),
+            (425.0, 1.0),
+            (600.0, 1.0),
+            (800.0, 0.0),
         ]
-        # Last run: crossfade in from 700 to 900, hold 900 to 1100, fade out to 0 at 1250.
+        # Last run (snap 900): hold_lo 800; fade-out side half = 0.5*150/2 = 37.5 → hold_hi
+        # 937.5; timeline ends at last_snap + fade_out = 900 + 150 = 1050.
         assert _image_sequence_run_keyframes(el, runs, 1) == [
-            (700.0, 0.0),
-            (900.0, 1.0),
-            (1100.0, 1.0),
-            (1250.0, 0.0),
+            (600.0, 0.0),
+            (800.0, 1.0),
+            (937.5, 1.0),
+            (1050.0, 0.0),
         ]
+
+
+class TestSnapPositionMerge:
+    """Element-derived snaps (image-sequence frame grid) merge into the chunk."""
+
+    @staticmethod
+    def _image_seq_ir(scroll_range: int, snap_positions: tuple[int, ...] = ()) -> SlideIR:
+        return SlideIR(
+            title="T",
+            scroll_range=scroll_range,
+            snap_positions=list(snap_positions),
+            elements=[
+                {
+                    "image_sequence": ["a.svg", "b.svg", "c.svg"],
+                    "frame_distance": 400,
+                    "hold_fraction": 0.5,
+                    "scroll_offset": 0,
+                    "position": [0, 0],
+                    "width": 80,
+                    "height": "auto",
+                }
+            ],
+        )
+
+    def test_derived_snaps_merged_when_no_author_snaps(self) -> None:
+        # --- arrange / act ----------------
+        chunk = _renderer().render(self._image_seq_ir(scroll_range=1000))
+
+        # --- assert -----------------------
+        # frame grid = scroll_offset + i*frame_distance → 0, 400, 800
+        assert chunk.snap_positions == (0.0, 400.0, 800.0)
+
+    def test_author_and_derived_snaps_merged_sorted(self) -> None:
+        # --- arrange / act ----------------
+        chunk = _renderer().render(self._image_seq_ir(scroll_range=1000, snap_positions=(200, 1000)))
+
+        # --- assert -----------------------
+        assert chunk.snap_positions == (0.0, 200, 400.0, 800.0, 1000)
+
+    def test_coinciding_author_snap_not_double_emitted(self) -> None:
+        # --- arrange / act ----------------
+        # Author 400 coincides with the middle frame's grid snap.
+        chunk = _renderer().render(self._image_seq_ir(scroll_range=1000, snap_positions=(400, 1000)))
+
+        # --- assert -----------------------
+        assert chunk.snap_positions == (0.0, 400, 800.0, 1000)
+        assert len(chunk.snap_positions) == 4
 
 
 class TestImageSequenceCompositingModes:
@@ -998,7 +1049,7 @@ class TestImageSequenceCompositingModes:
         return ImageSequenceElement(
             image_sequence=[Path("a.svg"), Path("b.svg"), Path("c.svg"), Path("d.svg")],
             frame_distance=400,
-            hold=200,
+            hold_fraction=0.5,
             scroll_offset=0,
             fade_in=fade_in,
             fade_out=fade_out,
@@ -1028,10 +1079,10 @@ class TestImageSequenceCompositingModes:
         # --- act / assert -----------------
         # Symmetric crossfade: 1→0 over the crossfade window into the next run.
         assert _image_sequence_run_keyframes(el, runs, 1) == [
-            (200.0, 0.0),
-            (400.0, 1.0),
-            (600.0, 1.0),
-            (800.0, 0.0),
+            (100.0, 0.0),
+            (300.0, 1.0),
+            (500.0, 1.0),
+            (700.0, 0.0),
         ]
 
     def test_overlay_extends_hold_and_drops_to_zero(self) -> None:
@@ -1049,16 +1100,16 @@ class TestImageSequenceCompositingModes:
         kfs = _image_sequence_run_keyframes(el, runs, 1)
 
         # --- assert -----------------------
-        # Run 1's hold extends to 800 (end of run 2's fade-in window),
-        # then drops to 0 over a tiny 1-unit ramp — a true step
-        # discontinuity isn't expressible in CSS calc(), so we use a
-        # near-instantaneous ramp that is visually indistinguishable
-        # from a step but keeps slopes well-defined.
+        # Run 1's hold extends to 700 (start of run 2's hold, i.e. where run 2
+        # reaches full opacity), then drops to 0 over a tiny 1-unit ramp — a
+        # true step discontinuity isn't expressible in CSS calc(), so we use a
+        # near-instantaneous ramp that is visually indistinguishable from a
+        # step but keeps slopes well-defined.
         assert kfs == [
-            (200.0, 0.0),
-            (400.0, 1.0),
-            (800.0, 1.0),
-            (800.0 + _STEP_RAMP_WIDTH, 0.0),
+            (100.0, 0.0),
+            (300.0, 1.0),
+            (700.0, 1.0),
+            (700.0 + _STEP_RAMP_WIDTH, 0.0),
         ]
 
     def test_overlay_last_run_behaves_like_blend(self) -> None:
@@ -1075,9 +1126,9 @@ class TestImageSequenceCompositingModes:
         # No next-run hold to extend through; trailing edge is just the hold,
         # plus optional fade_out (none here).
         assert _image_sequence_run_keyframes(el, runs, 3) == [
-            (1000.0, 0.0),
+            (900.0, 0.0),
+            (1100.0, 1.0),
             (1200.0, 1.0),
-            (1400.0, 1.0),
         ]
 
     def test_incremental_holds_until_sequence_end(self) -> None:
@@ -1091,24 +1142,24 @@ class TestImageSequenceCompositingModes:
         runs = _image_sequence_runs(list(el.image_sequence))
 
         # --- act / assert -----------------
-        # Run 0 holds at 1 from hold_start (0) until the sequence's final
-        # hold_end (1400). No fade_out, so no trailing 0 keyframe.
+        # Run 0 holds at 1 from its snap (0) until the sequence's final hold
+        # (1200). No fade_out, so no trailing 0 keyframe.
         assert _image_sequence_run_keyframes(el, runs, 0) == [
             (0.0, 1.0),
-            (1400.0, 1.0),
-        ]
-        # Run 1 fades in normally, then also holds until 1400.
-        assert _image_sequence_run_keyframes(el, runs, 1) == [
-            (200.0, 0.0),
-            (400.0, 1.0),
-            (1400.0, 1.0),
-        ]
-        # Last run: identical trailing edge — its own hold_end already
-        # equals the sequence's final hold_end.
-        assert _image_sequence_run_keyframes(el, runs, 3) == [
-            (1000.0, 0.0),
             (1200.0, 1.0),
-            (1400.0, 1.0),
+        ]
+        # Run 1 fades in normally, then also holds until 1200.
+        assert _image_sequence_run_keyframes(el, runs, 1) == [
+            (100.0, 0.0),
+            (300.0, 1.0),
+            (1200.0, 1.0),
+        ]
+        # Last run: identical trailing edge — its own hold already reaches the
+        # sequence's final hold.
+        assert _image_sequence_run_keyframes(el, runs, 3) == [
+            (900.0, 0.0),
+            (1100.0, 1.0),
+            (1200.0, 1.0),
         ]
 
     def test_incremental_fade_out_applies_to_every_run(self) -> None:
@@ -1122,8 +1173,9 @@ class TestImageSequenceCompositingModes:
         runs = _image_sequence_runs(list(el.image_sequence))
 
         # --- act / assert -----------------
-        # Every run shares the trailing fade — 1400 → 0 at 1550.
-        expected_trailer = [(1400.0, 1.0), (1550.0, 0.0)]
+        # Every run shares the trailing fade — final hold (1237.5) → 0 at
+        # last_snap + fade_out = 1200 + 150 = 1350.
+        expected_trailer = [(1237.5, 1.0), (1350.0, 0.0)]
         for run_idx in range(len(runs)):
             kfs = _image_sequence_run_keyframes(el, runs, run_idx)
             assert kfs[-2:] == expected_trailer, f"run {run_idx} trailing edge"
@@ -1140,17 +1192,17 @@ class TestImageSequenceCompositingModes:
         runs = _image_sequence_runs(list(el.image_sequence))
 
         # --- act / assert -----------------
-        # Non-last runs still drop out at the next run's fade-in end;
+        # Non-last runs still drop out at the next run's hold start;
         # only the last run uses the trailing fade_out.
         assert _image_sequence_run_keyframes(el, runs, 1)[-2:] == [
-            (800.0, 1.0),
-            (800.0 + _STEP_RAMP_WIDTH, 0.0),
+            (700.0, 1.0),
+            (700.0 + _STEP_RAMP_WIDTH, 0.0),
         ]
         assert _image_sequence_run_keyframes(el, runs, 3) == [
-            (1000.0, 0.0),
-            (1200.0, 1.0),
-            (1400.0, 1.0),
-            (1550.0, 0.0),
+            (900.0, 0.0),
+            (1100.0, 1.0),
+            (1237.5, 1.0),
+            (1350.0, 0.0),
         ]
 
     def test_fade_in_unchanged_across_modes(self) -> None:
@@ -1166,7 +1218,9 @@ class TestImageSequenceCompositingModes:
             el = self._make_el(compositing=mode, fade_in=100)
             runs = _image_sequence_runs(list(el.image_sequence))
             kfs = _image_sequence_run_keyframes(el, runs, 0)
-            assert kfs[:2] == [(-100.0, 0.0), (0.0, 1.0)], mode
+            # fade-in ramp from S - fade_in (-100) up to the hold start
+            # (S - hold_fraction*fade_in/2 = -25).
+            assert kfs[:2] == [(-100.0, 0.0), (-25.0, 1.0)], mode
 
 
 class TestIframeElement:
@@ -1363,7 +1417,7 @@ class TestImageSequenceInteractions:
       name: "seq",
       image_sequence: ["a.svg", "b.svg"],
       frame_distance: 400,
-      hold: 200,
+      hold_fraction: 0.5,
       position: [0, 0],
       width: 80,
       height: "auto",

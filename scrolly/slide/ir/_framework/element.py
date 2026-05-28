@@ -167,31 +167,36 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
 
     frame_distance: float = Field(
         description=(
-            "Scroll distance between the start of consecutive frames' hold periods. "
-            "Must be > hold (so the crossfade duration frame_distance - hold is > 0)."
+            "Scroll distance between consecutive frames' snap positions "
+            "(P_i = scroll_offset + i * frame_distance). Must be > 0."
         ),
     )
-    hold: float = Field(
-        description="Scroll distance each frame stays at full opacity. Must be > 0.",
+    hold_fraction: float = Field(
+        default=0.2,
+        description=(
+            "Fraction of frame_distance each frame stays at full opacity, centred "
+            "on its snap position. Must be in [0, 1) so the crossfade "
+            "(frame_distance * (1 - hold_fraction)) stays positive. Default 0.2."
+        ),
     )
     scroll_offset: float = Field(
         default=0,
-        description="Scroll position where frame 0's hold period begins.",
+        description="Scroll position of frame 0's snap (P_0); frame i snaps at scroll_offset + i * frame_distance.",
     )
     fade_in: float = Field(
         default=0,
         description=(
-            "Scroll distance of the leading fade-in ramp. "
+            "Scroll distance of the leading fade-in ramp before frame 0's snap. "
             "0 (default) = frame 0 starts at full opacity (hard cut). "
-            "> 0 = frame 0 ramps from opacity 0 to 1 over [scroll_offset - fade_in, scroll_offset]."
+            "> 0 = the timeline begins (opacity 0) at scroll_offset - fade_in."
         ),
     )
     fade_out: float = Field(
         default=0,
         description=(
-            "Scroll distance of the trailing fade-out ramp. "
-            "0 (default) = last frame stays at full opacity past the end of its hold (hard cut). "
-            "> 0 = last frame ramps from opacity 1 to 0 over fade_out scroll units after its hold ends."
+            "Scroll distance of the trailing fade-out ramp after the last frame's snap. "
+            "0 (default) = the last frame stays at full opacity past its snap (hard cut). "
+            "> 0 = the timeline ends (opacity 0) at last_snap + fade_out."
         ),
     )
     object_fit: Literal["cover", "contain", "fill"] | None = Field(
@@ -228,14 +233,12 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
                 code="E305",
                 message=f"image_sequence must contain at least 2 entries, got {len(self.image_sequence)}",
             )
-        if self.hold <= 0:
-            raise SlideSourceError(code="E306", message=f"hold must be > 0, got {self.hold}")
-        if self.frame_distance <= self.hold:
+        if self.frame_distance <= 0:
+            raise SlideSourceError(code="E306", message=f"frame_distance must be > 0, got {self.frame_distance}")
+        if not 0 <= self.hold_fraction < 1:
             raise SlideSourceError(
                 code="E306",
-                message=(
-                    f"frame_distance ({self.frame_distance}) must be > hold ({self.hold}) to allow a non-zero crossfade"
-                ),
+                message=f"hold_fraction must be in [0, 1), got {self.hold_fraction}",
             )
         if self.fade_in < 0:
             raise SlideSourceError(code="E306", message=f"fade_in must be >= 0, got {self.fade_in}")
@@ -261,23 +264,32 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
             )
         return self
 
-    def hold_centre_positions(self) -> list[float]:
-        """Return the scroll positions at each frame's hold-period centre.
+    def snap_positions(self) -> list[float]:
+        """Return the per-slot snap positions on the frame grid.
 
-        Each frame's hold period starts at ``scroll_offset + i * frame_distance``
-        and lasts ``hold`` units, so the centre is
-        ``scroll_offset + i * frame_distance + hold / 2``. These are the
-        natural snap stops for an image sequence: the scroll values where
-        a given frame is most clearly on display.
-
-        Blank slots (``None`` entries in ``image_sequence``) participate
-        in the timeline like any other frame — the centre of their hold
-        period is still a meaningful settle point.
+        Each slot ``i`` in ``image_sequence`` snaps at
+        ``scroll_offset + i * frame_distance`` — the centre of that frame's
+        symmetric hold and the natural settle point where the frame is most
+        clearly on display. Repeated frames and blank slots (``None`` entries)
+        each contribute one snap per slot.
 
         Returns:
-            One float per frame in ``image_sequence``, in order.
+            One float per slot in ``image_sequence``, in order.
         """
-        return [self.scroll_offset + i * self.frame_distance + self.hold / 2 for i in range(len(self.image_sequence))]
+        return [self.scroll_offset + i * self.frame_distance for i in range(len(self.image_sequence))]
+
+    def timeline_start(self) -> float:
+        """Return the scroll position where the sequence begins (frame 0 at opacity 0)."""
+        return self.scroll_offset - self.fade_in
+
+    def timeline_end(self) -> float:
+        """Return the scroll position where the sequence ends (last frame fully faded out).
+
+        Equals ``last_snap + fade_out``. Size the slide's ``scroll_range`` to at
+        least this so the trailing fade completes within range.
+        """
+        n = len(self.image_sequence)
+        return self.scroll_offset + (n - 1) * self.frame_distance + self.fade_out
 
 
 class HtmlElement(SlideElement, PrimitiveElement, frozen=True):

@@ -124,6 +124,21 @@ def test_snaps_cast_includes_derived_hold_centres() -> None:
         assert {"element_index", "element_name", "frame_index"} <= set(entry["source"].keys())
 
 
+def test_renderer_snap_positions_match_introspect_merged() -> None:
+    """The rendered slide threads exactly the snap set introspect reports as ``merged``."""
+    # --- arrange ----------------------
+    from scrolly.slide.renderers.slide import SlideRenderer
+
+    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+
+    # --- act --------------------------
+    merged = snaps_to_json(deck, slide_irs, ("cast",))["slides"]["cast"]["merged"]
+    chunk = SlideRenderer().render(slide_irs["cast"])
+
+    # --- assert -----------------------
+    assert list(chunk.snap_positions) == merged
+
+
 def test_timeline_contributions_has_animated_properties_and_intervals() -> None:
     """``contributions`` slide's timeline image is animated → timeline surfaces keyframes + intervals."""
     # --- arrange ----------------------
