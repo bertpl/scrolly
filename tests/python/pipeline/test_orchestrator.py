@@ -104,6 +104,53 @@ def test_builds_multi_slide_deck(tmp_path):
     assert 'data-id="b"' in html
 
 
+def test_builds_negative_coordinate_deck(tmp_path):
+    # Off-origin decks with negative row/column indices must build and carry
+    # their negative positions through to the embedded nav-data unchanged.
+    # The geometry that consumes them lives in canvas.js; the Python layer
+    # (parser, validator, inference, assembler) must simply accept and pass
+    # them along, with edge sides inferred from the relative positions.
+    import json
+
+    (tmp_path / "a.slide.json").write_text(_markdown_slide("A", "# A"))
+    (tmp_path / "b.slide.json").write_text(_markdown_slide("B", "# B"))
+    (tmp_path / "c.slide.json").write_text(_markdown_slide("C", "# C"))
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text(
+        "{ slides: ["
+        '{ id: "a", position: [-1, -1], source: "a.slide.json" },'
+        '{ id: "b", position: [0, -1], source: "b.slide.json" },'
+        '{ id: "c", position: [0, 0], source: "c.slide.json" }'
+        '], edges: [["a", "b"], ["b", "c"]] }'
+    )
+
+    out = tmp_path / "dist"
+    deck = build_deck(deck_file, out)
+
+    # Positions survive parse + inference unchanged.
+    assert {s.id: (s.position.x, s.position.y) for s in deck.slides} == {
+        "a": (-1, -1),
+        "b": (0, -1),
+        "c": (0, 0),
+    }
+
+    html = (out / "index.html").read_text()
+    # The slide container carries the raw (negative) cell coordinates.
+    assert "--cell-x: -1; --cell-y: -1;" in html
+
+    # nav-data carries the negative positions verbatim, and edge sides were
+    # inferred from the relative negative positions (a → right → b; b is
+    # above c, so b → bottom → c).
+    start = html.index('<script type="application/json" id="scrolly-deck">')
+    end = html.index("</script>", start)
+    data = json.loads(html[start:end].split(">", 1)[1])
+    assert data["slides"]["a"]["position"] == [-1, -1]
+    assert data["slides"]["b"]["position"] == [0, -1]
+    assert data["slides"]["c"]["position"] == [0, 0]
+    assert data["slides"]["a"]["edges"]["right"][0]["target"] == "b"
+    assert data["slides"]["b"]["edges"]["bottom"][0]["target"] == "c"
+
+
 def test_build_surfaces_unknown_slide_type(tmp_path):
     # Source filename uses an unregistered suffix; dispatch fails.
     slide = tmp_path / "only.totally-unknown.xyz"
