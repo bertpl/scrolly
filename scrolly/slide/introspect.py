@@ -86,11 +86,11 @@ def snaps_to_json(
     """Serialize per-slide snap positions (author + element-derived).
 
     Author snap positions come from each slide's ``snap_positions`` field.
-    Element-derived snap positions come from ``ImageSequenceElement``
-    hold-centres — every frame's hold period contributes one snap stop
-    at its centre. The ``merged`` list is the deduplicated + sorted
-    union the slide renderer threads into ``SlideHTML.snap_positions`` —
-    the value the canvas runtime actually uses.
+    Element-derived snap positions come from each ``ImageSequenceElement``'s
+    frame grid — every slot snaps at ``scroll_offset + i * frame_distance``.
+    The ``merged`` list is the deduplicated + sorted union the slide renderer
+    threads into ``SlideHTML.snap_positions`` — the value the canvas runtime
+    actually uses.
 
     Args:
         deck: Fully-resolved deck.
@@ -115,7 +115,7 @@ def snaps_to_json(
         derived: list[dict[str, Any]] = []
         for index, el in enumerate(ir.elements):
             if isinstance(el, ImageSequenceElement):
-                for frame_index, pos in enumerate(el.hold_centre_positions()):
+                for frame_index, pos in enumerate(el.snap_positions()):
                     derived.append(
                         {
                             "value": pos,

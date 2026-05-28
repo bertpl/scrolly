@@ -2,10 +2,9 @@
   title: "Slide 3",
   scroll_range: 2900,
   reverse: true,
-  // Hand-mirrored from `scrolly introspect snaps`'s `merged` list:
-  // endpoints + each image-sequence frame's hold-centre. Renderer does
-  // not currently merge element-derived snaps automatically.
-  snap_positions: [0, 550, 750, 950, 1150, 1350, 1550, 1750, 1950, 2150, 2700, 2900],
+  // Author snaps for the non-sequence beats only (start + closing reveals);
+  // the image-sequence frame snaps are merged in automatically by the renderer.
+  snap_positions: [0, 2700, 2900],
   elements: [
     {
       name: "background-band",
@@ -27,8 +26,10 @@
         "../frames/slide-3-07.svg",
       ],
       frame_distance: 200,
-      hold: 100,
-      scroll_offset: 500,
+      hold_fraction: 0.5,
+      // +50 vs the pre-redesign offset: grid snaps now land on the old
+      // hold-centres (550, 750, …), keeping the pan/step/banner keyframes aligned.
+      scroll_offset: 550,
       fade_in: 500,
       fade_out: 500,
       compositing: "overlay",

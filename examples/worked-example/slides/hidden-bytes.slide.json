@@ -25,7 +25,7 @@
       ],
       compositing: "overlay",
       frame_distance: 400,
-      hold: 200,
+      hold_fraction: 0.5,
       fade_in: 100,
       fade_out: 150,
       scroll_offset: 100,

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** `image_sequence` timing — the absolute `hold` field is replaced by `hold_fraction` (a fraction of `frame_distance`, default `0.2`). Frames snap to the frame grid, and `fade_in` / `fade_out` now bound the timeline exactly.
+
 ### Deprecated
 
 ### Removed

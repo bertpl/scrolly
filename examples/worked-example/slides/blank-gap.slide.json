@@ -26,7 +26,7 @@
       ],
       compositing: "blend",
       frame_distance: 350,
-      hold: 180,
+      hold_fraction: 0.5,
       fade_in: 100,
       fade_out: 150,
       scroll_offset: 200,

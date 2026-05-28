@@ -2,10 +2,9 @@
   title: "Slide 4",
   scroll_range: 2100,
   reverse: true,
-  // Hand-mirrored from `scrolly introspect snaps`'s `merged` list:
-  // endpoints + each image-sequence frame's hold-centre. Renderer does
-  // not currently merge element-derived snaps automatically.
-  snap_positions: [0, 550, 750, 950, 1150, 1350, 1900, 2100],
+  // Author snaps for the non-sequence beats only (start + closing reveals);
+  // the image-sequence frame snaps are merged in automatically by the renderer.
+  snap_positions: [0, 1900, 2100],
   elements: [
     {
       name: "background-band",
@@ -23,8 +22,10 @@
         "../frames/slide-4-04.svg",
       ],
       frame_distance: 200,
-      hold: 100,
-      scroll_offset: 500,
+      hold_fraction: 0.5,
+      // +50 vs the pre-redesign offset: grid snaps now land on the old
+      // hold-centres (550, 750, …), keeping the step/banner keyframes aligned.
+      scroll_offset: 550,
       fade_in: 500,
       fade_out: 500,
       compositing: "overlay",
@@ -39,8 +40,11 @@
         "../machete-terminal-after-slide-out.svg",
       ],
       frame_distance: 600,
-      hold: 500,
-      scroll_offset: 500,
+      hold_fraction: 0.8,
+      // +250 vs the pre-redesign offset (old hold/2): grid snaps land on the
+      // old hold-centres (750, 1350), keeping the transient bump's crossfade
+      // centred on scroll 1050.
+      scroll_offset: 750,
       fade_in: 500,
       fade_out: 300,
       compositing: "overlay",

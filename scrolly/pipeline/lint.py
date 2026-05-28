@@ -145,9 +145,8 @@ def _check_image_sequence(
     diagnostics: list[Diagnostic],
 ) -> None:
     """Check the auto-generated opacity keyframes for an image sequence element."""
-    n = len(el.image_sequence)
-    timeline_start = el.scroll_offset - el.fade_in
-    timeline_end = el.scroll_offset + (n - 1) * el.frame_distance + el.hold + el.fade_out
+    timeline_start = el.timeline_start()
+    timeline_end = el.timeline_end()
     if timeline_start < 0:
         diagnostics.append(
             Diagnostic(

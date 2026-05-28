@@ -59,7 +59,7 @@ def _image_sequence(**overrides) -> dict:
     base = {
         "image_sequence": ["a.svg", "b.svg", "c.svg"],
         "frame_distance": 400,
-        "hold": 200,
+        "hold_fraction": 0.5,
         "position": [0, 0],
         "width": 80,
         "height": "auto",
@@ -202,7 +202,7 @@ class TestImageSequenceElement:
         el = ImageSequenceElement(**_image_sequence())
         assert [p.name for p in el.image_sequence] == ["a.svg", "b.svg", "c.svg"]
         assert el.frame_distance == 400
-        assert el.hold == 200
+        assert el.hold_fraction == 0.5
 
     def test_defaults(self):
         el = ImageSequenceElement(**_image_sequence())
@@ -236,21 +236,30 @@ class TestImageSequenceElement:
         with pytest.raises(SlideSourceError, match="image_sequence must contain at least 2 entries"):
             ImageSequenceElement(**_image_sequence(image_sequence=["a.svg"]))
 
-    def test_zero_hold_rejected(self):
-        with pytest.raises(SlideSourceError, match="hold must be > 0"):
-            ImageSequenceElement(**_image_sequence(hold=0))
+    def test_hold_fraction_one_rejected(self):
+        with pytest.raises(SlideSourceError, match=r"hold_fraction must be in \[0, 1\)"):
+            ImageSequenceElement(**_image_sequence(hold_fraction=1))
 
-    def test_negative_hold_rejected(self):
-        with pytest.raises(SlideSourceError, match="hold must be > 0"):
-            ImageSequenceElement(**_image_sequence(hold=-50))
+    def test_hold_fraction_above_one_rejected(self):
+        with pytest.raises(SlideSourceError, match=r"hold_fraction must be in \[0, 1\)"):
+            ImageSequenceElement(**_image_sequence(hold_fraction=1.5))
 
-    def test_frame_distance_equal_to_hold_rejected(self):
-        with pytest.raises(SlideSourceError, match=r"frame_distance .* must be > hold"):
-            ImageSequenceElement(**_image_sequence(frame_distance=200, hold=200))
+    def test_negative_hold_fraction_rejected(self):
+        with pytest.raises(SlideSourceError, match=r"hold_fraction must be in \[0, 1\)"):
+            ImageSequenceElement(**_image_sequence(hold_fraction=-0.1))
 
-    def test_frame_distance_less_than_hold_rejected(self):
-        with pytest.raises(SlideSourceError, match=r"frame_distance .* must be > hold"):
-            ImageSequenceElement(**_image_sequence(frame_distance=100, hold=200))
+    def test_zero_hold_fraction_allowed(self):
+        el = ImageSequenceElement(**_image_sequence(hold_fraction=0))
+        assert el.hold_fraction == 0
+
+    def test_hold_fraction_defaults_to_0_2(self):
+        kwargs = _image_sequence()
+        del kwargs["hold_fraction"]
+        assert ImageSequenceElement(**kwargs).hold_fraction == 0.2
+
+    def test_zero_frame_distance_rejected(self):
+        with pytest.raises(SlideSourceError, match="frame_distance must be > 0"):
+            ImageSequenceElement(**_image_sequence(frame_distance=0))
 
     def test_negative_fade_in_rejected(self):
         with pytest.raises(SlideSourceError, match="fade_in must be >= 0"):
@@ -412,14 +421,14 @@ class TestMermaidElement:
 
 
 # ==================================================================================================
-#  ImageSequenceElement.hold_centre_positions — snap-derivation
+#  ImageSequenceElement.snap_positions / timeline — frame-grid derivation
 # ==================================================================================================
 def _seq(**overrides) -> dict:
     """Minimal valid ImageSequenceElement kwargs."""
     base = {
         "image_sequence": [Path("a.png"), Path("b.png"), Path("c.png")],
         "frame_distance": 400,
-        "hold": 200,
+        "hold_fraction": 0.5,
         "position": [0, 0],
         "width": 100,
         "height": 50,
@@ -428,50 +437,40 @@ def _seq(**overrides) -> dict:
     return {**base, **overrides}
 
 
-def test_hold_centre_positions_basic() -> None:
-    """Hold-centres are at ``scroll_offset + i * frame_distance + hold/2`` per frame."""
+def test_snap_positions_basic() -> None:
+    """Snaps land on the frame grid: ``scroll_offset + i * frame_distance``."""
     # --- arrange ----------------------
-    el = ImageSequenceElement(**_seq(scroll_offset=0, frame_distance=400, hold=200))
+    el = ImageSequenceElement(**_seq(scroll_offset=0, frame_distance=400))
 
     # --- act --------------------------
-    centres = el.hold_centre_positions()
+    snaps = el.snap_positions()
 
     # --- assert -----------------------
-    # Frame i hold starts at 0 + i*400 = [0, 400, 800]; centre = +100 → [100, 500, 900]
-    assert centres == [100.0, 500.0, 900.0]
+    assert snaps == [0.0, 400.0, 800.0]
 
 
-def test_hold_centre_positions_with_offset() -> None:
-    """``scroll_offset`` shifts every centre."""
-    # --- arrange ----------------------
-    el = ImageSequenceElement(**_seq(scroll_offset=50, frame_distance=400, hold=200))
-
-    # --- act --------------------------
-    centres = el.hold_centre_positions()
+def test_snap_positions_with_offset() -> None:
+    """``scroll_offset`` shifts every snap."""
+    # --- arrange / act ----------------
+    el = ImageSequenceElement(**_seq(scroll_offset=50, frame_distance=400))
 
     # --- assert -----------------------
-    assert centres == [150.0, 550.0, 950.0]
+    assert el.snap_positions() == [50.0, 450.0, 850.0]
 
 
-def test_hold_centre_positions_one_per_frame() -> None:
-    """Result has exactly as many entries as the image_sequence list."""
+def test_snap_positions_one_per_slot() -> None:
+    """One snap per slot — including repeated frames and blank slots."""
+    # --- arrange / act / assert -------
+    el = ImageSequenceElement(**_seq(image_sequence=[Path("a.png"), Path("a.png"), None, Path("b.png")]))
+    assert el.snap_positions() == [0.0, 400.0, 800.0, 1200.0]
+
+
+def test_timeline_start_and_end() -> None:
+    """Timeline spans ``[scroll_offset - fade_in, last_snap + fade_out]``."""
     # --- arrange ----------------------
-    el = ImageSequenceElement(**_seq(image_sequence=[Path("a.png"), Path("b.png")]))
+    el = ImageSequenceElement(**_seq(scroll_offset=100, frame_distance=400, fade_in=80, fade_out=150))
 
     # --- act / assert -----------------
-    assert len(el.hold_centre_positions()) == 2
-
-
-def test_hold_centre_positions_blank_frames_still_get_centres() -> None:
-    """Blank slots (None entries) participate in the timeline like any other frame."""
-    # --- arrange ----------------------
-    el = ImageSequenceElement(
-        **_seq(image_sequence=[Path("a.png"), None, Path("c.png")], scroll_offset=0, frame_distance=400, hold=200)
-    )
-
-    # --- act --------------------------
-    centres = el.hold_centre_positions()
-
-    # --- assert -----------------------
-    # Three centres regardless of the blank in the middle.
-    assert centres == [100.0, 500.0, 900.0]
+    # last snap = 100 + 2*400 = 900
+    assert el.timeline_start() == 100 - 80
+    assert el.timeline_end() == 900 + 150

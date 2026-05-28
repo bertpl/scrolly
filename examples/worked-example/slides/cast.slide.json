@@ -1,7 +1,7 @@
 // Two identity cards — the maintainer and the eventual co-maintainer.
 // Exercises: image_sequence with compositing:"overlay" (opaque-frame
 // crossfade — cards fully replace each other with no background bleed),
-// derived snaps at hold-centers.
+// derived snaps on the frame grid.
 {
   title: "The two contributors",
   scroll_range: 1000,
@@ -15,9 +15,8 @@
       text_align: "center",
       color: "#2c3e50",
     },
-    // image_sequence with blend (default) compositing — symmetric
-    // crossfade between the two identity cards. Snap centers derived
-    // from each frame's hold window.
+    // image_sequence with overlay compositing — opaque crossfade between
+    // the two identity cards. Snaps on each frame's grid position.
     {
       name: "cards",
       image_sequence: [
@@ -26,7 +25,7 @@
       ],
       compositing: "overlay",
       frame_distance: 400,
-      hold: 200,
+      // hold_fraction omitted → uses the default (0.2).
       fade_in: 100,
       fade_out: 200,
       scroll_offset: 100,

@@ -96,7 +96,7 @@ class ImageSequenceRenderer(ElementRenderer):
 
         # Per-frame snap stops, the same values `scrolly introspect snaps`
         # derives, so the rendered slide and introspect agree by construction.
-        snap_positions = tuple(ir.hold_centre_positions())
+        snap_positions = tuple(ir.snap_positions())
 
         return RenderedElement(html=html, scoped_css=scoped_css, assets=assets, snap_positions=snap_positions)
 
@@ -128,76 +128,89 @@ def _image_sequence_run_keyframes(
 ) -> list[tuple[float, float]]:
     """Build opacity keyframes for one post-dedup run.
 
-    The leading edge always uses ``fade_in`` for the first run (absent
-    when ``fade_in == 0``) and the inter-run crossfade for every other
-    run. The trailing edge depends on ``el.compositing``:
+    Each frame holds at full opacity over a window symmetric around its snap
+    (``scroll_offset + i * frame_distance``). The half-width is
+    ``hold_fraction * frame_distance / 2`` on interior sides, and
+    ``hold_fraction * fade_in / 2`` / ``hold_fraction * fade_out / 2`` on the
+    fade-in / fade-out sides. Crossfades and the leading/trailing fades fill
+    the gaps, so the timeline runs exactly from ``scroll_offset - fade_in`` to
+    ``last_snap + fade_out``.
 
-    - ``"blend"`` (default): each run ramps 1→0 over the crossfade into
-      the next run; the last run uses ``fade_out`` (or stays at 1 if 0).
-      Symmetric crossfade — leaves a brief mid-transition window where
-      both neighbours are partially transparent.
-    - ``"overlay"``: non-last runs hold at 1 through the *next* run's
-      fade-in window, then step instantly to 0 at the moment the next
-      run reaches opacity 1. The last run behaves like ``"blend"``'s
-      last run. Keeps a fully-opaque underlayer through every transition
-      (no background bleed-through for opaque frames).
-    - ``"incremental"``: every run holds at 1 until the sequence's final
-      ``hold_end``, then participates in any trailing ``fade_out``. All
-      revealed runs ramp out together. Used for additive transparent
-      layers that build up a composite.
+    The trailing edge depends on ``el.compositing``:
+
+    - ``"blend"`` (default): each run ramps 1→0 over the crossfade into the
+      next run; the last run uses ``fade_out`` (or stays at 1 if 0).
+    - ``"overlay"``: non-last runs hold at 1 through the *next* run's fade-in,
+      then step to 0 at the moment the next run reaches opacity 1. The last
+      run behaves like ``"blend"``'s last run.
+    - ``"incremental"``: every run holds at 1 until the final frame's hold
+      ends, then participates in any trailing ``fade_out``.
 
     Args:
         el: The image-sequence element whose run is being laid out.
         runs: Post-dedup runs as ``(path, i_start, i_end)`` tuples, where
-            ``i_start`` / ``i_end`` are inclusive scroll-grid slot
-            indices.
+            ``i_start`` / ``i_end`` are inclusive scroll-grid slot indices.
         run_idx: Index of the run to emit keyframes for.
 
     Returns:
-        Ordered list of ``(scroll_position, opacity)`` keyframes suitable
-        for piecewise-linear evaluation.
+        Ordered list of ``(scroll_position, opacity)`` keyframes suitable for
+        piecewise-linear evaluation (consecutive duplicates collapsed).
     """
     _, i_start, i_end = runs[run_idx]
-    hold_start = el.scroll_offset + i_start * el.frame_distance
-    hold_end = el.scroll_offset + i_end * el.frame_distance + el.hold
-    crossfade = el.frame_distance - el.hold
+    n = len(el.image_sequence)
+    f = el.hold_fraction
+    crossfade = el.frame_distance * (1 - f)
+    interior_half = f * el.frame_distance / 2
 
     is_first = run_idx == 0
     is_last = run_idx == len(runs) - 1
+
+    leading_half = (f * el.fade_in / 2) if is_first else interior_half
+    trailing_half = (f * el.fade_out / 2) if is_last else interior_half
+    hold_lo = el.scroll_offset + i_start * el.frame_distance - leading_half
+    hold_hi = el.scroll_offset + i_end * el.frame_distance + trailing_half
+    timeline_end = el.scroll_offset + (n - 1) * el.frame_distance + el.fade_out
 
     kfs: list[tuple[float, float]] = []
 
     # --- leading edge -------------------------------
     if is_first:
         if el.fade_in > 0:
-            kfs.append((hold_start - el.fade_in, 0.0))
-        kfs.append((hold_start, 1.0))
+            kfs.append((el.scroll_offset - el.fade_in, 0.0))
+        kfs.append((hold_lo, 1.0))
     else:
-        kfs.append((hold_start - crossfade, 0.0))
-        kfs.append((hold_start, 1.0))
+        kfs.append((hold_lo - crossfade, 0.0))
+        kfs.append((hold_lo, 1.0))
 
     # --- trailing edge ------------------------------
     if el.compositing == "blend":
-        kfs.append((hold_end, 1.0))
+        kfs.append((hold_hi, 1.0))
         if is_last:
             if el.fade_out > 0:
-                kfs.append((hold_end + el.fade_out, 0.0))
+                kfs.append((timeline_end, 0.0))
         else:
-            kfs.append((hold_end + crossfade, 0.0))
+            kfs.append((hold_hi + crossfade, 0.0))
     elif el.compositing == "overlay":
         if is_last:
-            kfs.append((hold_end, 1.0))
+            kfs.append((hold_hi, 1.0))
             if el.fade_out > 0:
-                kfs.append((hold_end + el.fade_out, 0.0))
+                kfs.append((timeline_end, 0.0))
         else:
-            # Extended hold through the next run's fade-in, then a 1-unit
-            # ramp to 0 at the instant the next run reaches full opacity.
-            kfs.append((hold_end + crossfade, 1.0))
-            kfs.append((hold_end + crossfade + _STEP_RAMP_WIDTH, 0.0))
+            # Hold through the next run's fade-in, then a 1-unit ramp to 0 at
+            # the instant the next run reaches full opacity.
+            kfs.append((hold_hi + crossfade, 1.0))
+            kfs.append((hold_hi + crossfade + _STEP_RAMP_WIDTH, 0.0))
     else:  # "incremental"
-        last_hold_end = el.scroll_offset + runs[-1][2] * el.frame_distance + el.hold
-        kfs.append((last_hold_end, 1.0))
+        last_hold_hi = el.scroll_offset + runs[-1][2] * el.frame_distance + f * el.fade_out / 2
+        kfs.append((last_hold_hi, 1.0))
         if el.fade_out > 0:
-            kfs.append((last_hold_end + el.fade_out, 0.0))
+            kfs.append((timeline_end, 0.0))
 
-    return kfs
+    # A zero-width hold (hold_fraction = 0, or a single-slot run with no
+    # fades) can emit two identical keyframes at the snap; collapse them so
+    # the piecewise-linear ramp has no zero-length segment.
+    deduped = [kfs[0]]
+    for kf in kfs[1:]:
+        if kf != deduped[-1]:
+            deduped.append(kf)
+    return deduped
