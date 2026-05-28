@@ -6,6 +6,8 @@
 {
   title: "Hidden in plain sight",
   scroll_range: 1400,
+  // Start + end snap stops, merged with the image-sequence frame snaps.
+  snap_positions: [0, 1400],
   elements: [
     {
       name: "caption",

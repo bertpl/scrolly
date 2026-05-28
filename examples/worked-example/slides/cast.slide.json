@@ -5,6 +5,8 @@
 {
   title: "The two contributors",
   scroll_range: 1000,
+  // Start + end snap stops, merged with the image-sequence frame snaps.
+  snap_positions: [0, 1000],
   elements: [
     // Caption above the cards.
     {
