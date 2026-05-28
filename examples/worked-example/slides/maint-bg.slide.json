@@ -5,7 +5,8 @@
 {
   title: "Background",
   scroll_range: 1200,
-  snap_positions: [0, 400, 800, 1200],
+  // Snap on each fact's reveal (fact-1 @200, fact-2 @500, fact-3 @900) plus start/end.
+  snap_positions: [0, 200, 500, 900, 1200],
   elements: [
     // Ambient JPG background — full-bleed.
     {
