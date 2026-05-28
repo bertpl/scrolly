@@ -26,40 +26,107 @@
     return parseFloat(n.toFixed(4)).toString();
   }
 
+  // ---- AxisGeometry (pure — no DOM access) ---------------------------------
+  //
+  // Geometry of a single grid axis — the column axis (X) or the row axis
+  // (Y). CanvasGeometry holds one of each, so off-origin and negative cell
+  // indices are handled identically on both. The only per-axis differences
+  // are the `extras` map (rows reserve group-label tab room on certain
+  // cells; columns reserve none) and the viewport dimension that normalises
+  // a gap into abstract units.
+  //
+  // Cells are integer indices in [min, max]; either bound may be negative.
+  // Each cell spans 1 abstract unit, with gaps stretched in between. All
+  // accumulation is measured relative to `min` (never 0), so the prefix
+  // array is indexed by `(i - min) >= 0` and negative indices need no
+  // special-casing. The single primitive is `gapBefore`; everything else is
+  // a prefix sum of it or a derivation:
+  //
+  //   gapBefore(i)     = (i > min ? GAP : 0) + extraAt(i)
+  //                      The gap immediately before cell i's leading edge,
+  //                      in gap-units. The leading cell (i === min) has no
+  //                      base gap — the sole special case in the class.
+  //   cumulativeGap(i) = Σ gapBefore over [min..i], in gap-units.
+  //                      Precomputed as a prefix array in the constructor.
+  //   abstractStart(i) = i + cumulativeGap(i) * factor — cell i's leading
+  //                      edge in abstract units.
+  //
+  // `factor` (abstract units per gap-unit) is set by `setFactor()` from the
+  // viewport. GAP is a shared dvmax-percentage constant, so the physical
+  // gap is identical on both axes; they differ only in dividing by their
+  // own viewport dimension (vw for columns, vh for rows).
+
+  class AxisGeometry {
+    constructor(min, max, baseGap, extras) {
+      this._min = min;
+      this._max = max;
+      this._baseGap = baseGap;
+      this._extras = extras || new Map();
+      this._factor = 0;
+      this._cumulative = this._computeCumulative();
+    }
+
+    get min() { return this._min; }
+    get max() { return this._max; }
+    get span() { return this._max < this._min ? 0 : this._max - this._min + 1; }
+
+    setFactor(abstractPerGapUnit) { this._factor = abstractPerGapUnit; }
+
+    extraAt(i) { return this._extras.get(i) || 0; }
+
+    gapBefore(i) {
+      // Gap immediately before cell i's leading edge, in gap-units. The
+      // leading cell has no base gap — nothing above/left of it to separate.
+      return (i > this._min ? this._baseGap : 0) + this.extraAt(i);
+    }
+
+    cumulativeGap(i) {
+      // Gap-units between cell `min`'s leading edge and cell i's. Indexed by
+      // `(i - min)`; out-of-range indices read as 0.
+      return this._cumulative[i - this._min] || 0;
+    }
+
+    abstractStart(i) { return i + this.cumulativeGap(i) * this._factor; }
+    abstractEnd(i) { return this.abstractStart(i) + 1; }
+
+    deckLeadingEdge() {
+      // Bare cell line of the leading cell: a leading-cell extra (a group
+      // tab on the top/left cell) is pulled back out so the bounding-box
+      // edge sits on the cell line and the tab protrudes into the reserved
+      // room inside the box.
+      return this.abstractStart(this._min) - this.extraAt(this._min) * this._factor;
+    }
+
+    deckTrailingEdge() { return this.abstractEnd(this._max); }
+    deckExtent() { return this.deckTrailingEdge() - this.deckLeadingEdge(); }
+    deckCenter() { return (this.deckLeadingEdge() + this.deckTrailingEdge()) / 2; }
+
+    _computeCumulative() {
+      // Prefix sums of gapBefore over [min..max], indexed by (i - min). An
+      // empty axis (max < min) yields an empty array.
+      const cum = [];
+      let total = 0;
+      for (let i = this._min; i <= this._max; i++) {
+        total += this.gapBefore(i);
+        cum.push(total);
+      }
+      return cum;
+    }
+  }
+
   // ---- CanvasGeometry (pure — no DOM access) --------------------------------
   //
-  // Coordinate systems used throughout this class. Mixing them is the
-  // most common source of subtle bugs in this file.
+  // Owns the deck's occupied bounding box (`_bbox = {minX, minY, maxX,
+  // maxY}`, either bound possibly negative) and one AxisGeometry per axis
+  // (`_colAxis`, `_rowAxis`). Three coordinate systems flow through it:
   //
-  //  1. Cell coords — integer (col, row) addresses from the deck source.
-  //     Slide positions are stored as `[col, row]` in `_slides[id]`;
-  //     the occupied bounding box is `_bbox = {minX, minY, maxX, maxY}`.
-  //     `_rowGaps[i]` is indexed by absolute row.
-  //
-  //  2. Abstract coords — floats in viewport-fraction units, with the
-  //     column and row gaps stretched in. A slide at cell (c, r) occupies
-  //     abstract x in [c·(1 + colGap), c·(1 + colGap) + 1] and similarly
-  //     for y with row-gap accumulation. `slideAbstractPos`, `deckBounds`,
-  //     `effectiveGridSize`, `deckCenter`, `attachmentPoint`,
-  //     `controlPoint`, and `buildPath` all live here.
-  //
+  //  1. Cell coords — integer (col, row) addresses from the deck source,
+  //     stored as `[col, row]` in `_slides[id]`.
+  //  2. Abstract coords — floats in viewport-fraction units with the gaps
+  //     stretched in, produced by the two AxisGeometry instances
+  //     (`slideAbstractPos`, `deckBounds`, `attachmentPoint`, …).
   //  3. Viewport pixel coords — returned by `cellBounds` after multiplying
   //     by the viewport dimensions cached by `refresh()`.
-  //
-  // Conversion factors live on the instance:
-  //  - `_colGap`: per-column horizontal gap, in abstract-x units per
-  //    column boundary. Set by `refresh()` from viewport width.
-  //  - `_dvmaxToRow`: converts dvmax-distance to abstract-y-distance.
-  //    Set by `refresh()` from viewport height.
-  //  - `_rowGaps[i]`: total gap above row i, in dvmax units. Decomposes
-  //    into two named components, both indexed by absolute row:
-  //      `_innerRowGap(i)` — inter-row spacing (only meaningful when the
-  //        row above is occupied); empty when row i is the topmost
-  //        occupied row of the deck.
-  //      `_labelExtra(i)` — label-tab room (LABEL_EXTRA whenever row i
-  //        itself carries a group label).
-  //    `deckBounds` uses the decomposed components directly; everything
-  //    else reads through `_rowGaps` / `_cumulativeRowGap`.
 
   class CanvasGeometry {
     static DECK_MARGIN_FACTOR = 0.85;
@@ -77,11 +144,10 @@
       this._groups = groups || [];
       this._fanSpacingFactor = fanSpacingFactor;
 
-      // Bounding box of occupied (col, row) cells. Slide positions stay
-      // absolute everywhere — only the deck-view fit/centre math reads
-      // the bounding box so an off-origin deck (leftmost/topmost slide
-      // not at column 0 / row 0) centres on its occupied region instead
-      // of on [0, maxCol] × [0, maxRow].
+      // Bounding box of occupied (col, row) cells; either bound may be
+      // negative. All axis math is bbox-relative (see AxisGeometry), so an
+      // off-origin deck centres on its occupied region rather than on
+      // [0, maxCol] × [0, maxRow].
       const positions = Object.values(slides);
       if (positions.length === 0) {
         this._bbox = { minX: 0, minY: 0, maxX: -1, maxY: -1 };
@@ -94,14 +160,16 @@
         };
       }
 
-      this._colGap = 0;
-      this._labelRows = this._computeLabelRows();
-      this._rowGaps = this._computeRowGaps();
-      this._dvmaxToRow = 0;
+      // One AxisGeometry per axis. Columns carry no per-cell extra (a
+      // uniform default gap); rows carry LABEL_EXTRA tab room on each
+      // group's top row. Same class, so negative indices and off-origin
+      // accumulation behave identically on both axes.
+      this._colAxis = new AxisGeometry(this._bbox.minX, this._bbox.maxX, CanvasGeometry.GAP, new Map());
+      this._rowAxis = new AxisGeometry(this._bbox.minY, this._bbox.maxY, CanvasGeometry.GAP, this._computeRowExtras());
     }
 
-    get cols() { return Math.max(0, this._bbox.maxX - this._bbox.minX + 1); }
-    get rows() { return Math.max(0, this._bbox.maxY - this._bbox.minY + 1); }
+    get cols() { return this._colAxis.span; }
+    get rows() { return this._rowAxis.span; }
     get vw() { return this._vw; }
     get vh() { return this._vh; }
     bbox() { return { ...this._bbox }; }
@@ -114,45 +182,42 @@
     slideGapOffset(slideId) {
       const p = this._slides[slideId];
       if (!p) return null;
-      return { gapX: p[0] * CanvasGeometry.GAP, gapY: this._cumulativeRowGap(p[1]) };
+      return { gapX: this._colAxis.cumulativeGap(p[0]), gapY: this._rowAxis.cumulativeGap(p[1]) };
     }
 
     slideAbstractPos(slideId) {
       const p = this._slides[slideId];
       if (!p) return null;
-      return {
-        x: p[0] * (1 + this._colGap),
-        y: p[1] + this._cumulativeRowGap(p[1]) * this._dvmaxToRow,
-      };
+      return { x: this._colAxis.abstractStart(p[0]), y: this._rowAxis.abstractStart(p[1]) };
     }
 
     refresh(viewportWidth, viewportHeight) {
       this._vw = viewportWidth;
       this._vh = viewportHeight;
       const vmax = Math.max(viewportWidth, viewportHeight);
-      this._colGap = CanvasGeometry.GAP / 100 * vmax / viewportWidth;
-      this._dvmaxToRow = vmax / (100 * viewportHeight);
+      this._colAxis.setFactor(viewportWidth > 0 ? vmax / (100 * viewportWidth) : 0);
+      this._rowAxis.setFactor(viewportHeight > 0 ? vmax / (100 * viewportHeight) : 0);
     }
 
     deckBounds() {
-      // The deck's visible bounding box in abstract coords. The top edge
-      // includes the label-tab extension above the topmost occupied row
-      // (when that row carries a label); the bottom, left, and right
-      // edges are the outer edges of the corner slide cells.
-      // effectiveGridSize and deckCenter are pure derivations of this.
+      // The deck's visible bounding box in abstract coords, composed from
+      // the two axes. Each axis's leading edge sits on the bare cell line of
+      // its min cell (a group-label tab, when present, protrudes into the
+      // reserved room inside the box); the trailing edge is the outer edge
+      // of the max cell. effectiveGridSize and deckCenter derive from the
+      // same two axes.
       const { minX, minY, maxX, maxY } = this._bbox;
       if (maxX < minX || maxY < minY) return { left: 0, top: 0, right: 0, bottom: 0 };
-      const leftX = minX * (1 + this._colGap);
-      const rightX = maxX * (1 + this._colGap) + 1;
-      const slideTopY = minY + this._cumulativeRowGap(minY) * this._dvmaxToRow;
-      const topY = slideTopY - this._labelExtra(minY) * this._dvmaxToRow;
-      const bottomY = maxY + this._cumulativeRowGap(maxY) * this._dvmaxToRow + 1;
-      return { left: leftX, top: topY, right: rightX, bottom: bottomY };
+      return {
+        left: this._colAxis.deckLeadingEdge(),
+        top: this._rowAxis.deckLeadingEdge(),
+        right: this._colAxis.deckTrailingEdge(),
+        bottom: this._rowAxis.deckTrailingEdge(),
+      };
     }
 
     effectiveGridSize() {
-      const b = this.deckBounds();
-      return { cols: b.right - b.left, rows: b.bottom - b.top };
+      return { cols: this._colAxis.deckExtent(), rows: this._rowAxis.deckExtent() };
     }
 
     fitAllScale() {
@@ -162,8 +227,7 @@
     }
 
     deckCenter() {
-      const b = this.deckBounds();
-      return { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 };
+      return { x: this._colAxis.deckCenter(), y: this._rowAxis.deckCenter() };
     }
 
     overlayBounds(margin) {
@@ -195,7 +259,7 @@
       return 0.5 + (fanIndex - (fanSize - 1) / 2) * spacing / sideLen;
     }
 
-    cellBounds(minX, minY, maxX, maxY, padding) {
+    cellBounds(minCol, minRow, maxCol, maxRow, padding) {
       const vw = this._vw;
       const vh = this._vh;
       const vmax = Math.max(vw, vh);
@@ -204,20 +268,16 @@
       const sidePad = padding.side * vmax;
       const bottomPad = padding.bottom * vmax;
 
-      const minGapY = this._cumulativeRowGap(minY) * this._dvmaxToRow;
-      const maxGapY = this._cumulativeRowGap(maxY) * this._dvmaxToRow;
-
-      const left = (minX + minX * this._colGap) * vw - sidePad;
-      const top = (minY + minGapY) * vh - topPad;
-      const right = (maxX + maxX * this._colGap + 1) * vw + sidePad;
-      const bottom = (maxY + maxGapY + 1) * vh + bottomPad;
+      const left = this._colAxis.abstractStart(minCol) * vw - sidePad;
+      const top = this._rowAxis.abstractStart(minRow) * vh - topPad;
+      const right = this._colAxis.abstractEnd(maxCol) * vw + sidePad;
+      const bottom = this._rowAxis.abstractEnd(maxRow) * vh + bottomPad;
 
       return { left, top, width: right - left, height: bottom - top, topPad };
     }
 
     get edges() { return this._edges; }
     get groups() { return this._groups; }
-    rowGapAbove(row) { return row < this._rowGaps.length ? this._rowGaps[row] : 0; }
 
     groupBounds(group) {
       const xs = group.slide_ids.map((id) => this._slides[id][0]);
@@ -230,60 +290,27 @@
       };
     }
 
-    _computeLabelRows() {
-      // Set of absolute row indices that carry a group label (the
-      // minimum row of each group). _labelExtra(row) reads from this.
-      const set = new Set();
+    _computeRowExtras() {
+      // Map of label-row -> LABEL_EXTRA, fed to the row AxisGeometry as its
+      // per-cell extra. A group's label sits on its topmost (minimum-y)
+      // row; two groups sharing that row set the same key once, so the tab
+      // room is reserved a single time.
+      const extras = new Map();
       for (const group of this._groups) {
         const ys = group.slide_ids.map((id) => this._slides[id][1]);
-        set.add(Math.min(...ys));
+        extras.set(Math.min(...ys), CanvasGeometry.LABEL_EXTRA);
       }
-      return set;
-    }
-
-    _innerRowGap(row) {
-      // Inter-row spacing above row r, in dvmax units. GAP whenever the
-      // row above could host a slide (r > 0). Has no effect on the deck's
-      // visible bounding box when r is the topmost occupied row — there's
-      // no neighbour above to separate from — which is why deckBounds
-      // pulls _labelExtra(minY) out of the topmost gap directly.
-      return row > 0 ? CanvasGeometry.GAP : 0;
-    }
-
-    _labelExtra(row) {
-      // Label-tab room above row r, in dvmax units. LABEL_EXTRA whenever
-      // row r itself carries a group label.
-      return this._labelRows.has(row) ? CanvasGeometry.LABEL_EXTRA : 0;
-    }
-
-    _computeRowGaps() {
-      // Precomputed `_innerRowGap(i) + _labelExtra(i)` for each absolute
-      // row, indexed up to maxY (inclusive). Length must reach maxY + 1
-      // even when the deck doesn't start at row 0, because
-      // _cumulativeRowGap(r) traverses gaps[0..r] regardless of minY.
-      const { maxY } = this._bbox;
-      if (maxY < 0) return [];
-      const gaps = [];
-      for (let i = 0; i <= maxY; i++) {
-        gaps.push(this._innerRowGap(i) + this._labelExtra(i));
-      }
-      return gaps;
-    }
-
-    _cumulativeRowGap(row) {
-      let total = 0;
-      for (let i = 0; i <= row; i++) total += this._rowGaps[i];
-      return total;
+      return extras;
     }
 
     attachmentPoint(gridX, gridY, side, fanOff) {
-      const ox = gridX * this._colGap;
-      const oy = this._cumulativeRowGap(gridY) * this._dvmaxToRow;
+      const baseX = this._colAxis.abstractStart(gridX);
+      const baseY = this._rowAxis.abstractStart(gridY);
       let x, y;
-      if (side === "top")         { x = gridX + ox + fanOff; y = gridY + oy; }
-      else if (side === "bottom") { x = gridX + ox + fanOff; y = gridY + oy + 1.0; }
-      else if (side === "left")   { x = gridX + ox;          y = gridY + oy + fanOff; }
-      else                        { x = gridX + ox + 1.0;    y = gridY + oy + fanOff; }
+      if (side === "top")         { x = baseX + fanOff; y = baseY; }
+      else if (side === "bottom") { x = baseX + fanOff; y = baseY + 1.0; }
+      else if (side === "left")   { x = baseX;          y = baseY + fanOff; }
+      else                        { x = baseX + 1.0;    y = baseY + fanOff; }
       return { x, y };
     }
 
@@ -1597,6 +1624,7 @@
   // ---- Exports (for Node.js / Vitest testing) -------------------------------
 
   if (typeof exports !== "undefined") {
+    exports.AxisGeometry = AxisGeometry;
     exports.CanvasGeometry = CanvasGeometry;
     exports.ScrollManager = ScrollManager;
     exports.SnapManager = SnapManager;

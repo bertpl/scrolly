@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, IdleTimer, resolveTarget, evaluatePiecewiseLinear } = require("../../scrolly/render/assets/canvas.js");
+const { AxisGeometry, CanvasGeometry, ScrollManager, SnapManager, EdgeArrows, BezierOverlay, GroupLayout, ViewState, IdleTimer, resolveTarget, evaluatePiecewiseLinear } = require("../../scrolly/render/assets/canvas.js");
 
 function _geo(slides, fanSpacingFactor) {
   return new CanvasGeometry({
@@ -10,6 +10,212 @@ function _geo(slides, fanSpacingFactor) {
     fanSpacingFactor: fanSpacingFactor || 0.1,
   });
 }
+
+describe("AxisGeometry", () => {
+  function _axis(min, max, extras) {
+    // baseGap = CanvasGeometry.GAP = 10.
+    return new AxisGeometry(min, max, 10, extras || new Map());
+  }
+
+  describe("span", () => {
+    it("is 0 for an empty axis (max < min)", () => {
+      expect(_axis(0, -1).span).toBe(0);
+    });
+
+    it("is 1 for a single cell", () => {
+      expect(_axis(3, 3).span).toBe(1);
+    });
+
+    it("counts inclusively across positive bounds", () => {
+      expect(_axis(0, 2).span).toBe(3);
+    });
+
+    it("counts inclusively across negative bounds", () => {
+      expect(_axis(-2, 1).span).toBe(4);
+    });
+  });
+
+  describe("gapBefore", () => {
+    it("has no base gap on the leading cell (even when negative)", () => {
+      expect(_axis(-2, 1).gapBefore(-2)).toBe(0);
+    });
+
+    it("is the base gap above the leading cell", () => {
+      expect(_axis(-2, 1).gapBefore(-1)).toBe(10);
+    });
+
+    it("adds the per-cell extra to the base gap", () => {
+      expect(_axis(0, 2, new Map([[1, 4]])).gapBefore(1)).toBe(14);
+    });
+
+    it("is extra-only when the extra falls on the leading cell", () => {
+      expect(_axis(0, 2, new Map([[0, 4]])).gapBefore(0)).toBe(4);
+    });
+  });
+
+  describe("cumulativeGap", () => {
+    it("is 0 at the leading cell with no extra", () => {
+      expect(_axis(-2, 1).cumulativeGap(-2)).toBe(0);
+    });
+
+    it("accumulates the base gap relative to min, not 0", () => {
+      // Cell 0 in a [-2, 1] axis is two steps from min → 2 * GAP.
+      expect(_axis(-2, 1).cumulativeGap(0)).toBe(20);
+    });
+
+    it("counts extras only within [min, i]", () => {
+      const a = _axis(0, 3, new Map([[1, 4], [3, 4]]));
+      // up to cell 2: base 2*10 + extra at 1 only (extra at 3 excluded) = 24
+      expect(a.cumulativeGap(2)).toBe(24);
+    });
+
+    it("reads out-of-range indices as 0", () => {
+      const a = _axis(0, 1);
+      expect(a.cumulativeGap(-5)).toBe(0);
+      expect(a.cumulativeGap(5)).toBe(0);
+    });
+  });
+
+  describe("abstractStart and factor", () => {
+    it("ignores gaps before setFactor (factor defaults to 0)", () => {
+      expect(_axis(-2, 1).abstractStart(1)).toBe(1);
+    });
+
+    it("applies the factor to the cumulative gap", () => {
+      const a = _axis(-2, 1);
+      a.setFactor(0.01);
+      // cell 0 is 2*GAP = 20 gap-units from min → 0 + 20*0.01 = 0.2
+      expect(a.abstractStart(0)).toBeCloseTo(0.2);
+    });
+  });
+
+  describe("deck edges", () => {
+    it("leading edge sits on the bare min cell line", () => {
+      const a = _axis(-2, 1);
+      a.setFactor(0.01);
+      expect(a.deckLeadingEdge()).toBeCloseTo(-2);
+    });
+
+    it("pulls a leading-cell extra back out of the leading edge", () => {
+      // A label/extra on the leading cell must not push the bbox edge in.
+      const a = _axis(0, 2, new Map([[0, 4]]));
+      a.setFactor(0.01);
+      expect(a.deckLeadingEdge()).toBeCloseTo(0);
+    });
+
+    it("extent is shift-invariant and centre tracks the shift", () => {
+      const atOrigin = _axis(0, 2);
+      atOrigin.setFactor(0.01);
+      const negative = _axis(-5, -3);
+      negative.setFactor(0.01);
+      expect(negative.deckExtent()).toBeCloseTo(atOrigin.deckExtent());
+      // origins differ by 5 → centres differ by 5
+      expect(atOrigin.deckCenter() - negative.deckCenter()).toBeCloseTo(5);
+    });
+  });
+});
+
+// ---- CanvasGeometry — negative & off-origin coordinates -------------------
+
+describe("CanvasGeometry — negative & off-origin coordinates", () => {
+  function _geoWithGroup(slides, groups) {
+    return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
+  }
+
+  it("cols/rows count inclusively across a negative bounding box", () => {
+    const g = _geo({ a: [-1, -1], b: [0, 0] });
+    expect(g.cols).toBe(2);
+    expect(g.rows).toBe(2);
+  });
+
+  it("leaves a real inter-row gap between row -1 and row 0 (regression)", () => {
+    // The bug this PR fixes: a slide at row -1 used to abut row 0 with no
+    // gap, because the row-gap array was indexed from absolute 0.
+    const g = _geo({ a: [0, -1], b: [0, 0] });
+    g.refresh(1000, 1000);
+    expect(g.slideGapOffset("a").gapY).toBe(0);   // top row, no gap above
+    expect(g.slideGapOffset("b").gapY).toBe(10);  // one GAP above row 0
+    // b's top edge sits a full GAP*factor below a's bottom edge.
+    const aPos = g.slideAbstractPos("a");
+    const bPos = g.slideAbstractPos("b");
+    expect(bPos.y - (aPos.y + 1)).toBeCloseTo(0.1);  // GAP(10) * factor(0.01)
+  });
+
+  it("leaves a real inter-column gap between col -1 and col 0", () => {
+    const g = _geo({ a: [-1, 0], b: [0, 0] });
+    g.refresh(1000, 1000);
+    expect(g.slideGapOffset("a").gapX).toBe(0);
+    expect(g.slideGapOffset("b").gapX).toBe(10);
+    const aPos = g.slideAbstractPos("a");
+    const bPos = g.slideAbstractPos("b");
+    expect(bPos.x - (aPos.x + 1)).toBeCloseTo(0.1);
+  });
+
+  it("deckBounds sits on the bare cell lines for a negative-origin deck", () => {
+    const g = _geo({ a: [-2, -1], b: [-1, -1] });
+    g.refresh(1000, 1000);
+    const b = g.deckBounds();
+    expect(b.left).toBeCloseTo(-2);   // minX
+    expect(b.top).toBeCloseTo(-1);    // minY
+    expect(b.right).toBeCloseTo(0.1); // -1 + 1*GAP*0.01 + 1
+    expect(b.bottom).toBeCloseTo(0);  // -1 + 1 (single row)
+  });
+
+  it("is shift-invariant into negative space (size + fit scale)", () => {
+    const atOrigin = _geo({ a: [0, 0], b: [1, 0] });
+    atOrigin.refresh(1000, 1000);
+    const negative = _geo({ a: [-3, -2], b: [-2, -2] });
+    negative.refresh(1000, 1000);
+    expect(negative.effectiveGridSize().cols).toBeCloseTo(atOrigin.effectiveGridSize().cols);
+    expect(negative.effectiveGridSize().rows).toBeCloseTo(atOrigin.effectiveGridSize().rows);
+    expect(negative.fitAllScale()).toBeCloseTo(atOrigin.fitAllScale());
+  });
+
+  it("builds a bezier path inside overlayBounds for negative-coord slides", () => {
+    const geo = new CanvasGeometry({
+      slides: { a: [-2, -1], b: [-1, -1] },
+      edges: [{
+        a_slide: "a", a_side: "right", a_fan_index: 0, a_fan_size: 1,
+        b_slide: "b", b_side: "left", b_fan_index: 0, b_fan_size: 1,
+      }],
+      fanSpacingFactor: 0.1,
+    });
+    geo.refresh(1000, 1000);
+    const o = geo.overlayBounds(BezierOverlay.MARGIN);
+    const d = geo.buildPath(geo.edges[0]);
+    const m = d.match(/^M ([\d.-]+) ([\d.-]+) .* ([\d.-]+) ([\d.-]+)$/);
+    const mx = Number(m[1]), my = Number(m[2]);
+    expect(mx).toBeGreaterThanOrEqual(o.left);
+    expect(mx).toBeLessThanOrEqual(o.left + o.width);
+    expect(my).toBeGreaterThanOrEqual(o.top);
+    expect(my).toBeLessThanOrEqual(o.top + o.height);
+  });
+
+  it("applies LABEL_EXTRA on a negative top row", () => {
+    const noLabel = _geoWithGroup({ a: [0, -1], b: [1, -1] }, []);
+    noLabel.refresh(1000, 1000);
+    const labelled = _geoWithGroup(
+      { a: [0, -1], b: [1, -1] },
+      [{ label: "G", slide_ids: ["a", "b"] }],
+    );
+    labelled.refresh(1000, 1000);
+    const nl = noLabel.deckBounds();
+    const l = labelled.deckBounds();
+    expect(l.top).toBeCloseTo(nl.top);  // top edge stays on the cell line (-1)
+    expect((l.bottom - l.top) - (nl.bottom - nl.top)).toBeCloseTo(0.04);  // LABEL_EXTRA
+  });
+
+  it("is symmetric under transpose (columns behave as rows do)", () => {
+    // Same shape rotated 90° on a square viewport, no labels: the column
+    // axis and the row axis must produce identical geometry.
+    const horizontal = _geo({ a: [0, 0], b: [2, 0] });
+    horizontal.refresh(1000, 1000);
+    const vertical = _geo({ a: [0, 0], b: [0, 2] });
+    vertical.refresh(1000, 1000);
+    expect(horizontal.effectiveGridSize().cols).toBeCloseTo(vertical.effectiveGridSize().rows);
+    expect(horizontal.slideGapOffset("b").gapX).toBe(vertical.slideGapOffset("b").gapY);
+  });
+});
 
 describe("CanvasGeometry", () => {
   // ---- Grid dimensions ----------------------------------------------------
@@ -181,23 +387,11 @@ describe("CanvasGeometry", () => {
         ],
       );
       g.refresh(1000, 1000);
-      // Both groups start at row 1, but extra is applied once
+      // Both groups start at row 1, but the label extra is applied once.
+      // Row 1 is the deck's topmost row, so it carries no inter-row GAP —
+      // only LABEL_EXTRA once (not 2*LABEL_EXTRA).
       const gap = g.slideGapOffset("a");
-      expect(gap.gapY).toBe(14); // GAP + LABEL_EXTRA, not GAP + 2*LABEL_EXTRA
-    });
-
-    it("rowGapAbove returns gap for valid row", () => {
-      const g = _geoWithGroup(
-        { a: [0, 0], b: [0, 1] },
-        [{ label: "G", slide_ids: ["b"] }],
-      );
-      expect(g.rowGapAbove(0)).toBe(0);
-      expect(g.rowGapAbove(1)).toBe(14); // GAP + LABEL_EXTRA
-    });
-
-    it("rowGapAbove returns 0 for out-of-range row", () => {
-      const g = _geoWithGroup({ a: [0, 0] }, []);
-      expect(g.rowGapAbove(5)).toBe(0);
+      expect(gap.gapY).toBe(4);
     });
 
     it("slideAbstractPos accounts for per-row gaps", () => {
@@ -328,13 +522,14 @@ describe("CanvasGeometry", () => {
       const g = _geo({ a: [3, 2], b: [4, 2] });
       g.refresh(1000, 1000);
       const b = g.deckBounds();
-      // left = 3*1.1 = 3.3; right = 4*1.1 + 1 = 5.4
-      expect(b.left).toBeCloseTo(3.3);
-      expect(b.right).toBeCloseTo(5.4);
-      // topY = 2 + cumRowGap(2)*0.01 - 0 = 2 + 20*0.01 = 2.20
-      // bottomY = 2 + 20*0.01 + 1 = 3.20
-      expect(b.top).toBeCloseTo(2.20);
-      expect(b.bottom).toBeCloseTo(3.20);
+      // Bbox-relative: the leading edges sit on the bare min cell lines
+      // (left = minX = 3, top = minY = 2), with gaps accumulating toward
+      // the trailing edges. left = 3; right = 4 + 1*GAP*0.01 + 1 = 5.1.
+      expect(b.left).toBeCloseTo(3);
+      expect(b.right).toBeCloseTo(5.1);
+      // Single row: top = 2; bottom = 2 + 1 = 3.
+      expect(b.top).toBeCloseTo(2);
+      expect(b.bottom).toBeCloseTo(3);
     });
 
     it("grows the deck by LABEL_EXTRA when the topmost row carries a label", () => {
@@ -450,19 +645,15 @@ describe("CanvasGeometry", () => {
     });
 
     it("tracks the bounding-box centroid for off-origin decks", () => {
-      // Same shape as above but shifted by (+3, +2). Centre should be
-      // the previous centre shifted by the slide-and-gap offsets, not
-      // ((maxX+1)/2, (maxY+1)/2).
+      // Same shape as above but shifted by (+3, +2). Centre is the midpoint
+      // of the bbox-relative bounds, not ((maxX+1)/2, (maxY+1)/2).
       const g = _geo({ a: [3, 2], b: [4, 2] });
       g.refresh(1000, 1000);
       const c = g.deckCenter();
-      // left = 3 * 1.1 = 3.3; right = 4 * 1.1 + 1 = 5.4; cx = 4.35
-      expect(c.x).toBeCloseTo(4.35);
-      // topY = 2 + cumRowGap(2)*dvmaxToRow; bottomY = 2 + cumRowGap(2)*dvmaxToRow + 1
-      // cy = topY + 0.5
-      // cumRowGap(2) = gaps[0] + gaps[1] + gaps[2] = 0 + 10 + 10 = 20 (no labels)
-      // dvmaxToRow = 1/100 on square; topY = 2.20; cy = 2.70
-      expect(c.y).toBeCloseTo(2.70);
+      // left = 3; right = 4 + 1*GAP*0.01 + 1 = 5.1; cx = 4.05
+      expect(c.x).toBeCloseTo(4.05);
+      // top = 2; bottom = 3 (single row, no gap); cy = 2.5
+      expect(c.y).toBeCloseTo(2.5);
     });
   });
 
@@ -538,7 +729,8 @@ describe("CanvasGeometry", () => {
     });
 
     it("left side places at cell left edge with gap offset", () => {
-      const g = _geo({ a: [1, 0] });
+      // Anchor at origin so col 1 is genuinely offset from the deck min.
+      const g = _geo({ o: [0, 0], a: [1, 0] });
       g.refresh(1000, 1000);
       const p = g.attachmentPoint(1, 0, "left", 0.5);
       // x = 1 + 1 * 0.1 = 1.1
@@ -563,7 +755,8 @@ describe("CanvasGeometry", () => {
     });
 
     it("includes gap offset for non-origin cells", () => {
-      const g = _geo({ a: [2, 1] });
+      // Anchor at origin so (2, 1) is genuinely offset from the deck min.
+      const g = _geo({ o: [0, 0], a: [2, 1] });
       g.refresh(1600, 900);
       const p = g.attachmentPoint(2, 1, "right", 0.5);
       // colGap = 0.1 on landscape; x = 2 + 2*0.1 + 1.0 = 3.2
@@ -860,20 +1053,20 @@ describe("BezierOverlay.computePaths", () => {
     });
     geo.refresh(1000, 1000);
     const result = new BezierOverlay(geo, null).computePaths();
-    // deckBounds: left = 2*1.1 = 2.2; right = 3*1.1 + 1 = 4.3; cols = 2.1.
-    // top = 1 + cumRowGap(1)*0.01 = 1.1; bottom = 2.1; rows = 1.
-    // MARGIN=2 → SVG left=0.2, top=-0.9, width=6.1, height=5.
-    expect(result.viewBox).toBe("0.2 -0.9 6.1 5");
-    expect(result.left).toBe("20dvw");
-    expect(result.top).toBe("-90dvh");
+    // Bbox-relative deckBounds: left = minX = 2; right = 3 + 1*GAP*0.01 + 1
+    // = 4.1; cols = 2.1. top = minY = 1; bottom = 1 + 1 = 2; rows = 1.
+    // MARGIN=2 → SVG left=0, top=-1, width=6.1, height=5.
+    expect(result.viewBox).toBe("0 -1 6.1 5");
+    expect(result.left).toBe("0dvw");
+    expect(result.top).toBe("-100dvh");
     expect(result.width).toBe("610dvw");
     expect(result.height).toBe("500dvh");
     // Path endpoints stay in absolute-grid coords; under the new viewBox
     // they fall inside the SVG's clipping box.
     const m = result.paths[0].match(/^M ([\d.-]+) ([\d.-]+) .* ([\d.-]+) ([\d.-]+)$/);
     const [, mx, my, , ] = m;
-    expect(Number(mx)).toBeCloseTo(3.2);  // gridX=2 + colGap*2 + 1.0
-    expect(Number(my)).toBeCloseTo(1.6);  // gridY=1 + cumRowGap(1)*0.01 + fanOff=0.5
+    expect(Number(mx)).toBeCloseTo(3);    // abstractStart(2)=2 (deck min) + 1.0
+    expect(Number(my)).toBeCloseTo(1.5);  // abstractStart(1)=1 (deck min) + fanOff=0.5
   });
 
   it("skips edges with unknown slides", () => {
