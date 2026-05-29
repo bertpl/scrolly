@@ -19,6 +19,7 @@ from .recipe import (
     HoldStep,
     KeyOverlay,
     Recipe,
+    ScrollHintOverlay,
     ScrollStep,
     ViewStep,
 )
@@ -26,6 +27,8 @@ from .recipe import (
 # Pulse / hold durations for the momentary interaction cues, in ms.
 _CLICK_PULSE_MS = 300
 _KEY_HOLD_MS = 600
+# Wheel-cycle period for the scroll-hint glyph, in ms.
+_SCROLL_CYCLE_MS = 700
 
 
 # ==================================================================================================
@@ -82,7 +85,15 @@ class KeyDraw:
     alpha: float
 
 
-OverlayDraw = CaptionDraw | CursorDraw | ClickDraw | KeyDraw
+@dataclass(frozen=True)
+class ScrollHintDraw:
+    """Draw the scroll-mouse glyph at `pos`; `phase` 0..1 drives the wheel."""
+
+    pos: tuple[float, float]
+    phase: float
+
+
+OverlayDraw = CaptionDraw | CursorDraw | ClickDraw | KeyDraw | ScrollHintDraw
 
 
 @dataclass(frozen=True)
@@ -170,6 +181,8 @@ def _overlay_draws(overlay: object, step: StepFrames, fps: int):
         yield from _click_draws(overlay, step, fps)
     elif isinstance(overlay, KeyOverlay):
         yield from _key_draws(overlay, step, fps)
+    elif isinstance(overlay, ScrollHintOverlay):
+        yield from _scroll_hint_draws(overlay, step, fps)
 
 
 def _caption_draws(overlay: CaptionOverlay, step: StepFrames, fps: int):
@@ -219,6 +232,17 @@ def _key_draws(overlay: KeyOverlay, step: StepFrames, fps: int):
         tail = max(hold // 3, 1)
         alpha = 1.0 if k < hold - tail else max(0.0, (hold - k) / tail)
         yield step.global_start + f, KeyDraw(label=overlay.label, alpha=alpha)
+
+
+def _scroll_hint_draws(overlay: ScrollHintOverlay, step: StepFrames, fps: int):
+    """Emit a scroll-mouse draw per in-span frame; the wheel cycles downward."""
+    cycle = _frame_count(_SCROLL_CYCLE_MS, fps)
+    start, end = overlay.span
+    for f in range(step.n_frames):
+        p = _progress(f, step.n_frames)
+        if not start <= p <= end:
+            continue
+        yield step.global_start + f, ScrollHintDraw(pos=overlay.pos, phase=(f % cycle) / cycle)
 
 
 # --- math helpers ---------------------------------

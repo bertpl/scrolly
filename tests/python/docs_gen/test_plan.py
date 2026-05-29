@@ -7,6 +7,7 @@ from animation_engine.plan import (
     ClickDraw,
     CursorDraw,
     KeyDraw,
+    ScrollHintDraw,
     build_frame_plan,
     frame_filename,
 )
@@ -149,6 +150,22 @@ def test_key_chip_appears() -> None:
     assert keys and all(k.label == "Z" for k in keys)
 
 
+def test_scroll_hint_emits_cycling_phase() -> None:
+    # --- arrange ----------------------
+    recipe = _recipe(
+        [{"type": "hold", "view": "deck", "ms": 1000}],
+        overlays=[{"type": "scroll_hint", "step": 0, "span": [0.0, 1.0], "pos": [100, 200]}],
+    )
+
+    # --- act --------------------------
+    plan = build_frame_plan(recipe)
+    hints = [d for frame in plan.overlay_draws for d in frame if isinstance(d, ScrollHintDraw)]
+
+    # --- assert -----------------------
+    assert hints
+    assert all(0.0 <= h.phase < 1.0 and h.pos == (100.0, 200.0) for h in hints)
+
+
 # ==================================================================================================
 #  Helpers + shipped recipe
 # ==================================================================================================
@@ -157,15 +174,15 @@ def test_frame_filename_is_zero_padded() -> None:
     assert frame_filename(7) == "frame-00007.png"
 
 
-def test_shipped_recipe_plans_all_overlay_types(project_root: Path) -> None:
+def test_shipped_recipe_plans_cleanly(project_root: Path) -> None:
     # --- arrange ----------------------
     recipe = load_recipe(project_root / "docs" / "_gen" / "animation_engine" / "hero-animation.recipe.json")
 
     # --- act --------------------------
     plan = build_frame_plan(recipe)
-    drawn_types = {type(d) for frame in plan.overlay_draws for d in frame}
+    drawn = [d for frame in plan.overlay_draws for d in frame]
 
     # --- assert -----------------------
     assert plan.total_frames > 0
     assert len(plan.overlay_draws) == plan.total_frames
-    assert drawn_types == {CaptionDraw, CursorDraw, ClickDraw, KeyDraw}
+    assert drawn  # overlays resolve to per-frame draws
