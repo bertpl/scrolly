@@ -1,0 +1,51 @@
+{
+  // Hero-animation recipe (JSON5 syntax; .json extension to match
+  // scrolly's deck files). A short proof-of-infra storyboard that
+  // exercises every step type (hold / view / scroll) and every overlay
+  // type (caption / cursor / click / key) end-to-end. The polished
+  // storyboard + captions are authored on top of this same schema when
+  // the real hero animation is tuned.
+
+  // deck file — the path `scrolly build` takes (not the directory).
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 2 },
+  fps: 15,
+  output: { path: "docs/assets/hero-v1.gif", loop: true, quality: 80 },
+
+  // ---- storyboard ----------------------------------------------------
+  steps: [
+    // 0 — open on the deck map.
+    { type: "hold", view: "deck", ms: 1000 },
+
+    // 1 — pan to the overview slide (still zoomed out).
+    { type: "view", slide: "overview", ms: 450 },
+
+    // 2 — zoom into the slide.
+    { type: "view", to: "slide", ms: 450 },
+
+    // 3 — scroll the overview slide top to bottom.
+    { type: "scroll", slide: "overview", from: 0.0, to: 1.0, ms: 2500, ease: "ease-in-out" },
+
+    // 4 — zoom back out to the deck map.
+    { type: "view", to: "deck", ms: 450 },
+
+    // 5 — settle on the deck map (loop point).
+    { type: "hold", view: "deck", ms: 600 },
+  ],
+
+  // ---- overlays (anchored to step index + fractional span) -----------
+  overlays: [
+    { type: "caption", step: 0, span: [0.15, 0.95], anchor: "bottom-center",
+      text: "A deck is a 2D canvas of slides", fade_ms: 200 },
+
+    // Glide the cursor to the slide and click to zoom in (step 2).
+    { type: "cursor", step: 2, span: [0.0, 0.8], from: [1180, 60], to: [640, 360] },
+    { type: "click", step: 2, at: 0.85, pos: [640, 360] },
+
+    { type: "caption", step: 3, span: [0.08, 0.92], anchor: "bottom-center",
+      text: "Scroll to drive the animation", fade_ms: 250 },
+
+    // Show the zoom-out key chip as we zoom back to the deck (step 4).
+    { type: "key", step: 4, at: 0.0, label: "Z" },
+  ],
+}
