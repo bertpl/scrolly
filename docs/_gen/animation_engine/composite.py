@@ -20,7 +20,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from .plan import CaptionDraw, ClickDraw, CursorDraw, FramePlan, KeyDraw, frame_filename
+from .plan import CaptionDraw, ClickDraw, CursorDraw, FramePlan, KeyDraw, ScrollHintDraw, frame_filename
 from .recipe import Recipe
 
 _FONT_CANDIDATES = (
@@ -88,6 +88,8 @@ def _paint(frame, draws, scale: int, fonts: _Fonts) -> None:
             _draw_click(draw, d, scale)
         elif isinstance(d, KeyDraw):
             _draw_key(draw, frame.size, d, scale, fonts.key)
+        elif isinstance(d, ScrollHintDraw):
+            _draw_scroll_hint(draw, d, scale)
     frame.alpha_composite(layer)
 
 
@@ -98,7 +100,7 @@ def _draw_caption(draw, size, d: CaptionDraw, scale: int, font) -> None:
     pad = round(16 * scale)
     left, top, right, bottom = draw.textbbox((0, 0), d.text, font=font)
     box_w, box_h = (right - left) + 2 * pad, (bottom - top) + 2 * pad
-    x, y = _anchor_xy(d.anchor, width, height, box_w, box_h, round(44 * scale))
+    x, y = _anchor_xy(d.anchor, width, height, box_w, box_h, round(30 * scale))
     draw.rounded_rectangle([x, y, x + box_w, y + box_h], radius=round(12 * scale), fill=(0, 0, 0, round(alpha * 0.6)))
     draw.text((x + pad - left, y + pad - top), d.text, font=font, fill=(255, 255, 255, alpha))
 
@@ -106,7 +108,7 @@ def _draw_caption(draw, size, d: CaptionDraw, scale: int, font) -> None:
 def _draw_cursor(draw, pos: tuple[float, float], scale: int) -> None:
     """Draw a simple arrow-cursor sprite with its tip at ``pos``."""
     x, y = pos[0] * scale, pos[1] * scale
-    s = 20 * scale
+    s = 34 * scale
     points = [
         (x, y),
         (x, y + 0.80 * s),
@@ -120,15 +122,17 @@ def _draw_cursor(draw, pos: tuple[float, float], scale: int) -> None:
 
 
 def _draw_click(draw, d: ClickDraw, scale: int) -> None:
-    """Draw an expanding, fading ring for a click pulse."""
+    """Draw an expanding, fading ring for a click pulse.
+
+    Amber on a white halo so the pulse reads on both the light deck map
+    and darker slide content (a plain white ring vanished on the deck).
+    """
     x, y = d.pos[0] * scale, d.pos[1] * scale
-    radius = (8 + d.progress * 26) * scale
+    radius = (14 + d.progress * 46) * scale
     alpha = round(255 * (1.0 - d.progress))
-    draw.ellipse(
-        [x - radius, y - radius, x + radius, y + radius],
-        outline=(255, 255, 255, alpha),
-        width=max(2, round(3 * scale)),
-    )
+    box = [x - radius, y - radius, x + radius, y + radius]
+    draw.ellipse(box, outline=(255, 255, 255, alpha), width=max(5, round(9 * scale)))
+    draw.ellipse(box, outline=(255, 138, 0, alpha), width=max(3, round(5 * scale)))
 
 
 def _draw_key(draw, size, d: KeyDraw, scale: int, font) -> None:
@@ -148,6 +152,22 @@ def _draw_key(draw, size, d: KeyDraw, scale: int, font) -> None:
         width=max(1, round(2 * scale)),
     )
     draw.text((x + (box_w - text_w) // 2 - left, y + pad - top), d.label, font=font, fill=(255, 255, 255, alpha))
+
+
+def _draw_scroll_hint(draw, d: ScrollHintDraw, scale: int) -> None:
+    """Draw a 'scroll down' mouse glyph; the wheel pill ticks downward."""
+    cx, cy = d.pos[0] * scale, d.pos[1] * scale
+    w, h = 30 * scale, 48 * scale
+    body = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2]
+    draw.rounded_rectangle(
+        body, radius=w / 2, fill=(255, 255, 255, 205), outline=(40, 40, 40, 235), width=max(2, round(3 * scale))
+    )
+    # Wheel pill ticks down from the top third and fades — reads as scroll-down.
+    top = cy - h / 2
+    wy = top + h * 0.18 + d.phase * h * 0.30
+    r = max(2, round(3.4 * scale))
+    a = round(235 * (1.0 - 0.7 * d.phase))
+    draw.rounded_rectangle([cx - r, wy - r * 1.7, cx + r, wy + r * 1.7], radius=r, fill=(40, 40, 40, a))
 
 
 def _anchor_xy(anchor: str, width: int, height: int, box_w: int, box_h: int, margin: int) -> tuple[int, int]:

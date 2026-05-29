@@ -134,7 +134,16 @@ class KeyOverlay:
     label: str
 
 
-Overlay = CaptionOverlay | CursorOverlay | ClickOverlay | KeyOverlay
+@dataclass(frozen=True)
+class ScrollHintOverlay:
+    """An animated scroll-mouse glyph shown over a fractional span of a step."""
+
+    step: int
+    span: tuple[float, float]
+    pos: tuple[float, float]
+
+
+Overlay = CaptionOverlay | CursorOverlay | ClickOverlay | KeyOverlay | ScrollHintOverlay
 
 
 # ==================================================================================================
@@ -277,6 +286,8 @@ def _parse_overlay(d: Any, n_steps: int) -> Overlay:
         return ClickOverlay(step=step, at=_at(d), pos=_xy(d, "pos"))
     if kind == "key":
         return KeyOverlay(step=step, at=_at(d), label=_req(d, "label", str))
+    if kind == "scroll_hint":
+        return ScrollHintOverlay(step=step, span=_span(d, "span"), pos=_xy(d, "pos"))
     raise ValueError(f"overlay: unknown type {kind!r}")
 
 

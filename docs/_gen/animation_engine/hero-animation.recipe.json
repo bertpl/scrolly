@@ -1,51 +1,97 @@
 {
-  // Hero-animation recipe (JSON5 syntax; .json extension to match
-  // scrolly's deck files). A short proof-of-infra storyboard that
-  // exercises every step type (hold / view / scroll) and every overlay
-  // type (caption / cursor / click / key) end-to-end. The polished
-  // storyboard + captions are authored on top of this same schema when
-  // the real hero animation is tuned.
+  // ================================================================
+  //  Hero animation — storyboard
+  //
+  //  A ~15s loop that sells scrolly in one glance: it's a 2D canvas
+  //  of slides you navigate by zoom + scroll, where scrolling
+  //  animates the content. Rendered from the stacked-diffs deck.
+  //
+  //    Beat 1  deck map   — a 2D canvas of slides; colored groups + bezier edges
+  //    Beat 2  zoom in    — dive into the hero slide (cursor glides + clicks)
+  //    Beat 3  scroll     — the money shot: the git graph builds (image_sequence
+  //                         + reverse) while the viewport pans up the oversized
+  //                         graph, steps tick off, Conclusions + References slide in
+  //    Beat 4  branch     — click the right arrow to pan into the green detail
+  //                         slide; click the left arrow to come back (it's a
+  //                         navigable graph, not a linear deck)
+  //    Beat 5  settle     — zoom out to the whole canvas; loops to Beat 1
+  //
+  //  Camera note: deck view is fit-all and ignores the selected slide, so
+  //  every camera *move* happens zoomed in (where the view follows the
+  //  selection). Edge arrows are hidden during transitions and in deck
+  //  view, so an arrow-click cue must land on a settled, zoomed-in slide.
+  //
+  //  Budget: <= 10 MB, 1280x720 @ 2x, 20 fps.
+  // ================================================================
 
   // deck file — the path `scrolly build` takes (not the directory).
   deck: "examples/stacked-diffs/deck.deck.json",
   viewport: { width: 1280, height: 720, scale: 2 },
-  fps: 15,
-  output: { path: "docs/assets/hero-v1.gif", loop: true, quality: 80 },
+  fps: 20,
+  output: { path: "docs/assets/hero-v1.gif", loop: true, quality: 100 },
 
-  // ---- storyboard ----------------------------------------------------
+  // ---- storyboard (steps) -------------------------------------------
   steps: [
-    // 0 — open on the deck map.
-    { type: "hold", view: "deck", ms: 1000 },
+    // Beat 1 — open on the deck map with the hero slide selected.
+    { type: "hold", view: "deck", slide: "slide-3", ms: 1800 },
 
-    // 1 — pan to the overview slide (still zoomed out).
-    { type: "view", slide: "overview", ms: 450 },
+    // Beat 2 — zoom into the hero slide (cursor/click lands at the tail
+    // of Beat 1 to motivate the zoom).
+    { type: "view", to: "slide", ms: 600 },
 
-    // 2 — zoom into the slide.
-    { type: "view", to: "slide", ms: 450 },
+    // Beat 3 — money shot: scroll slide-3 end to end, then settle (the
+    // settle is where the right-arrow click cue lands — arrows are only
+    // visible on a settled, zoomed-in slide).
+    { type: "scroll", slide: "slide-3", from: 0.0, to: 1.0, ms: 5500, ease: "ease-in-out" },
+    { type: "hold", view: "slide", slide: "slide-3", ms: 800 },
 
-    // 3 — scroll the overview slide top to bottom.
-    { type: "scroll", slide: "overview", from: 0.0, to: 1.0, ms: 2500, ease: "ease-in-out" },
+    // Beat 4 — click right arrow -> pan into the green detail slide;
+    // dwell (left-arrow click cue lands here); click left arrow -> back.
+    { type: "view", slide: "detail-3", ms: 1200 },
+    { type: "hold", view: "slide", slide: "detail-3", ms: 2300 },
+    { type: "view", slide: "slide-3", ms: 1000 },
 
-    // 4 — zoom back out to the deck map.
-    { type: "view", to: "deck", ms: 450 },
-
-    // 5 — settle on the deck map (loop point).
-    { type: "hold", view: "deck", ms: 600 },
+    // Beat 5 — zoom out to the full canvas and settle; matches Beat 1
+    // (deck view, slide-3 selected) so the loop seam is clean.
+    { type: "view", to: "deck", ms: 900 },
+    { type: "hold", view: "deck", slide: "slide-3", ms: 1300 },
   ],
 
-  // ---- overlays (anchored to step index + fractional span) -----------
+  // ---- overlays (captions + interaction cues) -----------------------
+  // Cursor/click coords are viewport px (pre-scale). The edge-arrow
+  // targets are derived from canvas.css (right arrow ~[1248,360], left
+  // arrow ~[32,360]); the deck-view slide-3 target is a first guess —
+  // eyeball and nudge after a run.
   overlays: [
-    { type: "caption", step: 0, span: [0.15, 0.95], anchor: "bottom-center",
-      text: "A deck is a 2D canvas of slides", fade_ms: 200 },
+    // Beat 1 caption + cursor/click that motivates the zoom into Beat 2.
+    { type: "caption", step: 0, span: [0.18, 0.95], anchor: "bottom-center",
+      text: "A 2D canvas of slides", fade_ms: 200 },
+    { type: "cursor", step: 0, span: [0.5, 0.97], from: [1150, 120], to: [640, 300] },
+    { type: "click", step: 0, at: 0.97, pos: [640, 300] },
 
-    // Glide the cursor to the slide and click to zoom in (step 2).
-    { type: "cursor", step: 2, span: [0.0, 0.8], from: [1180, 60], to: [640, 360] },
-    { type: "click", step: 2, at: 0.85, pos: [640, 360] },
+    // Beat 3 caption (over the scroll).
+    { type: "caption", step: 2, span: [0.06, 0.92], anchor: "bottom-center",
+      text: "Scroll drives the animation", fade_ms: 250 },
+    // Beat 3 scroll cue — animated mouse-wheel glyph, right of center.
+    // TUNE: pos is viewport px; nudge after a run.
+    { type: "scroll_hint", step: 2, span: [0.12, 0.85], pos: [1185, 330] },
 
-    { type: "caption", step: 3, span: [0.08, 0.92], anchor: "bottom-center",
-      text: "Scroll to drive the animation", fade_ms: 250 },
+    // Beat 4 — right-arrow click on the post-scroll settle (step 3),
+    // then the pan; left-arrow click during the detail dwell (step 5).
+    { type: "cursor", step: 3, span: [0.1, 0.85], from: [950, 360], to: [1248, 360] },
+    { type: "click", step: 3, at: 0.82, pos: [1248, 360] },
 
-    // Show the zoom-out key chip as we zoom back to the deck (step 4).
-    { type: "key", step: 4, at: 0.0, label: "Z" },
+    { type: "caption", step: 5, span: [0.0, 0.65], anchor: "bottom-center",
+      text: "Branch sideways for detail", fade_ms: 200 },
+    { type: "cursor", step: 5, span: [0.62, 0.95], from: [420, 360], to: [38, 360] },
+    { type: "click", step: 5, at: 0.9, pos: [38, 360] },
+
+    // Beat 5 — "Z" toggles zoom in scrolly; the chip flashes as we zoom
+    // out (step 7). Zoom-in (Beat 2) is shown via clicking the slide.
+    { type: "key", step: 7, at: 0.0, label: "Z" },
+
+    // Beat 5 caption.
+    { type: "caption", step: 8, span: [0.1, 0.9], anchor: "bottom-center",
+      text: "One self-contained HTML file", fade_ms: 200 },
   ],
 }
