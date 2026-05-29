@@ -42,6 +42,13 @@ dev = [
     # gitsvg frames.
     "gitsvg==0.2.2",
 ]
+# Optional group for the hero-animation capture pipeline (docs/_gen).
+# Heavy (Playwright ships browser binaries via `make capture-setup`),
+# so it's separate from `dev` — casual contributors don't pay the cost.
+capture = [
+    "playwright>=1.40",
+    "pillow>=10.0",
+]
 
 [project.scripts]
 scrolly = "scrolly._cli._cli:cli"
@@ -70,6 +77,10 @@ select = ["I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]
+# The hero-animation engine lives under docs/_gen (dev-only tooling, not
+# shipped in the wheel); put it on the path so its pure-logic unit tests
+# can import it without the optional `capture` group installed.
+pythonpath = ["docs/_gen"]
 
 [tool.coverage.run]
 source = ["scrolly"]
