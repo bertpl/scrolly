@@ -92,6 +92,13 @@ class SlideRenderer(Renderer):
                 has_mermaid = True
 
         if has_mermaid:
+            # `.mermaid svg { height: 100% }` only resolves against a
+            # definite-height parent, but the `<pre class="mermaid">` is
+            # content-height by default — so the SVG falls back to its
+            # intrinsic height and overflows the box. Give the `<pre>` the
+            # wrapper's height (and drop its default margin) to restore the
+            # chain, so the SVG fits its box like an `<img>` does.
+            css_rules.append(f"{ns} .mermaid {{\n  height: 100%;\n  margin: 0;\n}}")
             css_rules.append(f"{ns} .mermaid svg {{\n  width: 100%;\n  height: 100%;\n}}")
 
         inner = "\n".join(element_htmls)
