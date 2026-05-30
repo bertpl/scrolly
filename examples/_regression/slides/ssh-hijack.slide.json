@@ -2,7 +2,6 @@
 // liblzma -> libsystemd -> sshd indirect-linkage chain. Scrolly pans
 // the rendered SVG via animated anchor (same mechanic as
 // `contributions`, but with a `mermaid` element instead of `image`).
-// Exercises: mermaid element + oversized-element vertical pan.
 {
   title: "How it reached sshd",
   scroll_range: 1500,

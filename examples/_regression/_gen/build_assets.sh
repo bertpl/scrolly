@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate placeholder assets for the worked-example deck.
+# Generate placeholder assets for the regression deck.
 #
 # All visible assets here are first-version placeholders — simple
 # colored cards with text labels. They demonstrate the asset format
@@ -9,7 +9,7 @@
 # Requires ImageMagick v7 (`magick` command).
 #
 # Run from the repo root:
-#     bash examples/worked-example/_gen/build_assets.sh
+#     bash examples/_regression/_gen/build_assets.sh
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

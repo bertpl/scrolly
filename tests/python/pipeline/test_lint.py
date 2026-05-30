@@ -188,9 +188,9 @@ class TestOutOfRangeKeyframes:
         # --- assert -----------------------
         assert "'my-element'" in diagnostics[0].location
 
-    def test_no_warnings_on_worked_example(self) -> None:
+    def test_no_warnings_on_regression_deck(self) -> None:
         # --- arrange ----------------------
-        deck, _ = load_deck(EXAMPLES_DIR / "worked-example" / "deck.deck.json")
+        deck, _ = load_deck(EXAMPLES_DIR / "_regression" / "deck.deck.json")
 
         # --- act --------------------------
         diagnostics = lint_deck(deck)

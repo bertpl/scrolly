@@ -8,7 +8,7 @@ through the timeline.
 Stdlib-only; deterministic output. Re-run after editing ``EVENTS``.
 
 Run from repo root:
-    uv run python examples/worked-example/_gen/build_timeline.py
+    uv run python examples/_regression/_gen/build_timeline.py
 """
 
 from __future__ import annotations

@@ -1,5 +1,4 @@
 // The build-time staging — how the payload bytes became executable code.
-// Exercises: mermaid element (via mermaid_file).
 {
   title: "Build-time staging",
   scroll_range: 400,

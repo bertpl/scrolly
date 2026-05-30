@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_timeline_element_carries_animated_properties_and_intervals() -> None:
@@ -18,7 +18,7 @@ def test_timeline_element_carries_animated_properties_and_intervals() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "contributions"])
+    result = runner.invoke(cli, ["introspect", "timeline", str(REGRESSION_DECK), "--slide", "contributions"])
 
     # --- assert -----------------------
     assert result.exit_code == 0
@@ -41,7 +41,7 @@ def test_timeline_filter_restricts_to_slide() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "title"])
+    result = runner.invoke(cli, ["introspect", "timeline", str(REGRESSION_DECK), "--slide", "title"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -54,7 +54,7 @@ def test_timeline_unknown_slide_exits_with_error() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "timeline", str(WORKED_EXAMPLE), "--slide", "ghost"])
+    result = runner.invoke(cli, ["introspect", "timeline", str(REGRESSION_DECK), "--slide", "ghost"])
 
     # --- assert -----------------------
     assert result.exit_code == 1

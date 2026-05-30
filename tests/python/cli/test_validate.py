@@ -12,8 +12,8 @@ EXAMPLES_DIR = PROJECT_ROOT / "examples"
 runner = CliRunner()
 
 
-def test_validate_worked_example():
-    deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
+def test_validate_regression_deck():
+    deck_file = EXAMPLES_DIR / "_regression" / "deck.deck.json"
     result = runner.invoke(cli, ["validate", str(deck_file)])
     assert result.exit_code == 0
     assert "Valid" in result.output

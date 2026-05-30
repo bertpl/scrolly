@@ -1,8 +1,7 @@
 // Five concrete takeaways — rendered as a self-contained HTML
 // checklist inside an iframe with border + shadow decorations.
-// Exercises: iframe with border_width + shadow_size + internal
-// scrollbar (the lessons HTML is taller than the viewport, so the
-// iframe's own scrollbar appears); off-grid position (col 2, row 5).
+// The lessons HTML is taller than the viewport, so the iframe's own
+// scrollbar appears.
 {
   title: "Five takeaways",
   scroll_range: 600,

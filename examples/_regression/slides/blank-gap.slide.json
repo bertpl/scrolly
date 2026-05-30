@@ -1,7 +1,4 @@
 // Quiet interlude — 9 months of routine maintenance with nothing visibly amiss.
-// Exercises: image_sequence with `""` blank slots between the two AVIF
-// context cards. Demonstrates the "deliberately blank" image_sequence
-// feature + the AVIF asset format.
 {
   title: "Quiet preparation",
   scroll_range: 1800,
@@ -16,8 +13,8 @@
       text_align: "center",
       color: "#2c3e50",
     },
-    // image_sequence with blank middle slots representing months of
-    // routine activity between two AVIF context cards.
+    // Blank middle slots represent the months of routine activity
+    // between the two context cards.
     {
       name: "cards",
       image_sequence: [

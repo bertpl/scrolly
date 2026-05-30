@@ -26,11 +26,11 @@ uv tool install scrolly
 ## Quickstart
 
 ```bash
-scrolly build examples/worked-example/deck.deck.json --out /tmp/scrolly-out --force
+scrolly build examples/stacked-diffs/deck.deck.json --out /tmp/scrolly-out --force
 open /tmp/scrolly-out/index.html
 ```
 
-See [`examples/worked-example/`](examples/worked-example/) for a reference deck.
+See [`examples/stacked-diffs/`](examples/stacked-diffs/) for a complete example deck.
 
 ## Source format
 

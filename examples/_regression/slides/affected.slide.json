@@ -1,6 +1,4 @@
 // Distros that briefly shipped xz 5.6.0 / 5.6.1.
-// Exercises: off-grid position (col 5, row 0 — far right of the deck),
-// WebP image (distro-logos composite), markdown table.
 {
   title: "Who shipped it",
   scroll_range: 600,

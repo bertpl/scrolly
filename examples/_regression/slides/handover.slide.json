@@ -1,6 +1,4 @@
 // The turning point — co-maintainership granted in early 2023.
-// Exercises: markdown, animated `position` (date callout sliding in),
-// non-default scroll_speed for deliberate pacing.
 {
   title: "Co-maintainership",
   scroll_range: 1000,

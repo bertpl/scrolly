@@ -1,7 +1,5 @@
 // March 28, 2024 — Andres Freund's PostgreSQL benchmark on Debian sid
 // shows SSH connections running ~500 ms slower than baseline.
-// Exercises: html element styled as terminal output, non-default
-// font_scale for the pull-quote.
 {
   title: "The 500-ms anomaly",
   scroll_range: 500,
@@ -16,14 +14,14 @@
       width: 90, height: "auto",
       color: "#2c4d2c",
     },
-    // Terminal output, styled as html.
+    // Terminal output.
     {
       name: "terminal",
       html: "<div style=\"font:14px/1.5 Menlo,Consolas,monospace;background:#0d1117;color:#c9d1d9;padding:1.25em;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.15)\"><div style=\"color:#7ee787\">$ time ssh remote-host /bin/true</div><div>real    <span style=\"color:#f97583\">0m0.500s</span></div><div>user    0m0.010s</div><div>sys     0m0.005s</div><div style=\"margin-top:1em;color:#7ee787\">$ time ssh other-host /bin/true</div><div>real    <span style=\"color:#7ee787\">0m0.045s</span></div><div>user    0m0.008s</div><div>sys     0m0.004s</div></div>",
       position: [10, 35], anchor: [0, 0],
       width: 50, height: "auto",
     },
-    // Pull-quote — non-default font_scale at the slide level + this element's emphasis.
+    // Pull-quote — meant to read large.
     {
       name: "pull-quote",
       markdown: "## ~500 ms\n\n*on Debian sid only*",

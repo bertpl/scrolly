@@ -1,8 +1,6 @@
 // THE tall-asset showcase. The timeline.svg is ~2800px tall; we render
-// it at width:80 height:"auto" so it overflows the viewport, then pan
+// it at width:70 height:"auto" so it overflows the viewport, then pan
 // it top-to-bottom via animated `anchor` keyframes as the reader scrolls.
-// Exercises: image element + oversized-element vertical pan via
-// animated anchor + dense snap_positions (one per event mark in the SVG).
 {
   title: "Three years on the spine",
   scroll_range: 2200,

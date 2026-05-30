@@ -1,0 +1,16 @@
+// The three vetted source URLs + an invitation to verify any claim
+// in the deck. The long body overflows the viewport, so its height is
+// content-driven.
+{
+  title: "References",
+  // scroll_range omitted — content-driven height.
+  elements: [
+    {
+      name: "body",
+      markdown: "# References\n\nEvery factual claim in this deck is cross-referenced against three publicly-available, non-paywalled, neutrally-toned sources. If you want to verify anything you saw here, follow these links.\n\n---\n\n## 1. Wikipedia — *XZ Utils backdoor*\n\nComprehensive single-page overview. Neutral point of view by editorial policy. Cites 35+ primary sources. Actively maintained as new information surfaces.\n\n<https://en.wikipedia.org/wiki/XZ_Utils_backdoor>\n\n---\n\n## 2. Sam James — *xz-utils backdoor FAQ* (GitHub Gist)\n\nExhaustive technical FAQ covering background, mechanics, payload analysis, affected systems, and detection methods. Actively maintained through 2026. Explicit \"no speculation on attribution\" stance.\n\n<https://gist.github.com/thesamesam/223949d5a074ebc3dce9ee78baad9e27>\n\n---\n\n## 3. Russ Cox — *xz timeline* (research.swtch.com)\n\nThe canonical chronology of the social-engineering campaign from 2021 to March 2024. Technical, neutral, widely referenced. Static (posted April 2024).\n\n<https://research.swtch.com/xz-timeline>\n\n---\n\n## Notes\n\n- Mailing-list quotes on the *pressure* slide are verbatim from the public `xz-devel` archive.\n- Terminal-output examples on *anomaly* and *investigation* are simplified illustrations based on the openwall disclosure and the FAQ; exact wording may differ from any single source.\n- Hex-dump snippets on *hidden-bytes* are illustrative — the actual bytes are documented in the reverse-engineering write-ups linked from the FAQ.\n- All distro-version dates on *affected* match the corresponding distro security advisories (Debian DSA, Red Hat, openSUSE, Kali, Arch).\n\nIf you spot a factual error in this deck, please open an issue against the scrolly repository — `examples/_regression/` is meant to be a copy-paste-able reference, and getting the underlying narrative right matters.",
+      position: [10, 5], anchor: [0, 0],
+      width: 80, height: "auto",
+      color: "#2c3e50",
+    },
+  ],
+}

@@ -1,7 +1,5 @@
 // Three facts about xz utils' role + its maintainership history,
 // revealed sequentially as the reader scrolls.
-// Exercises: full-bleed JPG background, animated opacity keyframes
-// for sequential reveals, markdown with custom color.
 {
   title: "Background",
   scroll_range: 1200,

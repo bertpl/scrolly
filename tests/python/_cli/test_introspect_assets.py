@@ -9,16 +9,16 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_assets_returns_referenced_assets() -> None:
-    """Worked example uses several images; the asset table is non-empty."""
+    """Regression deck uses several images; the asset table is non-empty."""
     # --- arrange ----------------------
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "assets", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "assets", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     assert result.exit_code == 0
@@ -33,7 +33,7 @@ def test_assets_entry_fields() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "assets", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "assets", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -53,9 +53,9 @@ def test_assets_filter_scopes_to_named_slide() -> None:
     # --- act --------------------------
     result_filtered = runner.invoke(
         cli,
-        ["introspect", "assets", str(WORKED_EXAMPLE), "--slide", "capability"],
+        ["introspect", "assets", str(REGRESSION_DECK), "--slide", "capability"],
     )
-    result_all = runner.invoke(cli, ["introspect", "assets", str(WORKED_EXAMPLE)])
+    result_all = runner.invoke(cli, ["introspect", "assets", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     filtered = json.loads(result_filtered.output)
@@ -75,7 +75,7 @@ def test_assets_unknown_slide_exits_with_error() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "assets", str(WORKED_EXAMPLE), "--slide", "ghost"])
+    result = runner.invoke(cli, ["introspect", "assets", str(REGRESSION_DECK), "--slide", "ghost"])
 
     # --- assert -----------------------
     assert result.exit_code == 1

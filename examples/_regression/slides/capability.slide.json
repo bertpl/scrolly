@@ -1,7 +1,4 @@
 // What the backdoor could actually do, once activated.
-// Exercises: markdown + animated `scale` AND animated `angle` on the
-// key glyph — the two animation features that previously had no
-// worked-example slot. Also non-default scroll_speed for pacing.
 {
   title: "What it enabled",
   scroll_range: 1200,
@@ -17,8 +14,7 @@
       width: 55, height: "auto",
       color: "#5a2c2c",
     },
-    // The key glyph — animated scale + animated angle as scroll
-    // progresses (zooms in and rotates).
+    // The key glyph zooms in and rotates as scroll progresses.
     {
       name: "key",
       image: "../key-glyph.svg",
