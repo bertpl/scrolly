@@ -68,6 +68,9 @@ comments to intent (*why* an animation looks the way it does).
 | Feature | Covered by |
 |---|---|
 | slide groups with `color` | Setup, Infiltration, Backdoor, Discovery (4 groups, varied hues) |
+| group label auto-contrast — light bg → black | Setup, Infiltration |
+| group label auto-contrast — dark bg → white | Backdoor (`#8B2F2F`) |
+| group `label_color` override | Discovery (`#1B5E20` on light bg) |
 | off-grid / negative origin | deck origin `(-1, -2)`; `affected` `(4, -2)`, `lessons` `(1, 3)`, `reference` `(4, 3)` |
 | long bezier to an off-grid slide | `disclosure`→`affected`, `disclosure`→`lessons`, `lessons`→`reference` |
 | non-adjacent curved beziers | `disclosure`→`affected`, `disclosure`→`reference` |

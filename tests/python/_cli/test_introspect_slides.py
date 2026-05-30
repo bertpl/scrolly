@@ -67,6 +67,23 @@ def test_slides_edge_fields() -> None:
         assert edge["a"]["side"] in {"top", "bottom", "left", "right"}
 
 
+def test_slides_group_color_fields() -> None:
+    """Group entries carry ``color`` and ``label_color`` (dark bg + override cases)."""
+    # --- arrange ----------------------
+    runner = CliRunner()
+
+    # --- act --------------------------
+    result = runner.invoke(cli, ["introspect", "slides", str(REGRESSION_DECK)])
+
+    # --- assert -----------------------
+    payload = json.loads(result.output)
+    groups = {g["label"]: g for g in payload["groups"]}
+    assert set(groups["Backdoor"].keys()) == {"label", "color", "label_color", "slide_ids"}
+    assert groups["Backdoor"]["color"] == "#8B2F2F"
+    assert groups["Backdoor"]["label_color"] is None
+    assert groups["Discovery"]["label_color"] == "#1B5E20"
+
+
 def test_slides_writes_to_output_path(tmp_path: Path) -> None:
     """``-o PATH`` writes the JSON to the file instead of stdout."""
     # --- arrange ----------------------

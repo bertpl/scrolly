@@ -135,6 +135,7 @@ def test_parse_grouped_deck():
     assert deck.groups[0].label == "Architecture"
     assert deck.groups[0].slide_ids == ("arch-1", "arch-2")
     assert deck.groups[0].color is None
+    assert deck.groups[0].label_color is None
 
 
 def test_grouped_slides_flattened_in_order():
@@ -148,20 +149,21 @@ def test_ungrouped_deck_has_empty_groups():
     assert deck.groups == ()
 
 
+@pytest.mark.parametrize("key", ["color", "label_color"])
 @pytest.mark.parametrize(
-    "color,expected",
+    "value,expected",
     [
         ("#abc", "#abc"),
         ("#AABBCC", "#AABBCC"),
         ("#f5cba7", "#f5cba7"),
     ],
 )
-def test_parse_group_color(tmp_path, color, expected):
+def test_parse_group_hex_color(tmp_path, key, value, expected):
     # --- arrange ----------------------------
     f = tmp_path / "color.deck.json"
     f.write_text(f"""{{
       slides: [{{
-        group: "G", color: "{color}",
+        group: "G", {key}: "{value}",
         slides: [{{ id: "a", position: [0, 0], source: "a.slide.json" }}],
       }}],
     }}""")
@@ -171,11 +173,12 @@ def test_parse_group_color(tmp_path, color, expected):
     deck = parse_deck(f)
 
     # --- assert -----------------------------
-    assert deck.groups[0].color == expected
+    assert getattr(deck.groups[0], key) == expected
 
 
+@pytest.mark.parametrize("key", ["color", "label_color"])
 @pytest.mark.parametrize(
-    "color",
+    "value",
     [
         "abc",
         "#ab",
@@ -185,12 +188,12 @@ def test_parse_group_color(tmp_path, color, expected):
         "rgb(0,0,0)",
     ],
 )
-def test_parse_error_on_invalid_group_color(tmp_path, color):
+def test_parse_error_on_invalid_group_hex_color(tmp_path, key, value):
     # --- arrange ----------------------------
     f = tmp_path / "bad-color.deck.json"
     f.write_text(f"""{{
       slides: [{{
-        group: "G", color: "{color}",
+        group: "G", {key}: "{value}",
         slides: [{{ id: "a", position: [0, 0], source: "a.slide.json" }}],
       }}],
     }}""")

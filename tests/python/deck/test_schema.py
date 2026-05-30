@@ -37,6 +37,8 @@ def test_deck_source_schema_group_wrapper():
     group_props = group_schema["properties"]
     assert "group" in group_props
     assert "slides" in group_props
+    assert "color" in group_props
+    assert "label_color" in group_props
 
 
 def test_deck_source_schema_edge_format():

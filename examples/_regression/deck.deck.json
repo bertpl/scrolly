@@ -23,7 +23,9 @@
     },
     { id: "blank-gap", position: [0, 1], source: "slides/blank-gap.slide.json" },
     {
-      group: "Backdoor", color: "#e8b3b3",
+      // Dark background: exercises the auto-contrast default flipping the
+      // label to white (no explicit label_color).
+      group: "Backdoor", color: "#8B2F2F",
       slides: [
         { id: "hidden-bytes", position: [1, -2], source: "slides/hidden-bytes.slide.json" },
         { id: "build-trojan", position: [1, -1], source: "slides/build-trojan.slide.json" },
@@ -32,7 +34,9 @@
       ],
     },
     {
-      group: "Discovery", color: "#a8d8b3",
+      // Explicit label_color override: a dark-green label on a light-green
+      // background, overriding the black the auto-contrast default would pick.
+      group: "Discovery", color: "#a8d8b3", label_color: "#1B5E20",
       slides: [
         { id: "anomaly",       position: [2, -2], source: "slides/anomaly.slide.json" },
         { id: "investigation", position: [2, -1], source: "slides/investigation.slide.json" },

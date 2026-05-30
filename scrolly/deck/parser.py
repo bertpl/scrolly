@@ -79,8 +79,16 @@ def _parse_slides_and_groups(slides_raw: list, deck_path: Path) -> tuple[tuple[S
                 group_slide_ids.append(slide.id)
                 flat_idx += 1
 
-            color = _parse_group_color(item, ctx)
-            groups.append(SlideGroup(label=label, slide_ids=tuple(group_slide_ids), color=color))
+            color = _parse_group_hex_color(item, ctx, "color")
+            label_color = _parse_group_hex_color(item, ctx, "label_color")
+            groups.append(
+                SlideGroup(
+                    label=label,
+                    slide_ids=tuple(group_slide_ids),
+                    color=color,
+                    label_color=label_color,
+                )
+            )
         else:
             slide = _parse_slide(item, deck_dir, flat_idx, ctx)
             slides.append(slide)
@@ -92,16 +100,31 @@ def _parse_slides_and_groups(slides_raw: list, deck_path: Path) -> tuple[tuple[S
 _HEX_COLOR_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
-def _parse_group_color(raw: dict, ctx: str) -> str | None:
-    """Parse and validate an optional hex color from a group object."""
-    if "color" not in raw:
+def _parse_group_hex_color(raw: dict, ctx: str, key: str) -> str | None:
+    """Parse and validate an optional hex color field from a group object.
+
+    Args:
+        raw: The raw group object.
+        ctx: Error-context prefix (e.g. ``slides[2]``).
+        key: Which field to read — ``color`` (background) or ``label_color``
+            (label override).
+
+    Returns:
+        The validated ``#RGB`` / ``#RRGGBB`` string, or ``None`` if the field
+        is absent.
+
+    Raises:
+        DeckParseError: If present but not a string (E004) or not a valid hex
+            color (E009).
+    """
+    if key not in raw:
         return None
-    color = raw["color"]
-    if not isinstance(color, str):
-        raise DeckParseError(code="E004", message=f"{ctx}: 'color' must be a string, got {type(color).__name__}")
-    if not _HEX_COLOR_RE.match(color):
-        raise DeckParseError(code="E009", message=f"{ctx}: 'color' must be #RGB or #RRGGBB, got '{color}'")
-    return color
+    value = raw[key]
+    if not isinstance(value, str):
+        raise DeckParseError(code="E004", message=f"{ctx}: '{key}' must be a string, got {type(value).__name__}")
+    if not _HEX_COLOR_RE.match(value):
+        raise DeckParseError(code="E009", message=f"{ctx}: '{key}' must be #RGB or #RRGGBB, got '{value}'")
+    return value
 
 
 def _require_list(d: dict, key: str, deck_path: Path) -> list:

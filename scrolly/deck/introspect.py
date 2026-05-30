@@ -35,7 +35,7 @@ def slides_to_json(
             ``slides``: map of slide id → {position, title, scroll_range,
                 element_count, snap_position_count}.
             ``edges``: list of {a: {slide, side}, b: {slide, side}}.
-            ``groups``: list of {label, color, slide_ids}.
+            ``groups``: list of {label, color, label_color, slide_ids}.
     """
     del slide_ids  # always deck-wide; param exists for signature uniformity
 
@@ -63,6 +63,7 @@ def slides_to_json(
         {
             "label": group.label,
             "color": group.color,
+            "label_color": group.label_color,
             "slide_ids": list(group.slide_ids),
         }
         for group in deck.groups
