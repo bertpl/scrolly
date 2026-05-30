@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_snaps_returns_per_slide_split() -> None:
@@ -18,7 +18,7 @@ def test_snaps_returns_per_slide_split() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "cast"])
+    result = runner.invoke(cli, ["introspect", "snaps", str(REGRESSION_DECK), "--slide", "cast"])
 
     # --- assert -----------------------
     assert result.exit_code == 0
@@ -33,7 +33,7 @@ def test_snaps_derived_carries_structured_source() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "cast"])
+    result = runner.invoke(cli, ["introspect", "snaps", str(REGRESSION_DECK), "--slide", "cast"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -51,7 +51,7 @@ def test_snaps_merged_is_sorted_and_includes_both_sources() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snaps", str(WORKED_EXAMPLE), "--slide", "cast"])
+    result = runner.invoke(cli, ["introspect", "snaps", str(REGRESSION_DECK), "--slide", "cast"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)

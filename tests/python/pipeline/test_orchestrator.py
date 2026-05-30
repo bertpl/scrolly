@@ -178,12 +178,12 @@ def test_build_refuses_to_clobber_without_force(tmp_path):
         build_deck(deck_file, out)
 
 
-def test_worked_example_reference_slide_is_content_driven(tmp_path):
+def test_regression_deck_reference_slide_is_content_driven(tmp_path):
     # The reference slide exercises content-driven scroll end-to-end:
     # its rendered chunk content reaches the HTML, and the embedded
     # nav-data marks scroll_range: null so canvas.js's ResizeObserver
     # path activates.
-    deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
+    deck_file = EXAMPLES_DIR / "_regression" / "deck.deck.json"
     out = tmp_path / "dist"
     deck = build_deck(deck_file, out)
 
@@ -206,8 +206,8 @@ def test_worked_example_reference_slide_is_content_driven(tmp_path):
 # ==================================================================================================
 #  load_deck
 # ==================================================================================================
-def test_load_deck_on_worked_example():
-    deck_file = EXAMPLES_DIR / "worked-example" / "deck.deck.json"
+def test_load_deck_on_regression_deck():
+    deck_file = EXAMPLES_DIR / "_regression" / "deck.deck.json"
     deck, slide_irs = load_deck(deck_file)
     assert len(deck.slides) == 17
     assert len(deck.edges) == 17

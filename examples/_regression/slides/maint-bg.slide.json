@@ -1,7 +1,5 @@
 // Three facts about xz utils' role + its maintainership history,
 // revealed sequentially as the reader scrolls.
-// Exercises: full-bleed JPG background, animated opacity keyframes
-// for sequential reveals, markdown with custom color.
 {
   title: "Background",
   scroll_range: 1200,
@@ -23,7 +21,7 @@
       position: [10, 25], anchor: [0, 50],
       width: 50, height: "auto",
       color: "#e0e8f0",
-      opacity: { keyframes: [[0, 0], [200, 1], [800, 1], [1000, 0.5]] },
+      opacity: { keyframes: [[0, 0], [200, 1], [800, 1], [900, 0.5]] },
     },
     {
       name: "fact-2",
@@ -31,7 +29,7 @@
       position: [10, 50], anchor: [0, 50],
       width: 50, height: "auto",
       color: "#e0e8f0",
-      opacity: { keyframes: [[300, 0], [500, 1], [1000, 1], [1200, 0.7]] },
+      opacity: { keyframes: [[300, 0], [500, 1], [1000, 1], [1200, 0.5]] },
     },
     {
       name: "fact-3",

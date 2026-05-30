@@ -1,7 +1,4 @@
 // March 29, 2024 — CVE-2024-3094 disclosed; packages pulled.
-// Exercises: `reverse: true` (scroll-up advances) + animated `scale`
-// on the banner + animated `width` AND `height` on a small progress
-// indicator + opacity reveals.
 //
 // Note on the progress bar styling: Chrome's compositor uses sub-
 // pixel edge determination when re-rasterising an element whose
@@ -36,7 +33,7 @@
       scale: { keyframes: [[0, 0.3], [500, 1.0], [1000, 1.0]] },
       opacity: { keyframes: [[0, 0], [400, 1]] },
     },
-    // Status bar carrying the animated `width` + `height` feature.
+    // Status bar with animated width + height.
     // The outer HTML element has the animated dimensions; the inner
     // visible rect is inset 4 px on every side via a transparent
     // border, so the painted edge never coincides with the bounding-

@@ -10,22 +10,22 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_slides_emits_deck_topology() -> None:
-    """``introspect slides`` returns slides + edges + groups for the worked example."""
+    """``introspect slides`` returns slides + edges + groups for the regression deck."""
     # --- arrange ----------------------
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "slides", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "slides", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
     assert set(payload.keys()) == {"slides", "edges", "groups"}
-    # Worked example has 17 slides and 17 edges (matching the existing build tests).
+    # Regression deck has 17 slides and 17 edges (matching the existing build tests).
     assert len(payload["slides"]) == 17
     assert len(payload["edges"]) == 17
 
@@ -36,7 +36,7 @@ def test_slides_entry_fields() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "slides", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "slides", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -57,7 +57,7 @@ def test_slides_edge_fields() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "slides", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "slides", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -74,7 +74,7 @@ def test_slides_writes_to_output_path(tmp_path: Path) -> None:
     out = tmp_path / "topology.json"
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "slides", str(WORKED_EXAMPLE), "-o", str(out)])
+    result = runner.invoke(cli, ["introspect", "slides", str(REGRESSION_DECK), "-o", str(out)])
 
     # --- assert -----------------------
     assert result.exit_code == 0

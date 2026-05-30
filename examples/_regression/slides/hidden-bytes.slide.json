@@ -1,13 +1,9 @@
 // The payload, disguised as corrupted test fixtures.
-// Exercises: image_sequence with compositing:"overlay" (opaque
-// crossfade between clean / altered / clean hex dumps) + frame
-// deduplication (hidden-clean.svg referenced twice for the
-// "back to baseline" closing frame).
 {
   title: "Hidden in plain sight",
-  scroll_range: 1400,
+  scroll_range: 1050,
   // Start + end snap stops, merged with the image-sequence frame snaps.
-  snap_positions: [0, 1400],
+  snap_positions: [0, 1050],
   elements: [
     {
       name: "caption",
@@ -17,7 +13,8 @@
       text_align: "center",
       color: "#5a2c2c",
     },
-    // image_sequence: clean -> altered -> clean (frame dedup: hidden-clean.svg twice)
+    // clean → altered → clean: the closing frame reuses the clean dump
+    // to return to baseline.
     {
       name: "hex-dump",
       image_sequence: [

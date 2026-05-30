@@ -20,7 +20,7 @@ from scrolly.slide.introspect import (
 from scrolly.slide.ir._framework.animated_values import AnimatedScalar, ScalarKeyframes
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 # --------------------------------------------------------------------------
@@ -102,12 +102,12 @@ def test_visibility_auto_range_held_constant_positive_at_end() -> None:
 
 
 # --------------------------------------------------------------------------
-#  Helpers operating on the worked example
+#  Helpers operating on the regression deck
 # --------------------------------------------------------------------------
 def test_snaps_cast_includes_derived_hold_centres() -> None:
     """``cast`` slide's image_sequence contributes derived snap positions."""
     # --- arrange ----------------------
-    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+    deck, slide_irs = load_deck(REGRESSION_DECK)
 
     # --- act --------------------------
     result = snaps_to_json(deck, slide_irs, ("cast",))
@@ -129,7 +129,7 @@ def test_renderer_snap_positions_match_introspect_merged() -> None:
     # --- arrange ----------------------
     from scrolly.slide.renderers.slide import SlideRenderer
 
-    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+    deck, slide_irs = load_deck(REGRESSION_DECK)
 
     # --- act --------------------------
     merged = snaps_to_json(deck, slide_irs, ("cast",))["slides"]["cast"]["merged"]
@@ -142,7 +142,7 @@ def test_renderer_snap_positions_match_introspect_merged() -> None:
 def test_timeline_contributions_has_animated_properties_and_intervals() -> None:
     """``contributions`` slide's timeline image is animated → timeline surfaces keyframes + intervals."""
     # --- arrange ----------------------
-    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+    deck, slide_irs = load_deck(REGRESSION_DECK)
 
     # --- act --------------------------
     result = timeline_to_json(deck, slide_irs, ("contributions",))
@@ -160,7 +160,7 @@ def test_timeline_contributions_has_animated_properties_and_intervals() -> None:
 def test_dom_returns_one_entry_per_authored_element() -> None:
     """The per-authored-element view has ``len(ir.elements)`` entries per slide."""
     # --- arrange ----------------------
-    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+    deck, slide_irs = load_deck(REGRESSION_DECK)
 
     # --- act --------------------------
     result = dom_to_json(deck, slide_irs, ("capability",))
@@ -174,7 +174,7 @@ def test_dom_returns_one_entry_per_authored_element() -> None:
 def test_dom_includes_scoped_css_with_eid_selector() -> None:
     """Scoped CSS rules carry the element's ``data-element-id`` selector."""
     # --- arrange ----------------------
-    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+    deck, slide_irs = load_deck(REGRESSION_DECK)
 
     # --- act --------------------------
     result = dom_to_json(deck, slide_irs, ("reference",))
@@ -189,7 +189,7 @@ def test_dom_includes_scoped_css_with_eid_selector() -> None:
 def test_snapshot_resolves_animated_properties_at_scroll() -> None:
     """Snapshot on a slide with animated properties returns numeric values per scroll."""
     # --- arrange ----------------------
-    deck, slide_irs = load_deck(WORKED_EXAMPLE)
+    deck, slide_irs = load_deck(REGRESSION_DECK)
 
     # --- act --------------------------
     # capability's scroll_range is 1200; pick three values inside that range.

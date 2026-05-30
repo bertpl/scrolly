@@ -1,11 +1,9 @@
 // The investigation chain: anomaly → valgrind → IFUNC trail → disclosure.
-// Exercises: image_sequence with compositing:"incremental" (additive
-// layers building up the investigation evidence), dense snap positions.
 {
   title: "Working backwards",
-  scroll_range: 1800,
+  scroll_range: 1390,
   // Start + end snap stops, merged with the image-sequence frame snaps.
-  snap_positions: [0, 1800],
+  snap_positions: [0, 1390],
   elements: [
     {
       name: "caption",
@@ -15,8 +13,8 @@
       text_align: "center",
       color: "#2c4d2c",
     },
-    // image_sequence with incremental compositing — each step adds to
-    // the previous one rather than crossfading.
+    // Crossfade through the four investigation scenes — each a full
+    // step from anomaly to disclosure.
     {
       name: "steps",
       image_sequence: [
@@ -25,7 +23,7 @@
         "../investigation-3.svg",
         "../investigation-4.svg",
       ],
-      compositing: "incremental",
+      compositing: "overlay",
       frame_distance: 380,
       // hold_fraction omitted → uses the default (0.2).
       fade_in: 100,

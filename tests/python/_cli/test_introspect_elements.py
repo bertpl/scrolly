@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_elements_returns_resolved_tree_for_all_slides() -> None:
@@ -18,12 +18,12 @@ def test_elements_returns_resolved_tree_for_all_slides() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "elements", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert len(payload["slides"]) == 17  # all worked-example slides present
+    assert len(payload["slides"]) == 17  # all regression deck slides present
 
 
 def test_elements_filter_restricts_to_named_slides() -> None:
@@ -34,7 +34,7 @@ def test_elements_filter_restricts_to_named_slides() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "title", "--slide", "reference"],
+        ["introspect", "elements", str(REGRESSION_DECK), "--slide", "title", "--slide", "reference"],
     )
 
     # --- assert -----------------------
@@ -49,7 +49,7 @@ def test_elements_unknown_slide_exits_with_error() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "ghost"])
+    result = runner.invoke(cli, ["introspect", "elements", str(REGRESSION_DECK), "--slide", "ghost"])
 
     # --- assert -----------------------
     assert result.exit_code == 1
@@ -63,7 +63,7 @@ def test_elements_entries_carry_type_and_index() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "reference"])
+    result = runner.invoke(cli, ["introspect", "elements", str(REGRESSION_DECK), "--slide", "reference"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -79,11 +79,11 @@ def test_elements_animated_value_serializes_as_keyframes() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    # "capability" slide is documented in the worked example as exercising animated
+    # "capability" slide is documented in the regression deck as exercising animated
     # properties; the test verifies SOMETHING animated shows up as a keyframe dict
     # rather than asserting on specific values (which would couple the test to the
     # example deck's exact contents).
-    result = runner.invoke(cli, ["introspect", "elements", str(WORKED_EXAMPLE), "--slide", "capability"])
+    result = runner.invoke(cli, ["introspect", "elements", str(REGRESSION_DECK), "--slide", "capability"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)

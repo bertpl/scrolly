@@ -1,8 +1,0 @@
-flowchart TB
-    A[xz 5.6.0 tarball] --> B[./configure]
-    B --> C[m4 / autoconf runs build-to-host.m4]
-    C --> D{Test fixtures<br/>bad-3-corrupt_lzma2.xz}
-    D --> E[Stage-1 payload extracted]
-    E --> F[liblzma.so linker hook injected]
-    F --> G[Compiled liblzma carries the payload]
-    G --> H[Installed onto distro]

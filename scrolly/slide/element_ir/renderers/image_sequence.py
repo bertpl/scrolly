@@ -1,13 +1,10 @@
 """``ImageSequenceRenderer`` — renders an ``ImageSequenceElement`` primitive.
 
-This renderer stays as a primitive in v0.2.0 even though conceptually it
-"wants" to be a compiler that expands into N ``ImageElement`` primitives
-with computed opacity keyframes. The expansion would change the HTML
-structure (one wrapper ``<div>`` containing N ``<img>`` becomes N
-wrappers, one per ``<img>``), which conflicts with the byte-identical
-output invariant this PR series carries. The conversion to an
-``ElementCompiler`` is deferred to the worked-example regeneration step
-later in v0.2.0.
+This renderer stays a primitive even though it conceptually "wants" to be a
+compiler that expands into N ``ImageElement`` primitives with computed
+opacity keyframes. That expansion would change the HTML structure (one
+wrapper ``<div>`` containing N ``<img>`` becomes N wrappers, one per
+``<img>``), so it remains a single primitive renderer instead.
 """
 
 from __future__ import annotations

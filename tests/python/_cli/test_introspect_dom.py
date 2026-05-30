@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_dom_returns_per_element_html_and_css() -> None:
@@ -18,7 +18,7 @@ def test_dom_returns_per_element_html_and_css() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "reference"])
+    result = runner.invoke(cli, ["introspect", "dom", str(REGRESSION_DECK), "--slide", "reference"])
 
     # --- assert -----------------------
     assert result.exit_code == 0
@@ -35,7 +35,7 @@ def test_dom_filter_restricts_to_named_slides() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "title"])
+    result = runner.invoke(cli, ["introspect", "dom", str(REGRESSION_DECK), "--slide", "title"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -48,7 +48,7 @@ def test_dom_unfiltered_returns_every_slide() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE)])
+    result = runner.invoke(cli, ["introspect", "dom", str(REGRESSION_DECK)])
 
     # --- assert -----------------------
     payload = json.loads(result.output)
@@ -61,7 +61,7 @@ def test_dom_unknown_slide_exits_with_error() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "ghost"])
+    result = runner.invoke(cli, ["introspect", "dom", str(REGRESSION_DECK), "--slide", "ghost"])
 
     # --- assert -----------------------
     assert result.exit_code == 1
@@ -74,7 +74,7 @@ def test_dom_omits_deck_level_chrome() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "dom", str(WORKED_EXAMPLE), "--slide", "reference"])
+    result = runner.invoke(cli, ["introspect", "dom", str(REGRESSION_DECK), "--slide", "reference"])
 
     # --- assert -----------------------
     payload = json.loads(result.output)

@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from scrolly._cli._cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
-WORKED_EXAMPLE = PROJECT_ROOT / "examples" / "worked-example" / "deck.deck.json"
+REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"
 
 
 def test_snapshot_returns_resolved_substrate_properties() -> None:
@@ -20,7 +20,7 @@ def test_snapshot_returns_resolved_substrate_properties() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "500"],
+        ["introspect", "snapshot", str(REGRESSION_DECK), "--slide", "capability", "--scroll", "500"],
     )
 
     # --- assert -----------------------
@@ -56,7 +56,7 @@ def test_snapshot_multiple_scrolls_returns_one_snapshot_per_value() -> None:
         [
             "introspect",
             "snapshot",
-            str(WORKED_EXAMPLE),
+            str(REGRESSION_DECK),
             "--slide",
             "capability",
             "--scroll",
@@ -78,7 +78,7 @@ def test_snapshot_missing_slide_arg_errors() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snapshot", str(WORKED_EXAMPLE), "--scroll", "0"])
+    result = runner.invoke(cli, ["introspect", "snapshot", str(REGRESSION_DECK), "--scroll", "0"])
 
     # --- assert -----------------------
     assert result.exit_code != 0
@@ -91,7 +91,7 @@ def test_snapshot_missing_scroll_arg_errors() -> None:
     runner = CliRunner()
 
     # --- act --------------------------
-    result = runner.invoke(cli, ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability"])
+    result = runner.invoke(cli, ["introspect", "snapshot", str(REGRESSION_DECK), "--slide", "capability"])
 
     # --- assert -----------------------
     assert result.exit_code != 0
@@ -106,7 +106,7 @@ def test_snapshot_scroll_beyond_range_rejected() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "99999"],
+        ["introspect", "snapshot", str(REGRESSION_DECK), "--slide", "capability", "--scroll", "99999"],
     )
 
     # --- assert -----------------------
@@ -123,7 +123,7 @@ def test_snapshot_negative_scroll_rejected() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "-10"],
+        ["introspect", "snapshot", str(REGRESSION_DECK), "--slide", "capability", "--scroll", "-10"],
     )
 
     # --- assert -----------------------
@@ -139,7 +139,7 @@ def test_snapshot_unknown_slide_id_rejected() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "ghost", "--scroll", "0"],
+        ["introspect", "snapshot", str(REGRESSION_DECK), "--slide", "ghost", "--scroll", "0"],
     )
 
     # --- assert -----------------------
@@ -155,7 +155,7 @@ def test_snapshot_visible_flag_tracks_opacity() -> None:
     # --- act --------------------------
     result = runner.invoke(
         cli,
-        ["introspect", "snapshot", str(WORKED_EXAMPLE), "--slide", "capability", "--scroll", "0"],
+        ["introspect", "snapshot", str(REGRESSION_DECK), "--slide", "capability", "--scroll", "0"],
     )
 
     # --- assert -----------------------
