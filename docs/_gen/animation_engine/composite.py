@@ -59,6 +59,7 @@ def run_composite(recipe: Recipe, plan: FramePlan, frames_dir: Path, work_dir: P
         draws = plan.overlay_draws[index]
         if draws:
             _paint(frame, draws, scale, fonts)
+        frame = _add_chrome(frame, recipe, index, plan.total_frames)
         frame.convert("RGB").save(out_dir / frame_filename(index))
 
     return _assemble(recipe, plan, out_dir)
@@ -91,6 +92,57 @@ def _paint(frame, draws, scale: int, fonts: _Fonts) -> None:
         elif isinstance(d, ScrollHintDraw):
             _draw_scroll_hint(draw, d, scale)
     frame.alpha_composite(layer)
+
+
+# --- chrome (border + progress bar) ---------------
+def _add_chrome(frame, recipe: Recipe, index: int, total: int):
+    """Add the progress bar under the frame, then the border around it.
+
+    Both *extend* the canvas — they never overwrite captured frame content.
+    Sizes are absolute output pixels (not scaled by `viewport.scale`). The
+    progress bar fills its leftmost ``(index + 1) / total`` with the fill
+    color and the remainder with the track color.
+
+    Args:
+        frame: The composited RGBA frame (after overlays).
+        recipe: The recipe carrying `border` / `progress_bar` config.
+        index: This frame's 0-based index.
+        total: Total frame count (for the wall-clock fill fraction).
+
+    Returns:
+        The (possibly larger) RGBA frame with chrome added.
+    """
+    from PIL import Image, ImageDraw
+
+    img = frame
+
+    bar = recipe.progress_bar
+    if bar.height > 0:
+        w, h = img.size
+        out = Image.new("RGBA", (w, h + bar.height), _rgba(bar.track_color))
+        out.paste(img, (0, 0))
+        fill_w = round(w * (index + 1) / total)
+        if fill_w > 0:
+            ImageDraw.Draw(out).rectangle([0, h, fill_w - 1, h + bar.height - 1], fill=_rgba(bar.color))
+        img = out
+
+    border = recipe.border
+    if border.width > 0:
+        w, h = img.size
+        bw = border.width
+        out = Image.new("RGBA", (w + 2 * bw, h + 2 * bw), _rgba(border.color))
+        out.paste(img, (bw, bw))
+        img = out
+
+    return img
+
+
+def _rgba(hex_color: str) -> tuple[int, int, int, int]:
+    """Parse an opaque hex color (#RGB / #RRGGBB) into an (r, g, b, 255) tuple."""
+    from PIL import ImageColor
+
+    r, g, b = ImageColor.getrgb(hex_color)[:3]
+    return (r, g, b, 255)
 
 
 def _draw_caption(draw, size, d: CaptionDraw, scale: int, font) -> None:

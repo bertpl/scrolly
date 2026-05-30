@@ -21,7 +21,8 @@ or Pillow, so it loads without the optional ``capture`` group.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,32 @@ class Output:
     path: str
     loop: bool = True
     quality: int = 80
+
+
+@dataclass(frozen=True)
+class Border:
+    """A solid square frame added around every composited frame.
+
+    `width` is in absolute output pixels (not scaled by `Viewport.scale`);
+    `width == 0` disables the border.
+    """
+
+    width: int = 0
+    color: str = "#000000"
+
+
+@dataclass(frozen=True)
+class ProgressBar:
+    """A wall-clock progress bar added below every composited frame.
+
+    `height` is in absolute output pixels (not scaled by `Viewport.scale`);
+    `height == 0` disables the bar. The elapsed fraction is filled with
+    `color`, the remainder with `track_color`.
+    """
+
+    height: int = 0
+    color: str = "#000000"
+    track_color: str = "#000000"
 
 
 # ==================================================================================================
@@ -159,6 +186,8 @@ class Recipe:
     output: Output
     steps: tuple[Step, ...]
     overlays: tuple[Overlay, ...]
+    border: Border = field(default_factory=Border)
+    progress_bar: ProgressBar = field(default_factory=ProgressBar)
 
 
 # ==================================================================================================
@@ -213,7 +242,19 @@ def parse_recipe(data: dict[str, Any]) -> Recipe:
 
     overlays = tuple(_parse_overlay(o, len(steps)) for o in data.get("overlays", []))
 
-    return Recipe(deck=deck, viewport=viewport, fps=fps, output=output, steps=steps, overlays=overlays)
+    border = _parse_border(_opt_dict(data, "border"))
+    progress_bar = _parse_progress_bar(_opt_dict(data, "progress_bar"))
+
+    return Recipe(
+        deck=deck,
+        viewport=viewport,
+        fps=fps,
+        output=output,
+        steps=steps,
+        overlays=overlays,
+        border=border,
+        progress_bar=progress_bar,
+    )
 
 
 # --- global config --------------------------------
@@ -226,6 +267,21 @@ def _parse_output(d: dict[str, Any]) -> Output:
         path=_req(d, "path", str),
         loop=bool(d.get("loop", True)),
         quality=int(d.get("quality", 80)),
+    )
+
+
+def _parse_border(d: dict[str, Any]) -> Border:
+    return Border(
+        width=_nonneg_int(d, "width", 0),
+        color=_color(d, "color", "#000000"),
+    )
+
+
+def _parse_progress_bar(d: dict[str, Any]) -> ProgressBar:
+    return ProgressBar(
+        height=_nonneg_int(d, "height", 0),
+        color=_color(d, "color", "#000000"),
+        track_color=_color(d, "track_color", "#000000"),
     )
 
 
@@ -301,6 +357,41 @@ def _req(d: dict[str, Any], key: str, typ: type) -> Any:
         raise ValueError(f"field {key!r} must be {typ.__name__}, got bool")
     if not isinstance(value, typ):
         raise ValueError(f"field {key!r} must be {typ.__name__}, got {type(value).__name__}")
+    return value
+
+
+_HEX_COLOR_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+
+
+def _opt_dict(d: dict[str, Any], key: str) -> dict[str, Any]:
+    """Return ``d[key]`` (which must be an object) or ``{}`` if absent."""
+    if key not in d:
+        return {}
+    value = d[key]
+    if not isinstance(value, dict):
+        raise ValueError(f"field {key!r} must be an object")
+    return value
+
+
+def _nonneg_int(d: dict[str, Any], key: str, default: int) -> int:
+    """Read a non-negative int field, or ``default`` if absent."""
+    if key not in d:
+        return default
+    value = d[key]
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"field {key!r} must be a non-negative int")
+    if value < 0:
+        raise ValueError(f"field {key!r} must be >= 0, got {value}")
+    return value
+
+
+def _color(d: dict[str, Any], key: str, default: str) -> str:
+    """Read an opaque hex color (#RGB / #RRGGBB) field, or ``default`` if absent."""
+    if key not in d:
+        return default
+    value = d[key]
+    if not isinstance(value, str) or not _HEX_COLOR_RE.match(value):
+        raise ValueError(f"field {key!r} must be an opaque hex color (#RGB or #RRGGBB), got {value!r}")
     return value
 
 
