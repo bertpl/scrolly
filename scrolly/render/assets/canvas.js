@@ -994,49 +994,6 @@
   const TAB_H_PAD = 0.03;
   const TAB_PROTRUSION = 0.04;
 
-  // Default group-background fill, used when a group declares no explicit
-  // `color`. Mirrors `.slide-group-bg { fill }` in canvas.css so the label
-  // auto-contrast pick matches the rendered background.
-  const GROUP_DEFAULT_BG = "#dcdcdc";
-
-  // Parse a `#RGB` or `#RRGGBB` string into {r, g, b} byte values, or null
-  // when the input is not a valid hex color.
-  function _hexToRgb(hex) {
-    if (typeof hex !== "string") return null;
-    let m = /^#([0-9a-fA-F]{6})$/.exec(hex);
-    if (m) {
-      const n = parseInt(m[1], 16);
-      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-    }
-    m = /^#([0-9a-fA-F]{3})$/.exec(hex);
-    if (m) {
-      const [r, g, b] = m[1].split("").map((c) => parseInt(c + c, 16));
-      return { r, g, b };
-    }
-    return null;
-  }
-
-  // Pick black or white for the most legible group label against a background
-  // color: compute the background's WCAG relative luminance, then choose
-  // whichever of black / white gives the higher WCAG contrast ratio. The
-  // crossover sits at luminance ≈ 0.179, so light and mid-tone backgrounds get
-  // black and only genuinely dark ones get white. Accepts `#RGB` / `#RRGGBB`;
-  // unparseable input falls back to black. This is the label color a group
-  // takes when it sets no explicit `label_color`.
-  function labelContrastColor(bgHex) {
-    const rgb = _hexToRgb(bgHex);
-    if (!rgb) return "#000000";
-    const linear = (c) => {
-      const s = c / 255;
-      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-    };
-    const luminance =
-      0.2126 * linear(rgb.r) + 0.7152 * linear(rgb.g) + 0.0722 * linear(rgb.b);
-    const contrastBlack = (luminance + 0.05) / 0.05;
-    const contrastWhite = 1.05 / (luminance + 0.05);
-    return contrastBlack >= contrastWhite ? "#000000" : "#ffffff";
-  }
-
   class GroupLayout {
     constructor(geo, canvasEl) {
       this._geometry = geo;
@@ -1057,10 +1014,11 @@
         const label = document.createElement("span");
         label.className = "slide-group-label";
         label.textContent = group.label;
-        label.style.setProperty(
-          "--slide-group-label-color",
-          group.label_color || labelContrastColor(group.color || GROUP_DEFAULT_BG)
-        );
+        // `label_color` is resolved server-side (override or auto-contrast
+        // pick); fall back to the CSS default if absent.
+        if (group.label_color) {
+          label.style.setProperty("--slide-group-label-color", group.label_color);
+        }
         this._elements.push({ group, svg, path, label });
       }
       const firstSlideContainer = this._canvas.querySelector(".slide-container");
@@ -1681,7 +1639,6 @@
     exports.IdleTimer = IdleTimer;
     exports.evaluatePiecewiseLinear = evaluatePiecewiseLinear;
     exports.GroupLayout = GroupLayout;
-    exports.labelContrastColor = labelContrastColor;
     exports.ViewState = ViewState;
     exports.resolveTarget = resolveTarget;
     exports.decompressBundle = decompressBundle;

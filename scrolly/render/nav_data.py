@@ -23,8 +23,14 @@ from __future__ import annotations
 from typing import Any
 
 from scrolly.deck import Deck
+from scrolly.render.color import legible_text_color
 from scrolly.render.fan import FAN_SPACING_FACTOR, compute_fan_offsets
 from scrolly.slide import SlideHTML
+
+# Default group-background fill, used when a group sets no explicit `color`.
+# Mirrors `.slide-group-bg { fill }` in canvas.css so the label auto-contrast
+# pick matches the rendered background.
+DEFAULT_GROUP_BACKGROUND = "#dcdcdc"
 
 
 def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
@@ -93,15 +99,15 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
 
     edges_data = _build_edges(deck, fan)
 
-    groups_data = [
-        {
-            "label": g.label,
-            "slide_ids": list(g.slide_ids),
-            **({"color": g.color} if g.color else {}),
-            **({"label_color": g.label_color} if g.label_color else {}),
-        }
-        for g in deck.groups
-    ]
+    groups_data = []
+    for g in deck.groups:
+        entry: dict[str, Any] = {"label": g.label, "slide_ids": list(g.slide_ids)}
+        if g.color:
+            entry["color"] = g.color
+        # Resolve the label color here so the client just applies it: an explicit
+        # `label_color` override wins, else auto-contrast against the background.
+        entry["label_color"] = g.label_color or legible_text_color(g.color or DEFAULT_GROUP_BACKGROUND)
+        groups_data.append(entry)
 
     return {
         "initial_slide": deck.slides[0].id if deck.slides else None,

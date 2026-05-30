@@ -269,10 +269,12 @@ def test_groups_array_carries_label_and_slide_ids():
     assert g["label"] == "My Group"
     assert g["slide_ids"] == ["a", "b"]
     assert "color" not in g
-    assert "label_color" not in g
+    # No explicit color: label_color resolves to auto-contrast on the default
+    # light-gray background.
+    assert g["label_color"] == "#000000"
 
 
-def test_groups_array_includes_color_when_set():
+def test_groups_array_includes_color_and_auto_contrast_label():
     deck = Deck(
         title=None,
         slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
@@ -281,14 +283,27 @@ def test_groups_array_includes_color_when_set():
     )
     data = build_nav_data(deck, _chunks_for("a", "b"))
     assert data["groups"][0]["color"] == "#f5cba7"
+    assert data["groups"][0]["label_color"] == "#000000"  # auto black on light bg
 
 
-def test_groups_array_includes_label_color_when_set():
+def test_groups_array_auto_contrasts_white_on_dark_color():
     deck = Deck(
         title=None,
         slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
         edges=(),
-        groups=(SlideGroup(label="Tinted", slide_ids=("a", "b"), label_color="#1B5E20"),),
+        groups=(SlideGroup(label="Dark", slide_ids=("a", "b"), color="#4A6FA5"),),
+    )
+    data = build_nav_data(deck, _chunks_for("a", "b"))
+    assert data["groups"][0]["label_color"] == "#ffffff"
+
+
+def test_groups_array_label_color_override_wins():
+    # Light background would auto-resolve to black; the explicit override wins.
+    deck = Deck(
+        title=None,
+        slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
+        edges=(),
+        groups=(SlideGroup(label="Tinted", slide_ids=("a", "b"), color="#a8d8b3", label_color="#1B5E20"),),
     )
     data = build_nav_data(deck, _chunks_for("a", "b"))
     assert data["groups"][0]["label_color"] == "#1B5E20"
