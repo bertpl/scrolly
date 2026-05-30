@@ -7,12 +7,12 @@ flowchart TB
     RSA["RSA_public_decrypt<br/>(hijacked symbol)"]
     AUTH[Auth bypass + RCE]
 
-    SSHD --> PAM
-    SSHD -.->|"only on systemd-init distros<br/>where sshd is patched to link libsystemd"| SYSTEMD
-    SYSTEMD --> LZMA
-    LZMA --> PAYLOAD
-    PAYLOAD -.->|"IFUNC resolver swaps the symbol<br/>at dynamic-link time"| RSA
-    RSA --> AUTH
+    SSHD -----> PAM
+    SSHD -...->|"only on systemd-init distros<br/>where sshd is patched to link libsystemd"| SYSTEMD
+    SYSTEMD -----> LZMA
+    LZMA -----> PAYLOAD
+    PAYLOAD -...->|"IFUNC resolver swaps the symbol<br/>at dynamic-link time"| RSA
+    RSA -----> AUTH
 
     classDef hijacked fill:#f9d3d3,stroke:#c0392b,stroke-width:2px
     class PAYLOAD,RSA,AUTH hijacked

@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Slides positioned at negative row or column indices now render with correct gaps.
 - Bezier edge arrows no longer clip on decks whose top-left slide is not at the origin.
 - Inline `<code>` and `<pre>` now visually match the size of surrounding body text in slide content.
+- Mermaid diagrams now scale to fit their element box instead of overflowing.
 
 ### Security
 
