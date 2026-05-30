@@ -1014,6 +1014,11 @@
         const label = document.createElement("span");
         label.className = "slide-group-label";
         label.textContent = group.label;
+        // `label_color` is resolved server-side (override or auto-contrast
+        // pick); fall back to the CSS default if absent.
+        if (group.label_color) {
+          label.style.setProperty("--slide-group-label-color", group.label_color);
+        }
         this._elements.push({ group, svg, path, label });
       }
       const firstSlideContainer = this._canvas.querySelector(".slide-container");

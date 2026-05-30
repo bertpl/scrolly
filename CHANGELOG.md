@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Slide-group labels auto-pick a legible black or white color from the group background, with an optional `label_color` override.
+
 ### Changed
 
 ### Deprecated

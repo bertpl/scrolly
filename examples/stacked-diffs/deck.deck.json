@@ -2,7 +2,7 @@
   title: "Stacked Diffs",
   slides: [
     {
-      group: "Introduction",
+      group: "Introduction", color: "#4A6FA5",
       slides: [
         { id: "title",    position: [0, 0], source: "slides/title.slide.json" },
         { id: "overview", position: [0, 1], source: "slides/overview.slide.json" },
@@ -18,7 +18,7 @@
       ],
     },
     {
-      group: "Details", color: "#4AA56F",
+      group: "Details", color: "#9DD2BA",
       slides: [
         { id: "detail-4", position: [3, 0], source: "slides/detail-4.slide.json" },
         { id: "detail-3", position: [3, 1], source: "slides/detail-3.slide.json" },

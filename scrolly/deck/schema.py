@@ -55,6 +55,17 @@ def deck_source_schema() -> dict:
                                     "type": "string",
                                     "description": "Group label, displayed above the group rectangle in deck view.",
                                 },
+                                "color": {
+                                    "type": "string",
+                                    "description": "Group background fill as #RGB or #RRGGBB. Defaults to a neutral gray.",
+                                },
+                                "label_color": {
+                                    "type": "string",
+                                    "description": (
+                                        "Group label color as #RGB or #RRGGBB. Defaults to a "
+                                        "black-or-white auto-contrast pick against the background."
+                                    ),
+                                },
                                 "slides": {
                                     "type": "array",
                                     "description": "Slides in this group.",

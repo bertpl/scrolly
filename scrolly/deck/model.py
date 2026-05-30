@@ -82,6 +82,7 @@ class SlideGroup:
     label: str
     slide_ids: tuple[str, ...]
     color: str | None = None
+    label_color: str | None = None
 
 
 @dataclass(frozen=True)
