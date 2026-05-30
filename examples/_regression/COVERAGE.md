@@ -24,9 +24,9 @@ comments to intent (*why* an animation looks the way it does).
 |---|---|
 | `markdown` | most slides; richest syntax (headings, lists, links, code spans, emphasis) on `reference`, a table on `affected` |
 | `image` | `title` (glyph), `maint-bg` (jpg), `contributions` (timeline), `pressure` (png), `capability` (key), `affected` (logos) |
-| `image_sequence` | `cast`, `blank-gap`, `hidden-bytes`, `investigation` |
+| `image_sequence` | `cast`, `blank-gap`, `hidden-bytes`, `investigation`, `build-trojan` |
 | `html` | `title` (bg), `handover` (date callout), `anomaly` (terminal), `disclosure` (banner + progress bar) |
-| `mermaid` (`mermaid_file`) | `build-trojan`, `ssh-hijack` |
+| `mermaid` (`mermaid_file`) | `ssh-hijack` |
 | `iframe` (`iframe_html_file`) | `pressure` (thread), `lessons` (takeaways panel) |
 
 ## image_sequence compositing modes
@@ -34,8 +34,8 @@ comments to intent (*why* an animation looks the way it does).
 | Mode | Covered by |
 |---|---|
 | `blend` | `blank-gap` |
-| `overlay` | `cast`, `hidden-bytes` |
-| `incremental` | `investigation` |
+| `overlay` | `cast`, `hidden-bytes`, `investigation` |
+| `incremental` | `build-trojan` |
 
 ## Animatable element properties
 
@@ -43,7 +43,7 @@ comments to intent (*why* an animation looks the way it does).
 |---|---|
 | `position` (vec2 keyframes) | `contributions` (timeline pan), `handover` (date callout slide-in) |
 | `anchor` (vec2 keyframes) | `contributions`, `ssh-hijack` — oversized-element panning |
-| `opacity` (scalar keyframes) | `title`, `maint-bg`, `contributions`, `pressure`, `handover`, `build-trojan`, `capability`, `anomaly`, `disclosure` |
+| `opacity` (scalar keyframes) | `title`, `maint-bg`, `contributions`, `pressure`, `handover`, `capability`, `anomaly`, `disclosure` |
 | `scale` (scalar keyframes) | `title` (glyph), `capability` (key), `disclosure` (banner) |
 | `angle` (scalar keyframes) | `capability` (key) |
 | `width` (size-dim keyframes) | `disclosure` (progress bar) |
@@ -54,14 +54,14 @@ comments to intent (*why* an animation looks the way it does).
 
 | Feature | Covered by |
 |---|---|
-| `scroll_range: "auto"` (content-driven height) | `reference` |
-| `scroll_range: <int>` (fixed) | every other slide |
+| `scroll_range: "auto"` (content-driven height) | `reference`, `lessons`, `affected` |
+| `scroll_range: <int>` (fixed) | most slides |
 | `scroll_speed` ≠ 1.0 | `handover` (0.6), `capability` (0.7) |
 | `reverse: true` | `disclosure` |
 | author-supplied `snap_positions` | most slides |
 | element-derived snaps (image_sequence hold-centres) | `cast`, `blank-gap`, `hidden-bytes`, `investigation` |
 | `font_scale` ≠ 1.0 | `title` (1.4), `anomaly` (1.1) |
-| dense snaps (thumb-sizing) | `contributions` (11) — densest; see Gaps |
+| dense snaps (thumb-sizing) | `contributions` (23, Δ100 grid) |
 
 ## Deck / canvas features
 
@@ -78,12 +78,12 @@ comments to intent (*why* an animation looks the way it does).
 
 | Format | Covered by |
 |---|---|
-| SVG | `title`, `cast`, `contributions`, `hidden-bytes`, `capability`, `investigation` |
+| SVG | `title`, `cast`, `contributions`, `hidden-bytes`, `capability`, `investigation`, `build-trojan` |
 | PNG | `pressure` |
 | JPG | `maint-bg` |
 | WebP | `affected` |
 | AVIF | `blank-gap` |
-| mermaid (`.mmd`) | `build-trojan`, `ssh-hijack` |
+| mermaid (`.mmd`) | `ssh-hijack` |
 | HTML (`.html` via `iframe`) | `pressure`, `lessons` |
 
 ## Edge cases
@@ -103,7 +103,5 @@ comments to intent (*why* an animation looks the way it does).
 
 ## Gaps / partial coverage
 
-- **Dense snaps:** the densest slide (`contributions`, 11 explicit snaps)
-  sits below the ~20+ that best stresses scrollbar-thumb sizing.
 - **`object_fit: "contain"`:** not set explicitly anywhere; only `"cover"`
   is exercised (`maint-bg`).

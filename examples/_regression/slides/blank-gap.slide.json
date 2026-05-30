@@ -1,9 +1,9 @@
 // Quiet interlude — 9 months of routine maintenance with nothing visibly amiss.
 {
   title: "Quiet preparation",
-  scroll_range: 1800,
+  scroll_range: 950,
   // Start + end snap stops, merged with the image-sequence frame snaps.
-  snap_positions: [0, 1800],
+  snap_positions: [0, 950],
   elements: [
     {
       name: "caption",
@@ -13,13 +13,12 @@
       text_align: "center",
       color: "#2c3e50",
     },
-    // Blank middle slots represent the months of routine activity
+    // Blank middle slot represents the months of routine activity
     // between the two context cards.
     {
       name: "cards",
       image_sequence: [
         "../blank-card-before.avif",
-        "",
         "",
         "../blank-card-after.avif",
       ],
@@ -28,7 +27,7 @@
       hold_fraction: 0.5,
       fade_in: 100,
       fade_out: 150,
-      scroll_offset: 200,
+      scroll_offset: 100,
       position: [50, 28], anchor: [50, 0],
       width: 50, height: "auto",
     },

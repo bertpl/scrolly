@@ -1,10 +1,10 @@
 // The turning point — co-maintainership granted in early 2023.
 {
   title: "Co-maintainership",
-  scroll_range: 1000,
+  scroll_range: 800,
   scroll_speed: 0.6,
-  // Callout slide-in and context both settle at 800; plus start/end.
-  snap_positions: [0, 800, 1000],
+  // Callout slide-in and context both settle at 800 (= end); plus start @0.
+  snap_positions: [0, 800],
   elements: [
     {
       name: "headline",
@@ -18,7 +18,7 @@
     {
       name: "date-callout",
       html: "<div style=\"background:#f5cba7;padding:1em 2em;border-radius:8px;font:bold 1.4em -apple-system,sans-serif;color:#5a3a1a;text-align:center\">January 7, 2023</div>",
-      position: { keyframes: [[0, [-30, 55]], [800, [50, 55]], [1000, [50, 55]]] },
+      position: { keyframes: [[0, [-30, 55]], [800, [50, 55]]] },
       anchor: [50, 50],
       width: 30, height: "auto",
     },
@@ -29,7 +29,7 @@
       width: 70, height: "auto",
       text_align: "center",
       color: "#5a6675",
-      opacity: { keyframes: [[500, 0], [800, 1], [1000, 1]] },
+      opacity: { keyframes: [[500, 0], [800, 1]] },
     },
   ],
 }

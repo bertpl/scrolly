@@ -3,9 +3,9 @@
 // scroll_range visual purpose instead of being inert.
 {
   title: "Pressure on xz-devel",
-  scroll_range: 800,
-  // Snap on each reveal (mail-list @200, thread @600) plus start/end.
-  snap_positions: [0, 200, 600, 800],
+  scroll_range: 600,
+  // Snap on each reveal: mail-list @200, thread @600 (= end); plus start @0.
+  snap_positions: [0, 200, 600],
   elements: [
     // Caption — always visible.
     {

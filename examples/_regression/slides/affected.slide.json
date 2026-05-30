@@ -1,8 +1,7 @@
 // Distros that briefly shipped xz 5.6.0 / 5.6.1.
 {
   title: "Who shipped it",
-  scroll_range: 600,
-  snap_positions: [0, 600],
+  // scroll_range omitted — content-driven height.
   elements: [
     {
       name: "heading",

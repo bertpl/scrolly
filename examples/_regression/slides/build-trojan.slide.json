@@ -1,8 +1,9 @@
 // The build-time staging — how the payload bytes became executable code.
 {
   title: "Build-time staging",
-  scroll_range: 400,
-  snap_positions: [0, 400],
+  scroll_range: 1150,
+  // Start + end snap stops, merged with the image-sequence frame snaps.
+  snap_positions: [0, 1150],
   elements: [
     {
       name: "caption",
@@ -12,14 +13,25 @@
       text_align: "center",
       color: "#5a2c2c",
     },
+    // The trojan assembles stage by stage: each layer adds the next box,
+    // stacking into the full flow. fade_out:0 holds the finished diagram
+    // at the end (avoids the incremental shine-through of a trailing fade).
     {
-      name: "flow",
-      mermaid_file: "../build-trojan.mmd",
-      position: [50, 30], anchor: [50, 0],
-      width: 70, height: 65,
-      // Fade in across the whole scroll — the diagram reveals as the reader
-      // scrolls; snaps land on start (invisible) and end (fully revealed).
-      opacity: { keyframes: [[0, 0], [400, 1]] },
+      name: "assembly",
+      image_sequence: [
+        "../trojan-1.svg",
+        "../trojan-2.svg",
+        "../trojan-3.svg",
+        "../trojan-4.svg",
+      ],
+      compositing: "incremental",
+      frame_distance: 350,
+      hold_fraction: 0.4,
+      fade_in: 100,
+      fade_out: 0,
+      scroll_offset: 100,
+      position: [50, 32], anchor: [50, 0],
+      width: 80, height: "auto",
     },
   ],
 }

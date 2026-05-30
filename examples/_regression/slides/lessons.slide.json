@@ -4,8 +4,7 @@
 // scrollbar appears.
 {
   title: "Five takeaways",
-  scroll_range: 600,
-  snap_positions: [0, 600],
+  // scroll_range omitted — content-driven height (iframe carries its own scroll).
   elements: [
     {
       name: "heading",

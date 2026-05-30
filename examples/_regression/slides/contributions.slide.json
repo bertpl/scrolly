@@ -4,9 +4,9 @@
 {
   title: "Three years on the spine",
   scroll_range: 2200,
-  // Snap positions roughly aligned with the event markers in
-  // timeline.svg (Jan 2021 through Mar 29 2024).
-  snap_positions: [0, 100, 300, 600, 900, 1200, 1500, 1700, 1900, 2050, 2200],
+  // Dense Δ100 snap grid (23 stops) — exercises scrollbar-thumb sizing
+  // under many snap positions.
+  snap_positions: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200],
   elements: [
     // Caption pinned to the right.
     {
