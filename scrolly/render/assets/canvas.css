@@ -93,9 +93,13 @@ body {
   initial-value: 0.5;
 }
 
+/* `--view-scale` is the deck→slide interpolated scale applied to `.canvas`.
+ * `inherits: true` so the connector overlay (`.canvas-edge` / `#edge-dot`)
+ * can divide its stroke widths by it and stay a constant on-screen size
+ * regardless of how far deck view zooms out. */
 @property --view-scale {
   syntax: "<number>";
-  inherits: false;
+  inherits: true;
   initial-value: 1;
 }
 
@@ -884,6 +888,11 @@ body.view-deck .slide-container.selected:hover .subcanvas {
   z-index: 5;
   opacity: calc(1 - var(--view-zoom, 1));
   --connector-color: #4a4a4a;
+  /* Connector line + end-dot sizes, in on-screen px. The rules below divide
+   * these by --view-scale so they stay visually constant regardless of how far
+   * deck view zooms out (which grows with the slide grid). Tune for thickness. */
+  --edge-width: 1.5;
+  --edge-dot: 5;
 }
 
 /* ---- Slide-to-slide pan scale dip ------------------------------------- */
@@ -909,9 +918,18 @@ body.pan-transitioning .canvas {
 .canvas-edge {
   fill: none;
   stroke: var(--connector-color);
-  stroke-width: 3;
+  /* Divide by --view-scale so the line keeps a constant on-screen width
+   * regardless of grid size: non-scaling-stroke cancels the SVG-internal
+   * viewBox scale, the division cancels the .canvas deck-view transform. */
+  stroke-width: calc(var(--edge-width) / var(--view-scale, 1));
   vector-effect: non-scaling-stroke;
   stroke-linecap: round;
+}
+
+/* End-of-connector dots: round caps on a zero-length line in the #edge-dot
+ * marker. Same constant-on-screen-size treatment as the connector line. */
+.edge-dot-cap {
+  stroke-width: calc(var(--edge-dot) / var(--view-scale, 1));
 }
 
 /* ---- Help button -------------------------------------------------------- */
