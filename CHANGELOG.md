@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.2 (2026-05-30)
 
 ### Added
 
@@ -18,10 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Breaking:** `image_sequence` timing — the absolute `hold` field is replaced by `hold_fraction` (a fraction of `frame_distance`, default `0.2`). Frames snap to the frame grid, and `fade_in` / `fade_out` now bound the timeline exactly.
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Image-sequence slides now snap to each frame, not just the slide endpoints.
@@ -29,9 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bezier edge arrows no longer clip on decks whose top-left slide is not at the origin.
 - Inline `<code>` and `<pre>` now visually match the size of surrounding body text in slide content.
 - Mermaid diagrams now scale to fit their element box instead of overflowing.
-
-### Security
-
 ## 0.2.1 (2026-05-24)
 
 ### Added
