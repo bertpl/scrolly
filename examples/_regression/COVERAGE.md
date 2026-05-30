@@ -93,7 +93,7 @@ comments to intent (*why* an animation looks the way it does).
 | blank `""` slot in `image_sequence` | `blank-gap` |
 | frame deduplication (same file reused) | `hidden-bytes` (`hidden-clean.svg` ×2) |
 | oversized element panned via `anchor` | `contributions` (tall SVG), `ssh-hijack` (tall mermaid) |
-| tall mermaid contained in its box (no overflow) | `ssh-hijack` |
+| mermaid box hugs the diagram — pan edges land flush at scroll start/end, no stray whitespace or overflow | `ssh-hijack` |
 | iframe `border_width` + `border_color` | `pressure`, `lessons` |
 | iframe `shadow_size` + `shadow_color` | `pressure`, `lessons` |
 | iframe internal scrollbar | `pressure`, `lessons` |
