@@ -4,11 +4,13 @@ from pathlib import Path
 
 import pytest
 from animation_engine.recipe import (
+    Border,
     CaptionOverlay,
     ClickOverlay,
     CursorOverlay,
     HoldStep,
     KeyOverlay,
+    ProgressBar,
     Recipe,
     ScrollHintOverlay,
     ScrollStep,
@@ -126,3 +128,54 @@ def test_load_shipped_recipe_is_valid(project_root: Path) -> None:
     step_types = {type(s) for s in recipe.steps}
     assert step_types == {HoldStep, ViewStep, ScrollStep}
     assert len(recipe.overlays) > 0
+
+
+# ==================================================================================================
+#  Border + progress bar (whole-run chrome)
+# ==================================================================================================
+def test_chrome_defaults_off_when_absent() -> None:
+    # --- act --------------------------
+    recipe = parse_recipe(_recipe_dict())
+
+    # --- assert -----------------------
+    assert recipe.border == Border(width=0, color="#000000")
+    assert recipe.progress_bar == ProgressBar(height=0, color="#000000", track_color="#000000")
+
+
+def test_border_parsed() -> None:
+    # --- act --------------------------
+    recipe = parse_recipe(_recipe_dict(border={"width": 4, "color": "#1A1A1A"}))
+
+    # --- assert -----------------------
+    assert recipe.border == Border(width=4, color="#1A1A1A")
+
+
+def test_progress_bar_parsed() -> None:
+    # --- act --------------------------
+    recipe = parse_recipe(_recipe_dict(progress_bar={"height": 2, "color": "#4A6FA5", "track_color": "#3A3A3A"}))
+
+    # --- assert -----------------------
+    assert recipe.progress_bar == ProgressBar(height=2, color="#4A6FA5", track_color="#3A3A3A")
+
+
+@pytest.mark.parametrize(
+    "block,field",
+    [("border", "color"), ("progress_bar", "color"), ("progress_bar", "track_color")],
+)
+def test_invalid_chrome_color_rejected(block, field) -> None:
+    # --- act / assert -----------------
+    with pytest.raises(ValueError, match="opaque hex color"):
+        parse_recipe(_recipe_dict(**{block: {field: "red"}}))
+
+
+@pytest.mark.parametrize("block,field", [("border", "width"), ("progress_bar", "height")])
+def test_negative_chrome_size_rejected(block, field) -> None:
+    # --- act / assert -----------------
+    with pytest.raises(ValueError, match=">= 0"):
+        parse_recipe(_recipe_dict(**{block: {field: -1}}))
+
+
+def test_chrome_block_must_be_object() -> None:
+    # --- act / assert -----------------
+    with pytest.raises(ValueError, match="must be an object"):
+        parse_recipe(_recipe_dict(border="thick"))
