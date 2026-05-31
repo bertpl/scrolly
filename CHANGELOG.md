@@ -5,25 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.3 (2026-05-31)
 
 ### Added
 
 - Slide-group labels auto-pick a legible black or white color from the group background, with an optional `label_color` override.
 
-### Changed
-
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Slide-connector lines and their end dots now keep a constant on-screen size as the deck view zooms out, and carry a soft light outline so they stay legible against dark backgrounds.
 - Stepping between snap positions no longer briefly jerks the animation backward before moving toward the target.
-
-### Security
-
 ## 0.2.2 (2026-05-30)
 
 ### Added
