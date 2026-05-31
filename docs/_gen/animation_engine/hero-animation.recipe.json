@@ -2,24 +2,32 @@
   // ================================================================
   //  Hero animation — storyboard
   //
-  //  A ~15s loop that sells scrolly in one glance: it's a 2D canvas
-  //  of slides you navigate by zoom + scroll, where scrolling
-  //  animates the content. Rendered from the stacked-diffs deck.
+  //  A loop that sells scrolly in one glance: crisp self-contained
+  //  HTML decks, where slides live on a 2D canvas, scroll-drive their
+  //  own animations, and carry built-in debug + help. Rendered from
+  //  the stacked-diffs deck. (Intentionally long for a first cut —
+  //  trimmed by feel against the render.)
   //
-  //    Beat 1  deck map   — a 2D canvas of slides; colored groups + bezier edges
-  //    Beat 2  zoom in    — dive into the hero slide (cursor glides + clicks)
-  //    Beat 3  scroll     — the money shot: the git graph builds (image_sequence
-  //                         + reverse) while the viewport pans up the oversized
-  //                         graph, steps tick off, Conclusions + References slide in
-  //    Beat 4  branch     — click the right arrow to pan into the green detail
-  //                         slide; click the left arrow to come back (it's a
-  //                         navigable graph, not a linear deck)
-  //    Beat 5  settle     — zoom out to the whole canvas; loops to Beat 1
+  //    Scene 1  intro    — open on the title slide, pan to overview and
+  //                         step through its animation with shift-down
+  //    Scene 2  canvas    — zoom out to the 2D canvas; click into slide-1,
+  //                         walk the main thread up (arrow keys) and back
+  //                         down (arrow clicks), then side-step to a detail
+  //                         slide and back (non-linear navigation)
+  //    Scene 3  animation — zoom into slide-3, scroll its keyframe animation;
+  //                         toggle debug mode on/off mid-scroll; note inlined
+  //                         + compressed images
+  //    Scene 4  help      — open the built-in help overlay, scroll it, close
   //
   //  Camera note: deck view is fit-all and ignores the selected slide, so
   //  every camera *move* happens zoomed in (where the view follows the
   //  selection). Edge arrows are hidden during transitions and in deck
   //  view, so an arrow-click cue must land on a settled, zoomed-in slide.
+  //
+  //  Deck geometry (position is [column, row]): the Main Content slides
+  //  are a vertical stack in column 2 — slide-4 (top) over slide-3,
+  //  slide-2, slide-1 (bottom) — so slide-1->2->3->4 reads as "up" and the
+  //  detail slides sit one column to the right ("right" from a main slide).
   //
   //  Budget: <= 10 MB, 1280x720 @ 2x, 20 fps.
   // ================================================================
@@ -28,70 +36,135 @@
   deck: "examples/stacked-diffs/deck.deck.json",
   viewport: { width: 1280, height: 720, scale: 2 },
   fps: 20,
-  output: { path: "docs/assets/hero-v1.gif", loop: true, quality: 100 },
+  output: { path: "docs/assets/hero-v2.gif", loop: true, quality: 100 },
+
+  // ---- whole-run chrome ---------------------------------------------
+  // Added around the captured frame (never over content): a thin frame,
+  // and a wall-clock progress bar below it that fills 0 -> full once per
+  // loop. Sizes are absolute output px. width/height 0 disables either.
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
 
   // ---- storyboard (steps) -------------------------------------------
   steps: [
-    // Beat 1 — open on the deck map with the hero slide selected.
-    { type: "hold", view: "deck", slide: "slide-3", ms: 1800 },
+    // -- Scene 1: intro -------------------------------------------------
+    // overview has snaps [0,250,500,750,1000,1500,2000]; step through them
+    // with shift-down (6 jumps) rather than a continuous scroll, which read
+    // awkwardly near the start. The snap transition animates each jump.
+    { type: "hold", view: "slide", slide: "title", ms: 2600 },          // 0
+    { type: "view", slide: "overview", ms: 700 },                       // 1
+    { type: "press", key: "Shift+ArrowDown", ms: 700 },                 // 2  (0->250)
+    { type: "press", key: "Shift+ArrowDown", ms: 700 },                 // 3  (250->500)
+    { type: "press", key: "Shift+ArrowDown", ms: 700 },                 // 4  (500->750)
+    { type: "press", key: "Shift+ArrowDown", ms: 700 },                 // 5  (750->1000)
+    { type: "press", key: "Shift+ArrowDown", ms: 700 },                 // 6  (1000->1500)
+    { type: "press", key: "Shift+ArrowDown", ms: 700 },                 // 7  (1500->2000)
+    { type: "hold", view: "slide", slide: "overview", ms: 1000 },       // 8
 
-    // Beat 2 — zoom into the hero slide (cursor/click lands at the tail
-    // of Beat 1 to motivate the zoom).
-    { type: "view", to: "slide", ms: 600 },
+    // -- Scene 2: 2D canvas + non-linear navigation ---------------------
+    { type: "view", to: "deck", ms: 900 },                              // 9
+    { type: "hold", view: "deck", slide: "overview", ms: 2600 },        // 10
+    { type: "view", to: "slide", slide: "slide-1", ms: 900 },           // 11
+    { type: "hold", view: "slide", slide: "slide-1", ms: 1800 },        // 12
+    { type: "view", slide: "slide-2", ms: 450 },                        // 13 (up)
+    { type: "view", slide: "slide-3", ms: 450 },                        // 14 (up)
+    { type: "view", slide: "slide-4", ms: 450 },                        // 15 (up)
+    { type: "hold", view: "slide", slide: "slide-4", ms: 700 },         // 16
+    { type: "view", slide: "slide-3", ms: 450 },                        // 17 (down)
+    { type: "view", slide: "slide-2", ms: 450 },                        // 18 (down)
+    { type: "view", slide: "slide-1", ms: 450 },                        // 19 (down)
+    { type: "hold", view: "slide", slide: "slide-1", ms: 2200 },        // 20
+    { type: "view", slide: "detail-1", ms: 750 },                       // 21 (right)
+    { type: "hold", view: "slide", slide: "detail-1", ms: 1100 },       // 22
+    { type: "view", slide: "slide-1", ms: 750 },                        // 23 (left)
 
-    // Beat 3 — money shot: scroll slide-3 end to end, then settle (the
-    // settle is where the right-arrow click cue lands — arrows are only
-    // visible on a settled, zoomed-in slide).
-    { type: "scroll", slide: "slide-3", from: 0.0, to: 1.0, ms: 5500, ease: "ease-in-out" },
-    { type: "hold", view: "slide", slide: "slide-3", ms: 800 },
+    // -- Scene 3: keyframe animation + debug + compression --------------
+    { type: "view", to: "deck", ms: 900 },                              // 24
+    { type: "hold", view: "deck", slide: "slide-3", ms: 1400 },         // 25
+    { type: "view", to: "slide", slide: "slide-3", ms: 900 },           // 26
+    { type: "scroll", slide: "slide-3", from: 0.0, to: 1.0, ms: 4800, ease: "ease-in-out" }, // 27 (slowed)
+    { type: "hold", view: "slide", slide: "slide-3", ms: 700 },         // 28
+    { type: "press", key: "d", ms: 1600 },                              // 29 (debug on)
+    { type: "scroll", slide: "slide-3", from: 1.0, to: 0.0, ms: 4800, ease: "ease-in-out" }, // 30 (debug visible, full scroll-back, slowed)
+    { type: "hold", view: "slide", slide: "slide-3", ms: 500 },         // 31 (dwell at scroll 0, debug on)
+    { type: "press", key: "d", ms: 1000 },                              // 32 (debug off)
+    { type: "hold", view: "slide", slide: "slide-3", ms: 600 },         // 33 (settle, debug off)
 
-    // Beat 4 — click right arrow -> pan into the green detail slide;
-    // dwell (left-arrow click cue lands here); click left arrow -> back.
-    { type: "view", slide: "detail-3", ms: 1200 },
-    { type: "hold", view: "slide", slide: "detail-3", ms: 2300 },
-    { type: "view", slide: "slide-3", ms: 1000 },
-
-    // Beat 5 — zoom out to the full canvas and settle; matches Beat 1
-    // (deck view, slide-3 selected) so the loop seam is clean.
-    { type: "view", to: "deck", ms: 900 },
-    { type: "hold", view: "deck", slide: "slide-3", ms: 1300 },
+    // -- Scene 4: built-in help (stays open at the end) -----------------
+    { type: "press", key: "h", ms: 1800 },                              // 34 (help opens)
+    { type: "scroll_el", selector: ".help-modal-body", from: 0.0, to: 1.0, ms: 3200, ease: "ease-in-out" }, // 35 (down, all the way)
+    { type: "hold", view: "slide", slide: "slide-3", ms: 500 },         // 36 (hold between down + up)
+    { type: "scroll_el", selector: ".help-modal-body", from: 1.0, to: 0.0, ms: 2600, ease: "ease-in-out" }, // 37 (back up)
+    { type: "hold", view: "slide", slide: "slide-3", ms: 2000 },        // 38 (caption gone; linger on the open help)
   ],
 
   // ---- overlays (captions + interaction cues) -----------------------
-  // Cursor/click coords are viewport px (pre-scale). The edge-arrow
-  // targets are derived from canvas.css (right arrow ~[1248,360], left
-  // arrow ~[32,360]); the deck-view slide-3 target is a first guess —
-  // eyeball and nudge after a run.
+  // Cursor/click coords are viewport px (pre-scale). Edge-arrow targets
+  // from canvas.css: right ~[1248,360], left ~[32,360], top ~[640,32],
+  // bottom ~[640,688]. Deck-view slide-center targets are estimates — nudge
+  // against the render. Caption spans end at 0.96 (not 1.0) to leave a short
+  // caption-free gap before the next caption.
   overlays: [
-    // Beat 1 caption + cursor/click that motivates the zoom into Beat 2.
-    { type: "caption", step: 0, span: [0.18, 0.95], anchor: "bottom-center",
-      text: "A 2D canvas of slides", fade_ms: 200 },
-    { type: "cursor", step: 0, span: [0.5, 0.97], from: [1150, 120], to: [640, 300] },
-    { type: "click", step: 0, at: 0.97, pos: [640, 300] },
+    // Scene 1
+    { type: "caption", step: [0, 1], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Create crisp, self-contained HTML slide decks", fade_ms: 250 },
+    // B spans the whole overview progression (the 6 shift-down jumps + hold).
+    { type: "caption", step: [2, 8], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Build elegant layouts and animations in a snap", fade_ms: 250 },
 
-    // Beat 3 caption (over the scroll).
-    { type: "caption", step: 2, span: [0.06, 0.92], anchor: "bottom-center",
-      text: "Scroll drives the animation", fade_ms: 250 },
-    // Beat 3 scroll cue — animated mouse-wheel glyph, right of center.
-    // TUNE: pos is viewport px; nudge after a run.
-    { type: "scroll_hint", step: 2, span: [0.12, 0.85], pos: [1185, 330] },
+    // Scene 2 — establish the 2D canvas, click into the main thread
+    { type: "caption", step: [9, 10], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Slides live on a 2D canvas", fade_ms: 250 },
+    { type: "cursor", step: 10, span: [0.45, 0.95], from: [380, 250], to: [690, 470] }, // slide-1 center (est.)
+    { type: "click", step: 10, at: 0.92, pos: [690, 470] },
 
-    // Beat 4 — right-arrow click on the post-scroll settle (step 3),
-    // then the pan; left-arrow click during the detail dwell (step 5).
-    { type: "cursor", step: 3, span: [0.1, 0.85], from: [950, 360], to: [1248, 360] },
-    { type: "click", step: 3, at: 0.82, pos: [1248, 360] },
+    // D spans the whole main-thread walk: zoom into slide-1, up to slide-4
+    // and back down — so the caption holds across the quick hops.
+    { type: "caption", step: [11, 19], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "A main thread can flow in one direction…", fade_ms: 200 },
+    // Forward walk: arrow-key cue, repeated up the column.
+    { type: "key", step: 13, at: 0.0, label: "↑" },
+    { type: "key", step: 14, at: 0.0, label: "↑" },
+    { type: "key", step: 15, at: 0.0, label: "↑" },
+    // Return walk: cursor glides to the bottom arrow, then a click on EACH
+    // descent (4->3->2->1) so every down-move is visibly clicked, not just
+    // the first. Cursor is held on the arrow across the quick hops.
+    { type: "cursor", step: 16, span: [0.10, 0.90], from: [640, 520], to: [640, 688] },
+    { type: "cursor", step: 17, span: [0.0, 1.0], from: [640, 688], to: [640, 688] },
+    { type: "click",  step: 17, at: 0.05, pos: [640, 688] },
+    { type: "cursor", step: 18, span: [0.0, 1.0], from: [640, 688], to: [640, 688] },
+    { type: "click",  step: 18, at: 0.05, pos: [640, 688] },
+    { type: "cursor", step: 19, span: [0.0, 1.0], from: [640, 688], to: [640, 688] },
+    { type: "click",  step: 19, at: 0.05, pos: [640, 688] },
 
-    { type: "caption", step: 5, span: [0.0, 0.65], anchor: "bottom-center",
-      text: "Branch sideways for detail", fade_ms: 200 },
-    { type: "cursor", step: 5, span: [0.62, 0.95], from: [420, 360], to: [38, 360] },
-    { type: "click", step: 5, at: 0.9, pos: [38, 360] },
+    // E spans the side-step: slide-1 hold, out to detail-1 and back.
+    { type: "caption", step: [20, 23], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "…and detail can branch off to the side", fade_ms: 200 },
+    { type: "cursor", step: 20, span: [0.50, 0.95], from: [950, 360], to: [1248, 360] },
+    { type: "click", step: 20, at: 0.92, pos: [1248, 360] },
+    // Detail dwell: mouse to the left arrow + click, to come back.
+    { type: "cursor", step: 22, span: [0.10, 0.70], from: [330, 360], to: [32, 360] },
+    { type: "click", step: 22, at: 0.60, pos: [32, 360] },
 
-    // Beat 5 — "Z" toggles zoom in scrolly; the chip flashes as we zoom
-    // out (step 7). Zoom-in (Beat 2) is shown via clicking the slide.
-    { type: "key", step: 7, at: 0.0, label: "Z" },
+    // Scene 3 — click into slide-3, scroll its animation, toggle debug
+    { type: "cursor", step: 25, span: [0.20, 0.90], from: [640, 300], to: [690, 320] }, // slide-3 center (est.)
+    { type: "click", step: 25, at: 0.85, pos: [690, 320] },
+    { type: "caption", step: [25, 28], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "A keyframe animation system drives every element", fade_ms: 250 },
+    { type: "scroll_hint", step: 27, span: [0.10, 0.85], pos: [1185, 330] },
+    // G spans the debug demo: toggle on, scroll all the way back with it
+    // visible, dwell at the start, then toggle off.
+    { type: "caption", step: [29, 32], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Built-in debug mode", fade_ms: 200 },
+    { type: "key", step: 29, at: 0.0, label: "D" },
+    { type: "key", step: 32, at: 0.0, label: "D" },
 
-    // Beat 5 caption.
-    { type: "caption", step: 8, span: [0.1, 0.9], anchor: "bottom-center",
-      text: "One self-contained HTML file", fade_ms: 200 },
+    // Scene 4 — built-in help
+    // I covers open → scroll down → back up, then fades before the final
+    // 2s dwell on the (still-open) help screen.
+    { type: "caption", step: [34, 37], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Built-in help for newcomers", fade_ms: 200 },
+    { type: "key", step: 34, at: 0.0, label: "H" },
+    { type: "scroll_hint", step: 35, span: [0.10, 0.90], pos: [640, 360] },
   ],
 }

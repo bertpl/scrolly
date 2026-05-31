@@ -601,6 +601,10 @@
       this._config = snapConfig;
       this._containerFn = containerFn;
       this._enabled = true;
+      // The idle auto-snap (settle to nearest snap after IDLE_MS of scroll
+      // inactivity) can be turned off independently of `_enabled`, leaving the
+      // snap control, dots, and manual up()/down() intact. See setIdleSnap().
+      this._idleSnap = true;
       this._timer = null;
       this._anim = null;
       this._animTarget = null;
@@ -658,9 +662,19 @@
 
     schedule(slideId) {
       this.cancel();
-      if (!this._enabled) return;
+      if (!this._enabled || !this._idleSnap) return;
       if (!this._snapsFor(slideId)) return;
       this._timer = setTimeout(() => { this._timer = null; this._animateToNearest(slideId); }, SnapManager.IDLE_MS);
+    }
+
+    // Toggle the idle auto-snap only. Unlike `_setEnabled`, this leaves the
+    // snap feature on (control, scrollbar snap dots, and manual up()/down()
+    // nav all keep working) — it just stops the post-idle settle from firing.
+    // The capture harness sets this off so scripted setScroll positions render
+    // exactly instead of being pulled toward a snap mid-capture.
+    setIdleSnap(enabled) {
+      this._idleSnap = enabled;
+      if (!enabled) this.cancel();
     }
 
     cancel() {
@@ -2190,6 +2204,13 @@
       scrollManager,
       isAnimating: () => document.body.classList.contains("view-transitioning"),
     });
+    // Turn off the idle auto-snap under automation: scripted setScroll
+    // positions are exact, but the idle-snap timer would otherwise fire between
+    // the capture's (slow) screenshots and animate the scroll toward the
+    // nearest snap — a visible wobble + catch-up jump. The snap feature stays
+    // enabled, so the scrollbar's snap dots (a key debug-mode cue) and the
+    // scripted Shift+Arrow nav both keep working.
+    snapManager.setIdleSnap(false);
     console.log("scrolly automation hook active");
   }
 })(typeof module !== "undefined" ? module.exports : {});

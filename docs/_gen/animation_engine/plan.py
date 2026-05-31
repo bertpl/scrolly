@@ -18,7 +18,9 @@ from .recipe import (
     CursorOverlay,
     HoldStep,
     KeyOverlay,
+    PressStep,
     Recipe,
+    ScrollElStep,
     ScrollHintOverlay,
     ScrollStep,
     ViewStep,
@@ -38,10 +40,13 @@ _SCROLL_CYCLE_MS = 700
 class StepFrames:
     """The frame budget + capture hints for one recipe step.
 
-    `type` is ``"hold"`` / ``"view"`` / ``"scroll"``. For ``scroll``,
-    `scroll_fractions` holds the per-frame normalized position; for the
-    others it is empty. `view` is the target zoom (``"deck"`` /
-    ``"slide"`` / ``None`` when unchanged) and `slide` the target slide.
+    `type` is ``"hold"`` / ``"view"`` / ``"scroll"`` / ``"press"`` /
+    ``"scroll_el"``. For ``scroll`` / ``scroll_el``, `scroll_fractions`
+    holds the per-frame normalized position; for the others it is empty.
+    `view` is the target zoom (``"deck"`` / ``"slide"`` / ``None`` when
+    unchanged) and `slide` the target slide. `key` is set for ``press``
+    (the key to dispatch); `selector` is set for ``scroll_el`` (the
+    element to scroll).
     """
 
     step_index: int
@@ -51,6 +56,8 @@ class StepFrames:
     view: str | None
     slide: str | None
     scroll_fractions: tuple[float, ...]
+    key: str | None = None
+    selector: str | None = None
 
 
 @dataclass(frozen=True)
@@ -147,6 +154,10 @@ def _plan_steps(recipe: Recipe) -> tuple[StepFrames, ...]:
         elif isinstance(step, ScrollStep):
             held_slide = step.slide
             planned.append(_scroll_frames(i, n, cursor, step))
+        elif isinstance(step, PressStep):
+            planned.append(StepFrames(i, "press", n, cursor, None, held_slide, (), key=step.key))
+        elif isinstance(step, ScrollElStep):
+            planned.append(_scroll_el_frames(i, n, cursor, step, held_slide))
         cursor += n
     return tuple(planned)
 
@@ -160,44 +171,53 @@ def _scroll_frames(index: int, n: int, start: int, step: ScrollStep) -> StepFram
     return StepFrames(index, "scroll", n, start, "slide", step.slide, fractions)
 
 
+def _scroll_el_frames(index: int, n: int, start: int, step: ScrollElStep, slide: str | None) -> StepFrames:
+    fractions = tuple(_lerp(step.start, step.end, _ease(_progress(f, n), step.ease)) for f in range(n))
+    return StepFrames(index, "scroll_el", n, start, None, slide, fractions, selector=step.selector)
+
+
 # --- overlay resolution ---------------------------
 def _resolve_overlays(recipe: Recipe, steps: tuple[StepFrames, ...], total: int) -> tuple[tuple[OverlayDraw, ...], ...]:
     """Build the per-frame draw lists from the recipe's overlays."""
     buckets: list[list[OverlayDraw]] = [[] for _ in range(total)]
     for overlay in recipe.overlays:
-        step = steps[overlay.step]
-        for global_index, draw in _overlay_draws(overlay, step, recipe.fps):
+        for global_index, draw in _overlay_draws(overlay, steps, recipe.fps):
             buckets[global_index].append(draw)
     return tuple(tuple(b) for b in buckets)
 
 
-def _overlay_draws(overlay: object, step: StepFrames, fps: int):
+def _overlay_draws(overlay: object, steps: tuple[StepFrames, ...], fps: int):
     """Yield ``(global_frame_index, OverlayDraw)`` for one overlay."""
     if isinstance(overlay, CaptionOverlay):
-        yield from _caption_draws(overlay, step, fps)
+        yield from _caption_draws(overlay, steps, fps)
     elif isinstance(overlay, CursorOverlay):
-        yield from _cursor_draws(overlay, step)
+        yield from _cursor_draws(overlay, steps[overlay.step])
     elif isinstance(overlay, ClickOverlay):
-        yield from _click_draws(overlay, step, fps)
+        yield from _click_draws(overlay, steps[overlay.step], fps)
     elif isinstance(overlay, KeyOverlay):
-        yield from _key_draws(overlay, step, fps)
+        yield from _key_draws(overlay, steps[overlay.step], fps)
     elif isinstance(overlay, ScrollHintOverlay):
-        yield from _scroll_hint_draws(overlay, step, fps)
+        yield from _scroll_hint_draws(overlay, steps[overlay.step], fps)
 
 
-def _caption_draws(overlay: CaptionOverlay, step: StepFrames, fps: int):
+def _caption_draws(overlay: CaptionOverlay, steps: tuple[StepFrames, ...], fps: int):
     start, end = overlay.span
-    # Fade duration in progress units (0..1 over the step). No min-1
-    # floor here: fade_ms == 0 must mean a hard cut, not a 1-frame ramp.
+    # A caption spans an inclusive step range; its span fractions and fade
+    # are measured over the combined frame window of that range, so the
+    # text can persist across transitions / quick hops between steps.
+    first = steps[overlay.step_start]
+    n_total = sum(steps[i].n_frames for i in range(overlay.step_start, overlay.step_end + 1))
+    # Fade duration in progress units (0..1 over the range). No min-1 floor
+    # here: fade_ms == 0 must mean a hard cut, not a 1-frame ramp.
     fade_frames = round(overlay.fade_ms / 1000.0 * fps)
-    fade_frac = fade_frames / max(step.n_frames - 1, 1)
-    for f in range(step.n_frames):
-        p = _progress(f, step.n_frames)
+    fade_frac = fade_frames / max(n_total - 1, 1)
+    for f in range(n_total):
+        p = _progress(f, n_total)
         if not start <= p <= end:
             continue
         alpha = _trapezoid_alpha(p, start, end, fade_frac)
         if alpha > 0:
-            yield step.global_start + f, CaptionDraw(text=overlay.text, anchor=overlay.anchor, alpha=alpha)
+            yield first.global_start + f, CaptionDraw(text=overlay.text, anchor=overlay.anchor, alpha=alpha)
 
 
 def _cursor_draws(overlay: CursorOverlay, step: StepFrames):
