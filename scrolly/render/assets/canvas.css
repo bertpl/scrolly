@@ -887,12 +887,21 @@ body.view-deck .slide-container.selected:hover .subcanvas {
   display: block;
   z-index: 5;
   opacity: calc(1 - var(--view-zoom, 1));
-  --connector-color: #4a4a4a;
+  --connector-color: #333333;
   /* Connector line + end-dot sizes, in on-screen px. The rules below divide
    * these by --view-scale so they stay visually constant regardless of how far
    * deck view zooms out (which grows with the slide grid). Tune for thickness. */
-  --edge-width: 1.5;
-  --edge-dot: 5;
+  --edge-width: 1.25;
+  --edge-dot: 4;
+  /* Sharp casing: a second, slightly wider set of connectors + dots is drawn
+   * in an opaque light tint (--edge-halo-color) directly behind the dark ones
+   * (.canvas-edge-halo / .edge-dot-cap-halo, emitted by BezierOverlay), giving
+   * a crisp light edge that separates them from dark backdrops without the
+   * softness of a blur. --edge-halo-ring is the extra on-screen px per side,
+   * divided by --view-scale to stay constant on-screen like the stroke widths
+   * above. */
+  --edge-halo-ring: 0.75;
+  --edge-halo-color: #cccccc;
 }
 
 /* ---- Slide-to-slide pan scale dip ------------------------------------- */
@@ -926,10 +935,27 @@ body.pan-transitioning .canvas {
   stroke-linecap: round;
 }
 
+/* White casing drawn behind every connector (--edge-halo-ring px wider per
+ * side). BezierOverlay emits all casing paths before any dark path, so the
+ * casing never paints over a dark line where two connectors cross. */
+.canvas-edge-halo {
+  fill: none;
+  stroke: var(--edge-halo-color);
+  stroke-width: calc((var(--edge-width) + 2 * var(--edge-halo-ring)) / var(--view-scale, 1));
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+
 /* End-of-connector dots: round caps on a zero-length line in the #edge-dot
  * marker. Same constant-on-screen-size treatment as the connector line. */
 .edge-dot-cap {
   stroke-width: calc(var(--edge-dot) / var(--view-scale, 1));
+}
+
+/* Matching wider white casing for the dots, via the #edge-dot-halo marker. */
+.edge-dot-cap-halo {
+  stroke: var(--edge-halo-color);
+  stroke-width: calc((var(--edge-dot) + 2 * var(--edge-halo-ring)) / var(--view-scale, 1));
 }
 
 /* ---- Help button -------------------------------------------------------- */
