@@ -10,8 +10,10 @@ from animation_engine.recipe import (
     CursorOverlay,
     HoldStep,
     KeyOverlay,
+    PressStep,
     ProgressBar,
     Recipe,
+    ScrollElStep,
     ScrollHintOverlay,
     ScrollStep,
     ViewStep,
@@ -55,6 +57,30 @@ def test_parse_recipe_step_types() -> None:
     assert (scroll.start, scroll.end, scroll.ease) == (0.0, 1.0, "linear")
 
 
+def test_parse_press_and_scroll_el_steps() -> None:
+    # --- arrange ----------------------
+    data = _recipe_dict(
+        steps=[
+            {"type": "press", "key": "d", "ms": 800},
+            {
+                "type": "scroll_el",
+                "selector": ".help-modal-body",
+                "from": 0.0,
+                "to": 1.0,
+                "ms": 1500,
+                "ease": "ease-in-out",
+            },
+        ]
+    )
+
+    # --- act --------------------------
+    recipe = parse_recipe(data)
+
+    # --- assert -----------------------
+    assert recipe.steps[0] == PressStep(key="d", ms=800)
+    assert recipe.steps[1] == ScrollElStep(selector=".help-modal-body", start=0.0, end=1.0, ms=1500, ease="ease-in-out")
+
+
 def test_parse_recipe_overlay_types() -> None:
     # --- arrange ----------------------
     data = _recipe_dict(
@@ -82,6 +108,23 @@ def test_parse_recipe_overlay_types() -> None:
     assert recipe.overlays[1].end == (30.0, 40.0)
 
 
+def test_parse_caption_step_forms() -> None:
+    # --- arrange ----------------------
+    data = _recipe_dict(
+        overlays=[
+            {"type": "caption", "step": 0, "span": [0.0, 1.0], "text": "single"},
+            {"type": "caption", "step": [0, 2], "span": [0.0, 1.0], "text": "range"},
+        ]
+    )
+
+    # --- act --------------------------
+    single, ranged = parse_recipe(data).overlays
+
+    # --- assert -----------------------
+    assert (single.step_start, single.step_end) == (0, 0)  # int -> degenerate range
+    assert (ranged.step_start, ranged.step_end) == (0, 2)
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -90,10 +133,23 @@ def test_parse_recipe_overlay_types() -> None:
         pytest.param(lambda d: d.update(steps=[]), id="empty-steps"),
         pytest.param(lambda d: d["steps"][0].update(type="wobble"), id="unknown-step-type"),
         pytest.param(lambda d: d["steps"][0].update(view="sideways"), id="bad-view"),
+        pytest.param(lambda d: d.update(steps=[{"type": "press", "ms": 500}]), id="press-missing-key"),
+        pytest.param(
+            lambda d: d.update(steps=[{"type": "scroll_el", "from": 0.0, "to": 1.0, "ms": 500}]),
+            id="scroll-el-missing-selector",
+        ),
         pytest.param(lambda d: d["steps"][2].update(**{"from": 1.5}), id="fraction-out-of-range"),
         pytest.param(
             lambda d: d.update(overlays=[{"type": "caption", "step": 9, "span": [0, 1], "text": "x"}]),
             id="overlay-step-out-of-range",
+        ),
+        pytest.param(
+            lambda d: d.update(overlays=[{"type": "caption", "step": [2, 0], "span": [0, 1], "text": "x"}]),
+            id="caption-range-reversed",
+        ),
+        pytest.param(
+            lambda d: d.update(overlays=[{"type": "caption", "step": [0, 9], "span": [0, 1], "text": "x"}]),
+            id="caption-range-out-of-range",
         ),
         pytest.param(
             lambda d: d.update(overlays=[{"type": "caption", "step": 0, "span": [0.9, 0.1], "text": "x"}]),
@@ -123,10 +179,12 @@ def test_load_shipped_recipe_is_valid(project_root: Path) -> None:
 
     # --- assert -----------------------
     assert recipe.deck == "examples/stacked-diffs/deck.deck.json"
-    # The storyboard uses all three step types; the overlay mix evolves as
-    # the animation is tuned, so just require a non-empty, valid overlay set.
+    # The storyboard's exact step/overlay mix evolves as the animation is
+    # tuned, so just require valid types from the known set and the core
+    # hold/view/scroll trio always being present.
     step_types = {type(s) for s in recipe.steps}
-    assert step_types == {HoldStep, ViewStep, ScrollStep}
+    assert step_types <= {HoldStep, ViewStep, ScrollStep, PressStep, ScrollElStep}
+    assert {HoldStep, ViewStep, ScrollStep} <= step_types
     assert len(recipe.overlays) > 0
 
 

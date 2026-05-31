@@ -9,11 +9,12 @@ the animation.
 Two timelines:
 
 - ``steps`` — the storyboard: ordered ``hold`` / ``view`` (pan or zoom
-  transition) / ``scroll`` (over one slide) entries with durations.
+  transition) / ``scroll`` (over one slide) / ``press`` (a real key) /
+  ``scroll_el`` (over an element's own scrollbar) entries with durations.
 - ``overlays`` — the compositing layer: ``caption`` / ``cursor`` /
-  ``click`` / ``key`` entries, each anchored to a step index plus a
-  fractional span within that step, so retiming a step does not shift
-  every later overlay.
+  ``click`` / ``key`` / ``scroll_hint`` entries, each anchored to a step
+  (captions may span an inclusive step range) plus a fractional span,
+  so retiming a step does not shift every later overlay.
 
 This module is pure (JSON5 + stdlib only); it does not import Playwright
 or Pillow, so it loads without the optional ``capture`` group.
@@ -113,7 +114,36 @@ class ScrollStep:
     ease: str = "linear"  # "linear" | "ease-in-out"
 
 
-Step = HoldStep | ViewStep | ScrollStep
+@dataclass(frozen=True)
+class PressStep:
+    """Press a keyboard key, then hold the resulting view for ``ms``.
+
+    Drives a real key handler in the deck (e.g. ``d`` for debug mode,
+    ``h`` for help) rather than the automation hook, so it can exercise
+    behavior the hook does not expose.
+    """
+
+    key: str
+    ms: int
+
+
+@dataclass(frozen=True)
+class ScrollElStep:
+    """Scroll an arbitrary element (by CSS ``selector``) from ``start`` to ``end``.
+
+    Like `ScrollStep` but targets a page element's own scroll position
+    (normalized 0..1 of its scrollable height) instead of a slide — used
+    for overlays with their own scrollbar, such as the help modal.
+    """
+
+    selector: str
+    start: float
+    end: float
+    ms: int
+    ease: str = "linear"  # "linear" | "ease-in-out"
+
+
+Step = HoldStep | ViewStep | ScrollStep | PressStep | ScrollElStep
 
 
 # ==================================================================================================
@@ -121,9 +151,16 @@ Step = HoldStep | ViewStep | ScrollStep
 # ==================================================================================================
 @dataclass(frozen=True)
 class CaptionOverlay:
-    """Text caption shown over a fractional span of a step."""
+    """Text caption shown over a fractional span of a step or step range.
 
-    step: int
+    `step_start` and `step_end` are an inclusive range of step indices
+    (equal for a single step); `span` is a ``(start, end)`` fraction of
+    the *combined* duration of that range, so a caption can persist
+    across several steps (e.g. a transition or a run of quick hops).
+    """
+
+    step_start: int
+    step_end: int
     span: tuple[float, float]
     text: str
     anchor: str = "bottom-center"
@@ -315,6 +352,16 @@ def _parse_step(d: Any, index: int) -> Step:
             ms=ms,
             ease=d.get("ease", "linear"),
         )
+    if kind == "press":
+        return PressStep(key=_req(d, "key", str), ms=ms)
+    if kind == "scroll_el":
+        return ScrollElStep(
+            selector=_req(d, "selector", str),
+            start=_fraction(d, "from", index),
+            end=_fraction(d, "to", index),
+            ms=ms,
+            ease=d.get("ease", "linear"),
+        )
     raise ValueError(f"step {index}: unknown type {kind!r}")
 
 
@@ -324,18 +371,21 @@ def _parse_overlay(d: Any, n_steps: int) -> Overlay:
     if not isinstance(d, dict):
         raise ValueError("overlay: must be an object")
     kind = _req(d, "type", str)
-    step = _req(d, "step", int)
-    if not 0 <= step < n_steps:
-        raise ValueError(f"overlay: step {step} out of range (0..{n_steps - 1})")
 
     if kind == "caption":
+        step_start, step_end = _step_range(d, n_steps)
         return CaptionOverlay(
-            step=step,
+            step_start=step_start,
+            step_end=step_end,
             span=_span(d, "span"),
             text=_req(d, "text", str),
             anchor=d.get("anchor", "bottom-center"),
             fade_ms=int(d.get("fade_ms", 200)),
         )
+
+    step = _req(d, "step", int)
+    if not 0 <= step < n_steps:
+        raise ValueError(f"overlay: step {step} out of range (0..{n_steps - 1})")
     if kind == "cursor":
         return CursorOverlay(step=step, span=_span(d, "span"), start=_xy(d, "from"), end=_xy(d, "to"))
     if kind == "click":
@@ -348,6 +398,39 @@ def _parse_overlay(d: Any, n_steps: int) -> Overlay:
 
 
 # --- field helpers --------------------------------
+def _step_range(d: dict[str, Any], n_steps: int) -> tuple[int, int]:
+    """Parse a caption ``step``: an int (single) or an inclusive ``[start, end]`` pair.
+
+    Args:
+        d: The raw caption overlay dict.
+        n_steps: Total number of steps, for range validation.
+
+    Returns:
+        An inclusive ``(start, end)`` step-index pair (equal for a single step).
+
+    Raises:
+        ValueError: If ``step`` is missing, malformed, or out of range.
+    """
+    if "step" not in d:
+        raise ValueError("missing required field 'step'")
+    raw = d["step"]
+    if isinstance(raw, bool):
+        raise ValueError("field 'step' must be an int or [start, end], got bool")
+    if isinstance(raw, int):
+        start = end = raw
+    elif (
+        isinstance(raw, (list, tuple))
+        and len(raw) == 2
+        and all(isinstance(x, int) and not isinstance(x, bool) for x in raw)
+    ):
+        start, end = raw
+    else:
+        raise ValueError("field 'step' must be an int or a [start, end] pair of ints")
+    if not 0 <= start <= end < n_steps:
+        raise ValueError(f"caption step range [{start}, {end}] out of range (0..{n_steps - 1})")
+    return start, end
+
+
 def _req(d: dict[str, Any], key: str, typ: type) -> Any:
     if key not in d:
         raise ValueError(f"missing required field {key!r}")

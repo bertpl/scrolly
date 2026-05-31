@@ -57,6 +57,13 @@ _PROBE_RANGE_JS = """(id) => {
   return parseFloat(v) || 0;
 }"""
 
+# JS that sets an arbitrary element's scrollTop to a fraction of its
+# scrollable height (used by scroll_el for the help modal's own scrollbar).
+_SCROLL_EL_JS = """({sel, frac}) => {
+  const el = document.querySelector(sel);
+  if (el) el.scrollTop = frac * (el.scrollHeight - el.clientHeight);
+}"""
+
 
 # ==================================================================================================
 #  Entry point
@@ -115,6 +122,10 @@ def _capture_step(page, recipe: Recipe, step: StepFrames, frames_dir: Path, rang
         _set_state(page, "slide", step.slide)
         range_units = ranges.setdefault(step.slide, _probe_range(page, step.slide))
         _shoot_scroll(page, frames_dir, step, range_units)
+    elif step.type == "press":
+        _shoot_press(page, recipe, step, frames_dir)
+    elif step.type == "scroll_el":
+        _shoot_scroll_el(page, frames_dir, step)
 
 
 def _shoot_static_run(page, frames_dir: Path, start: int, n: int) -> None:
@@ -142,6 +153,27 @@ def _shoot_scroll(page, frames_dir: Path, step: StepFrames, range_units: float) 
     """Set each frame's scroll position and screenshot (synchronous)."""
     for k, fraction in enumerate(step.scroll_fractions):
         page.evaluate("(p) => window.__scrolly.setScroll(p)", fraction * range_units)
+        page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
+
+
+def _shoot_press(page, recipe: Recipe, step: StepFrames, frames_dir: Path) -> None:
+    """Dispatch a real key press, then sample frames across the result.
+
+    The key goes through the deck's own keydown handler (e.g. ``d`` /
+    ``h``); frames are sampled in real time so any fade-in (such as the
+    help modal) is captured, then the view holds for the remainder.
+    """
+    page.keyboard.press(step.key)
+    interval = 1.0 / recipe.fps
+    for k in range(step.n_frames):
+        page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
+        time.sleep(interval)
+
+
+def _shoot_scroll_el(page, frames_dir: Path, step: StepFrames) -> None:
+    """Set an element's scrollTop per frame and screenshot (synchronous)."""
+    for k, fraction in enumerate(step.scroll_fractions):
+        page.evaluate(_SCROLL_EL_JS, {"sel": step.selector, "frac": fraction})
         page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
 
 

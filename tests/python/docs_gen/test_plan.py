@@ -78,6 +78,36 @@ def test_scroll_ease_in_out_is_symmetric() -> None:
     assert abs(mid - 0.5) < 0.05  # smoothstep passes through 0.5 at the midpoint
 
 
+def test_press_step_plans_static_with_key() -> None:
+    # --- arrange ----------------------
+    recipe = _recipe([{"type": "press", "key": "d", "ms": 1000}])
+
+    # --- act --------------------------
+    step = build_frame_plan(recipe).steps[0]
+
+    # --- assert -----------------------
+    assert step.type == "press"
+    assert step.key == "d"
+    assert step.view is None  # a press does not change the zoom level
+    assert step.scroll_fractions == ()
+    assert step.n_frames == 15
+
+
+def test_scroll_el_step_plans_fractions_with_selector() -> None:
+    # --- arrange ----------------------
+    recipe = _recipe([{"type": "scroll_el", "selector": ".help-modal-body", "from": 0.0, "to": 1.0, "ms": 1000}])
+
+    # --- act --------------------------
+    step = build_frame_plan(recipe).steps[0]
+
+    # --- assert -----------------------
+    assert step.type == "scroll_el"
+    assert step.selector == ".help-modal-body"
+    assert step.view is None
+    assert step.scroll_fractions[0] == 0.0
+    assert step.scroll_fractions[-1] == 1.0
+
+
 # ==================================================================================================
 #  Overlay resolution
 # ==================================================================================================
@@ -100,6 +130,28 @@ def test_caption_resolves_within_span_only() -> None:
     # --- assert -----------------------
     assert in_span and all(isinstance(d, CaptionDraw) and d.alpha == 1.0 for d in in_span)
     assert after_span == []
+
+
+def test_caption_spans_step_range_and_stops_at_range_end() -> None:
+    # --- arrange ----------------------
+    recipe = _recipe(
+        [
+            {"type": "hold", "view": "deck", "ms": 1000},  # step 0: 15 frames
+            {"type": "hold", "view": "deck", "ms": 1000},  # step 1: 15 frames
+            {"type": "hold", "view": "deck", "ms": 1000},  # step 2: 15 frames
+        ],
+        overlays=[{"type": "caption", "step": [0, 1], "span": [0.0, 1.0], "text": "hi", "fade_ms": 0}],
+    )
+
+    # --- act --------------------------
+    plan = build_frame_plan(recipe)
+    in_range = [d for f in range(30) for d in plan.overlay_draws[f]]  # steps 0+1
+    after_range = [d for f in range(30, plan.total_frames) for d in plan.overlay_draws[f]]  # step 2
+
+    # --- assert -----------------------
+    # The caption covers the full combined window of steps 0+1, then stops.
+    assert len(in_range) == 30 and all(isinstance(d, CaptionDraw) for d in in_range)
+    assert after_range == []
 
 
 def test_cursor_interpolates_start_to_end() -> None:

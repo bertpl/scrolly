@@ -30,6 +30,18 @@ _FONT_CANDIDATES = (
     "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
 )
 
+# Key chips can show arrow glyphs (↑ ↓ ← →), which the macOS Helvetica face
+# Pillow loads from the .ttc does NOT cover (they render as tofu boxes). This
+# list front-loads fonts that do cover the arrows; Helvetica trails as a
+# last resort so plain labels (D / H / Z) still render if nothing else loads.
+_KEY_FONT_CANDIDATES = (
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/System/Library/Fonts/Helvetica.ttc",
+)
+
 
 # ==================================================================================================
 #  Entry point
@@ -52,7 +64,10 @@ def run_composite(recipe: Recipe, plan: FramePlan, frames_dir: Path, work_dir: P
     scale = recipe.viewport.scale
     out_dir = work_dir / "composited"
     _prepare(out_dir)
-    fonts = _Fonts(caption=_load_font(round(26 * scale)), key=_load_font(round(20 * scale)))
+    fonts = _Fonts(
+        caption=_load_font(round(26 * scale)),
+        key=_load_font(round(20 * scale), _KEY_FONT_CANDIDATES),
+    )
 
     for index in range(plan.total_frames):
         frame = Image.open(frames_dir / frame_filename(index)).convert("RGBA")
@@ -233,11 +248,11 @@ def _anchor_xy(anchor: str, width: int, height: int, box_w: int, box_h: int, mar
 
 
 # --- fonts ----------------------------------------
-def _load_font(size: int):
-    """Load a TrueType font at ``size``, falling back to Pillow's default."""
+def _load_font(size: int, candidates: tuple[str, ...] = _FONT_CANDIDATES):
+    """Load a TrueType font at ``size`` from ``candidates``, else Pillow's default."""
     from PIL import ImageFont
 
-    for path in _FONT_CANDIDATES:
+    for path in candidates:
         try:
             return ImageFont.truetype(path, size)
         except OSError:

@@ -1249,6 +1249,44 @@ describe("SnapManager.prevTarget / nextTarget", () => {
   });
 });
 
+// ---- SnapManager.setIdleSnap --------------------------------------------
+
+describe("SnapManager.setIdleSnap", () => {
+  function _snap() {
+    const scrollManager = { position: () => 0 };
+    return new SnapManager(scrollManager, { a: { snapPositions: [0, 50, 100] } }, () => null);
+  }
+
+  it("arms the idle-snap timer by default", () => {
+    const snap = _snap();
+    snap.schedule("a");
+    expect(snap._timer).not.toBeNull();
+    snap.cancel();
+  });
+
+  it("does not arm the timer when idle-snap is off", () => {
+    const snap = _snap();
+    snap.setIdleSnap(false);
+    snap.schedule("a");
+    expect(snap._timer).toBeNull();
+  });
+
+  it("leaves the snap feature enabled (control/manual nav) when idle-snap is off", () => {
+    const snap = _snap();
+    snap.setIdleSnap(false);
+    expect(snap.enabled).toBe(true); // dots + up()/down() stay available
+  });
+
+  it("re-arms after idle-snap is turned back on", () => {
+    const snap = _snap();
+    snap.setIdleSnap(false);
+    snap.setIdleSnap(true);
+    snap.schedule("a");
+    expect(snap._timer).not.toBeNull();
+    snap.cancel();
+  });
+});
+
 // ---- SnapManager.easeOutQuad --------------------------------------------
 
 describe("SnapManager.easeOutQuad", () => {
