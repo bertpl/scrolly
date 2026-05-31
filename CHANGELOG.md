@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Slide-connector lines and their end dots now keep a constant on-screen size regardless of how large the deck grid is, instead of thinning out as the deck view zooms further out.
+- Stepping between snap positions no longer briefly jerks the animation backward before moving toward the target.
 
 ### Security
 
