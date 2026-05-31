@@ -40,7 +40,7 @@ dev = [
     # Exact pin: gitsvg is pre-1.0 and its output schema can shift
     # between releases. Used to regenerate the stacked-diffs example's
     # gitsvg frames.
-    "gitsvg==0.2.2",
+    "gitsvg==0.2.3",
 ]
 # Optional group for the hero-animation capture pipeline (docs/_gen).
 # Heavy (Playwright ships browser binaries via `make capture-setup`),
