@@ -689,8 +689,13 @@
 
       this._animTarget = target;
       const start = current;
-      const t0 = performance.now();
+      // Anchor t0 to the first frame's timestamp, not performance.now():
+      // a rAF timestamp can predate a now() taken just before scheduling,
+      // making elapsed (and thus t) negative on frame 1, which drives
+      // easeOutQuad below 0 and kicks the position backward for one frame.
+      let t0 = null;
       const step = (now) => {
+        if (t0 === null) t0 = now;
         const elapsed = now - t0;
         const t = Math.min(1, elapsed / SnapManager.DURATION_MS);
         const ease = SnapManager.easeOutQuad(t);
