@@ -1303,15 +1303,21 @@
       this._svg.style.height = data.height;
 
       const ns = "http://www.w3.org/2000/svg";
-      for (const d of data.paths) {
+      // Two passes so every white casing sits behind every dark connector:
+      // all halos first (wider, opaque white), then all dark lines on top.
+      // Interleaving would let a later edge's casing paint over an earlier
+      // edge's dark line at a crossing.
+      const addPath = (d, cls, marker) => {
         const path = document.createElementNS(ns, "path");
-        path.setAttribute("class", "canvas-edge");
-        path.setAttribute("marker-start", "url(#edge-dot)");
-        path.setAttribute("marker-end", "url(#edge-dot)");
+        path.setAttribute("class", cls);
+        path.setAttribute("marker-start", `url(#${marker})`);
+        path.setAttribute("marker-end", `url(#${marker})`);
         path.setAttribute("d", d);
         this._svg.appendChild(path);
         this._paths.push(path);
-      }
+      };
+      for (const d of data.paths) addPath(d, "canvas-edge-halo", "edge-dot-halo");
+      for (const d of data.paths) addPath(d, "canvas-edge", "edge-dot");
     }
   }
 
