@@ -173,16 +173,16 @@ wheels = [
 
 [[package]]
 name = "gitsvg"
-version = "0.2.2"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "drawsvg" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/ca/e4426dd41d1938aa951e051fb79fc897349a22b0569aa6008f64e7f29d41/gitsvg-0.2.2.tar.gz", hash = "sha256:54cac2c7a78dbc2307388e47f2a9070f32655ef6a92371eeab593d5fbef8a620", size = 109699, upload-time = "2026-05-19T07:32:19.441Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/dd/7dc435d11415a55a81cf419eda4f7ea0884a57a579da25ce3541b9d0e19b/gitsvg-0.2.3.tar.gz", hash = "sha256:24fbce93e4e41eaa120d76c830cf96be81fcc0a63f945782c8d911849ae5172a", size = 116103, upload-time = "2026-05-30T16:54:10.143Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/7b/b188b54188e4d0ef2f9f90d99711da77c57c39cd8abdb1665e29c6e11797/gitsvg-0.2.2-py3-none-any.whl", hash = "sha256:ef455c3f029b77f5b04aef89c344b7cea635f921d5e81ebc961707393d92909c", size = 171522, upload-time = "2026-05-19T07:32:17.748Z" },
+    { url = "https://files.pythonhosted.org/packages/95/0e/0306e9d0c6eec4dd9b020f47d22a3b70f9b5c63892377fa69b7fba9ec459/gitsvg-0.2.3-py3-none-any.whl", hash = "sha256:c69d413e2cab3cfa69df4bdabaf638d23ba442d4c7e803535a9e5398fb7874d9", size = 180610, upload-time = "2026-05-30T16:54:08.777Z" },
 ]
 
 [[package]]
@@ -881,7 +881,7 @@ capture = [
     { name = "playwright", specifier = ">=1.40" },
 ]
 dev = [
-    { name = "gitsvg", specifier = "==0.2.2" },
+    { name = "gitsvg", specifier = "==0.2.3" },
     { name = "pre-commit", specifier = ">=4.0" },
     { name = "pytest", specifier = ">=9.0" },
     { name = "pytest-cov", specifier = ">=6.0" },
