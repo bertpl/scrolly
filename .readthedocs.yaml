@@ -1,0 +1,18 @@
+# Read the Docs build configuration.
+# https://docs.readthedocs.io/en/stable/config-file/v2.html
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+
+mkdocs:
+  configuration: mkdocs.yml
+
+python:
+  install:
+    # The docs toolchain (MkDocs + Material). scrolly itself is not
+    # installed here yet — the auto-generated reference and live-deck
+    # build, which need the CLI, are not part of this scaffold.
+    - requirements: docs/requirements.txt

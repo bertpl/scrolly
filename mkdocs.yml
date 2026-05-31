@@ -1,0 +1,80 @@
+site_name: scrolly
+site_description: Compile a JSON5 deck into a self-contained, scrollable 2D-canvas HTML presentation.
+site_url: https://scrolly.readthedocs.io
+repo_url: https://github.com/bertpl/scrolly
+repo_name: bertpl/scrolly
+copyright: MIT-licensed. Liked by humans; understood by agents.
+
+# NOTE: Material for MkDocs entered maintenance mode in November 2025
+# (security + critical fixes only). The successor, Zensical, reads this
+# mkdocs.yml directly, so staying on Material today keeps the migration
+# path open. Revisit when Zensical reaches feature parity.
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      # Lets the Changelog page embed the repo-root CHANGELOG.md
+      # verbatim (single source of truth).
+      base_path:
+        - .
+        - docs
+      check_paths: true
+
+plugins:
+  - search
+
+# docs/ also holds the dev-only animation engine (_gen/), the docs
+# toolchain pin (requirements.txt), and build-time deck output (live/).
+# None of those are documentation pages — keep them out of the site.
+exclude_docs: |
+  _gen/
+  requirements.txt
+  live/
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Concepts:
+      - The 2D canvas: concepts/2d-canvas.md
+      - Slides: concepts/slides.md
+      - Elements: concepts/elements.md
+      - Animation: concepts/animation.md
+      - Output & bundling: concepts/output-and-bundling.md
+  - Authoring:
+      - Deck format: authoring/deck-format.md
+      - Slide format: authoring/slide-format.md
+      - Working with assets: authoring/assets.md
+  - Viewing decks:
+      - Navigation & shortcuts: viewing-decks/navigation.md
+      - Help screen: viewing-decks/help-screen.md
+      - Debug mode: viewing-decks/debug-mode.md
+      - Deck view & mini-map: viewing-decks/deck-view-and-mini-map.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Element schemas: reference/element-schemas.md
+      - Error codes: reference/error-codes.md
+  - Recipes / How-to: recipes.md
+  - Changelog: changelog.md

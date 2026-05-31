@@ -1,0 +1,11 @@
+# Documentation-site dependencies (MkDocs + Material).
+#
+# Single source of truth for the docs toolchain, consumed by both:
+#   - Read the Docs, via .readthedocs.yaml (python.install.requirements)
+#   - local builds, via `make docs-serve` / `make docs-build`
+#     (uv run --with-requirements docs/requirements.txt mkdocs ...)
+#
+# Material for MkDocs entered maintenance mode in November 2025 (security
+# and critical fixes only); its successor, Zensical, reads this project's
+# mkdocs.yml, so staying on Material now keeps the migration path open.
+mkdocs-material>=9.5,<10
