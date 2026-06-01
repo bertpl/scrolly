@@ -7,12 +7,18 @@ so stage 2 can pair them with `FramePlan.overlay_draws`.
 
 Determinism notes:
 
-- ``setScroll`` is synchronous (it sets the ``--scroll-position`` CSS
-  var and syncs the scrollbar), so scroll frames are captured with no
-  settling wait — each ``setScroll`` then screenshot is exact.
-- Pan / zoom are CSS transitions; ``isAnimating()`` (the
-  ``view-transitioning`` body class) is the settle signal. View steps
-  are sampled in real time across the transition to capture motion.
+- ``setScroll`` / ``scrollTop`` are synchronous, so scroll frames are
+  captured with no settling wait — each set-then-screenshot is exact.
+- Pan / zoom (CSS transitions) and key-triggered effects (the side
+  glows, the JS snap tween) animate in real time. Those steps sample
+  frames paced at one ``1 / fps`` interval of *wall-clock* each, with the
+  screenshot's own time subtracted from the sleep so frames land one
+  interval apart — not interval-plus-screenshot. Skipping that
+  compensation under-samples the animation and plays it back too fast.
+- Screenshots go through CDP ``Page.captureScreenshot`` with
+  ``optimizeForSpeed`` (lossless PNG, faster and far less time-variable
+  than ``page.screenshot``), which keeps the real-time sampling above
+  comfortably inside its per-frame budget.
 - Scripted hook calls don't reset the idle-fade timers, so the
   scrollbar / snap / zoom controls are pinned visible via injected CSS
   (otherwise the scroll affordance would fade out mid-capture).
@@ -24,12 +30,13 @@ so the rest of the engine loads without it.
 
 from __future__ import annotations
 
+import base64
 import os
 import time
 from pathlib import Path
 
 from .plan import FramePlan, StepFrames, frame_filename
-from .recipe import Recipe
+from .recipe import Recipe, Viewport
 
 # Injected before capture. Two jobs:
 #  1. Pin the idle-faded controls visible (scripted hook calls don't reset
@@ -63,6 +70,52 @@ _SCROLL_EL_JS = """({sel, frac}) => {
   const el = document.querySelector(sel);
   if (el) el.scrollTop = frac * (el.scrollHeight - el.clientHeight);
 }"""
+
+
+# ==================================================================================================
+#  Screenshots
+# ==================================================================================================
+class _Shooter:
+    """Lossless PNG screenshots via CDP — faster than ``page.screenshot``.
+
+    ``Page.captureScreenshot`` with ``optimizeForSpeed`` trades bigger
+    files for faster, far less time-variable zlib encoding. The frames are
+    throwaway, so file size is irrelevant and the predictable timing is
+    what matters: real-time sampling needs every screenshot to stay inside
+    the frame budget. ``clip.scale`` carries the device-scale factor —
+    ``page.screenshot`` honors it automatically, the raw CDP call does not.
+    """
+
+    def __init__(self, page, viewport: Viewport) -> None:
+        self._cdp = page.context.new_cdp_session(page)
+        self._clip = {"x": 0, "y": 0, "width": viewport.width, "height": viewport.height, "scale": viewport.scale}
+
+    def shot(self, path: Path) -> None:
+        """Capture the current page to ``path`` as a PNG."""
+        result = self._cdp.send(
+            "Page.captureScreenshot", {"format": "png", "optimizeForSpeed": True, "clip": self._clip}
+        )
+        path.write_bytes(base64.b64decode(result["data"]))
+
+
+def _sample_realtime(shooter: _Shooter, frames_dir: Path, start: int, n: int, interval: float) -> None:
+    """Screenshot ``n`` frames paced at ``interval`` seconds of wall-clock each.
+
+    Subtracts each screenshot's own time from the sleep so frames land one
+    ``interval`` apart, not ``interval + screenshot_time`` — otherwise a
+    live CSS / rAF animation is sampled too coarsely and plays back fast.
+
+    Args:
+        shooter: The CDP screenshotter.
+        frames_dir: Output directory.
+        start: Global index of the first frame.
+        n: Number of frames to sample.
+        interval: Target wall-clock seconds per frame (``1 / fps``).
+    """
+    for k in range(n):
+        t0 = time.perf_counter()
+        shooter.shot(_frame_path(frames_dir, start + k))
+        time.sleep(max(0.0, interval - (time.perf_counter() - t0)))
 
 
 # ==================================================================================================
@@ -100,10 +153,11 @@ def run_capture(recipe: Recipe, plan: FramePlan, deck_html: Path, frames_dir: Pa
         page.goto(url)
         page.wait_for_function("() => !!(window.__scrolly && window.__scrolly.isAnimating)")
         page.add_style_tag(content=_CAPTURE_CSS)
+        shooter = _Shooter(page, recipe.viewport)
 
         ranges: dict[str, float] = {}
         for step in plan.steps:
-            _capture_step(page, recipe, step, frames_dir, ranges)
+            _capture_step(page, shooter, recipe, step, frames_dir, ranges)
 
         browser.close()
 
@@ -111,52 +165,51 @@ def run_capture(recipe: Recipe, plan: FramePlan, deck_html: Path, frames_dir: Pa
 
 
 # --- per-step capture -----------------------------
-def _capture_step(page, recipe: Recipe, step: StepFrames, frames_dir: Path, ranges: dict[str, float]) -> None:
+def _capture_step(
+    page, shooter: _Shooter, recipe: Recipe, step: StepFrames, frames_dir: Path, ranges: dict[str, float]
+) -> None:
     """Capture one step's frames according to its type."""
     if step.type == "hold":
         _set_state(page, step.view, step.slide)
-        _shoot_static_run(page, frames_dir, step.global_start, step.n_frames)
+        _shoot_static_run(shooter, frames_dir, step.global_start, step.n_frames)
     elif step.type == "view":
-        _shoot_transition(page, recipe, step, frames_dir)
+        _shoot_transition(page, shooter, recipe, step, frames_dir)
     elif step.type == "scroll":
         _set_state(page, "slide", step.slide)
         range_units = ranges.setdefault(step.slide, _probe_range(page, step.slide))
-        _shoot_scroll(page, frames_dir, step, range_units)
+        _shoot_scroll(page, shooter, frames_dir, step, range_units)
     elif step.type == "press":
-        _shoot_press(page, recipe, step, frames_dir)
+        _shoot_press(page, shooter, recipe, step, frames_dir)
     elif step.type == "scroll_el":
-        _shoot_scroll_el(page, frames_dir, step)
+        _shoot_scroll_el(page, shooter, frames_dir, step)
 
 
-def _shoot_static_run(page, frames_dir: Path, start: int, n: int) -> None:
+def _shoot_static_run(shooter: _Shooter, frames_dir: Path, start: int, n: int) -> None:
     """Screenshot once and duplicate for an unchanging (held) view."""
     first = _frame_path(frames_dir, start)
-    page.screenshot(path=str(first))
+    shooter.shot(first)
     data = first.read_bytes()
     for k in range(1, n):
         _frame_path(frames_dir, start + k).write_bytes(data)
 
 
-def _shoot_transition(page, recipe: Recipe, step: StepFrames, frames_dir: Path) -> None:
+def _shoot_transition(page, shooter: _Shooter, recipe: Recipe, step: StepFrames, frames_dir: Path) -> None:
     """Trigger a pan / zoom and sample frames in real time across it."""
     if step.slide:
         page.evaluate("(id) => window.__scrolly.selectSlide(id)", step.slide)
     if step.view:
         page.evaluate("(v) => window.__scrolly.setView(v)", step.view)
-    interval = 1.0 / recipe.fps
-    for k in range(step.n_frames):
-        page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
-        time.sleep(interval)
+    _sample_realtime(shooter, frames_dir, step.global_start, step.n_frames, 1.0 / recipe.fps)
 
 
-def _shoot_scroll(page, frames_dir: Path, step: StepFrames, range_units: float) -> None:
+def _shoot_scroll(page, shooter: _Shooter, frames_dir: Path, step: StepFrames, range_units: float) -> None:
     """Set each frame's scroll position and screenshot (synchronous)."""
     for k, fraction in enumerate(step.scroll_fractions):
         page.evaluate("(p) => window.__scrolly.setScroll(p)", fraction * range_units)
-        page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
+        shooter.shot(_frame_path(frames_dir, step.global_start + k))
 
 
-def _shoot_press(page, recipe: Recipe, step: StepFrames, frames_dir: Path) -> None:
+def _shoot_press(page, shooter: _Shooter, recipe: Recipe, step: StepFrames, frames_dir: Path) -> None:
     """Dispatch a real key press, then sample frames across the result.
 
     The key goes through the deck's own keydown handler (e.g. ``d`` /
@@ -164,17 +217,14 @@ def _shoot_press(page, recipe: Recipe, step: StepFrames, frames_dir: Path) -> No
     help modal) is captured, then the view holds for the remainder.
     """
     page.keyboard.press(step.key)
-    interval = 1.0 / recipe.fps
-    for k in range(step.n_frames):
-        page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
-        time.sleep(interval)
+    _sample_realtime(shooter, frames_dir, step.global_start, step.n_frames, 1.0 / recipe.fps)
 
 
-def _shoot_scroll_el(page, frames_dir: Path, step: StepFrames) -> None:
+def _shoot_scroll_el(page, shooter: _Shooter, frames_dir: Path, step: StepFrames) -> None:
     """Set an element's scrollTop per frame and screenshot (synchronous)."""
     for k, fraction in enumerate(step.scroll_fractions):
         page.evaluate(_SCROLL_EL_JS, {"sel": step.selector, "frac": fraction})
-        page.screenshot(path=str(_frame_path(frames_dir, step.global_start + k)))
+        shooter.shot(_frame_path(frames_dir, step.global_start + k))
 
 
 # --- browser helpers ------------------------------
