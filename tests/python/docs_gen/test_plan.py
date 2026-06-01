@@ -21,7 +21,7 @@ def _recipe(steps, overlays=None, fps=15):
             "deck": "d",
             "viewport": {"width": 1280, "height": 720, "scale": 2},
             "fps": fps,
-            "output": {"path": "out.gif"},
+            "output": {"gif": {"path": "out.gif"}},
             "steps": steps,
             "overlays": overlays or [],
         }

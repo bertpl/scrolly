@@ -48,10 +48,15 @@ capture-setup:
 	uv sync --group capture
 	uv run playwright install chromium
 	@echo ''
-	@echo 'Also install a gifski binary (not a Python package):'
-	@echo '  macOS:  brew install gifski'
-	@echo '  cargo:  cargo install gifski'
-	@echo '  more:   https://gif.ski'
+	@echo 'Also install the native assembly binaries (not Python packages),'
+	@echo 'per the recipe output format — gifski for GIF, img2webp for WebP:'
+	@echo '  gifski (GIF):'
+	@echo '    macOS:  brew install gifski'
+	@echo '    cargo:  cargo install gifski'
+	@echo '    more:   https://gif.ski'
+	@echo '  img2webp (WebP, ships with libwebp):'
+	@echo '    macOS:  brew install webp'
+	@echo '    apt:    apt install webp'
 
 hero-animation:
 	bash scripts/make_animation.sh

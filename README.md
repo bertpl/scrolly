@@ -4,7 +4,7 @@ Compile a JSON5 deck into a self-contained, scrollable 2D-canvas HTML presentati
 
 *Liked by humans; understood by agents.*
 
-[![scrolly — scroll-driven 2D-canvas presentations](https://raw.githubusercontent.com/bertpl/scrolly/main/docs/assets/hero-v2.gif)](https://github.com/bertpl/scrolly)
+[![scrolly — scroll-driven 2D-canvas presentations](https://raw.githubusercontent.com/bertpl/scrolly/main/docs/assets/hero-v3.gif)](https://github.com/bertpl/scrolly)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/bertpl/scrolly/push_to_main.yml?branch=main&label=CI)](https://github.com/bertpl/scrolly/actions/workflows/push_to_main.yml)
 [![PyPI](https://img.shields.io/pypi/v/scrolly.svg)](https://pypi.org/project/scrolly/)

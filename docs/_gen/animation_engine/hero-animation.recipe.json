@@ -29,14 +29,15 @@
   //  slide-2, slide-1 (bottom) — so slide-1->2->3->4 reads as "up" and the
   //  detail slides sit one column to the right ("right" from a main slide).
   //
-  //  Budget: <= 10 MB, 1280x720 @ 2x, 20 fps.
+  //  Output: 1282x725 GIF @ 20 fps (~9 MB, q90), captured 2x and delivered 1x.
   // ================================================================
 
   // deck file — the path `scrolly build` takes (not the directory).
   deck: "examples/stacked-diffs/deck.deck.json",
-  viewport: { width: 1280, height: 720, scale: 2 },
+  // Captured at 2x for crisp supersampling, delivered at 1x (downscaled).
+  viewport: { width: 1280, height: 720, scale: 2, output_scale: 1 },
   fps: 20,
-  output: { path: "docs/assets/hero-v2.gif", loop: true, quality: 100 },
+  output: { loop: true, gif: { path: "docs/assets/hero-v3.gif", quality: 90 } },
 
   // ---- whole-run chrome ---------------------------------------------
   // Added around the captured frame (never over content): a thin frame,
