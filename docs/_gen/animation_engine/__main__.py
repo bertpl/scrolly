@@ -50,8 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in ("composite", "all"):
         from .composite import run_composite
 
-        out = run_composite(recipe, plan, frames_dir, work)
-        print(f"wrote {out}")
+        outs = run_composite(recipe, plan, frames_dir, work)
+        print("wrote " + ", ".join(str(p) for p in outs))
     return 0
 
 

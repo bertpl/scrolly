@@ -10,8 +10,8 @@ import pytest
 
 pytest.importorskip("PIL")  # composite draws with Pillow (optional `capture` dep)
 
-from animation_engine.composite import _add_chrome  # noqa: E402
-from animation_engine.recipe import Border, Output, ProgressBar, Recipe, Viewport  # noqa: E402
+from animation_engine.composite import _add_chrome, _downscale, _frame_width  # noqa: E402
+from animation_engine.recipe import Border, Gif, Output, ProgressBar, Recipe, Viewport  # noqa: E402
 from PIL import Image  # noqa: E402
 
 
@@ -19,9 +19,9 @@ def _recipe(border: Border = Border(), progress_bar: ProgressBar = ProgressBar()
     """A Recipe carrying just the chrome config (other fields unused by `_add_chrome`)."""
     return Recipe(
         deck="d",
-        viewport=Viewport(width=10, height=10, scale=1),
+        viewport=Viewport(width=10, height=10, scale=1, output_scale=1),
         fps=1,
-        output=Output(path="o.gif"),
+        output=Output(gif=Gif(path="o.gif")),
         steps=(),
         overlays=(),
         border=border,
@@ -33,6 +33,40 @@ def _frame(w: int = 100, h: int = 60) -> Image.Image:
     return Image.new("RGBA", (w, h), (0, 0, 0, 255))
 
 
+# ==================================================================================================
+#  Supersample downscale
+# ==================================================================================================
+def test_downscale_resamples_by_output_over_capture() -> None:
+    # --- act --------------------------
+    out = _downscale(_frame(200, 100), scale=2, output_scale=1.0)
+
+    # --- assert -----------------------
+    assert out.size == (100, 50)  # 2x capture -> 1x delivery
+
+
+def test_downscale_is_noop_when_scales_match() -> None:
+    # --- arrange ----------------------
+    frame = _frame(200, 100)
+
+    # --- act --------------------------
+    out = _downscale(frame, scale=2, output_scale=2.0)
+
+    # --- assert -----------------------
+    assert out is frame  # unchanged object, no resample
+
+
+def test_frame_width_reads_pixel_width(tmp_path) -> None:
+    # --- arrange ----------------------
+    path = tmp_path / "frame-00000.png"
+    _frame(321, 240).save(path)
+
+    # --- act / assert -----------------
+    assert _frame_width(str(path)) == 321
+
+
+# ==================================================================================================
+#  Border + progress-bar chrome
+# ==================================================================================================
 def test_no_chrome_keeps_frame_size() -> None:
     # --- act --------------------------
     out = _add_chrome(_frame(100, 60), _recipe(), index=0, total=10)

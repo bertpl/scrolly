@@ -35,20 +35,65 @@ import json5
 # ==================================================================================================
 @dataclass(frozen=True)
 class Viewport:
-    """Browser viewport the deck is captured at."""
+    """Browser viewport plus capture / delivery resolution.
+
+    The deck is captured at `scale` device pixels — a supersampling
+    factor for crisp output — and the assembled frames are delivered at
+    `output_scale` device pixels relative to the CSS viewport. So
+    `scale=2, output_scale=1` renders at 2x and Lanczos-downsamples to
+    1x. They are equal (no downscale) when `output_scale` is omitted.
+    """
 
     width: int
     height: int
     scale: int
+    output_scale: float
+
+
+@dataclass(frozen=True)
+class Gif:
+    """gifski encoder settings for the GIF output.
+
+    `quality` is gifski's 0–100 quality knob.
+    """
+
+    path: str
+    quality: int = 80
+
+
+@dataclass(frozen=True)
+class Webp:
+    """img2webp encoder settings for the WebP output.
+
+    Mirrors the libwebp knob set: `quality` (`-q`) and `method` (`-m`)
+    apply in lossy / mixed modes; `mode` selects the coding strategy
+    (`lossy` | `lossless` | `mixed` | `near_lossless`); `near_lossless`
+    is the preprocessing level (`-near_lossless`) used only in that mode.
+    `mode` defaults to universally-safe `lossy`. `method` defaults to 4:
+    libwebp's m6 spends ~25x the time of m4 for only ~3% smaller output,
+    so m4 sits at the speed/size knee for a hero's 1000+ large frames.
+    """
+
+    path: str
+    quality: float = 80.0
+    method: int = 4
+    mode: str = "lossy"
+    near_lossless: int = 60
 
 
 @dataclass(frozen=True)
 class Output:
-    """Where and how the assembled animation is written."""
+    """Which animation outputs to produce, and how.
 
-    path: str
+    The presence of `gif` / `webp` enables that format; at least one is
+    required. Each block carries its own output path and encoder
+    settings. `loop` is shared by both codecs — it's a property of the
+    animation, not of the encoder.
+    """
+
     loop: bool = True
-    quality: int = 80
+    gif: Gif | None = None
+    webp: Webp | None = None
 
 
 @dataclass(frozen=True)
@@ -296,14 +341,52 @@ def parse_recipe(data: dict[str, Any]) -> Recipe:
 
 # --- global config --------------------------------
 def _parse_viewport(d: dict[str, Any]) -> Viewport:
-    return Viewport(width=_req(d, "width", int), height=_req(d, "height", int), scale=_req(d, "scale", int))
+    scale = _req(d, "scale", int)
+    return Viewport(
+        width=_req(d, "width", int),
+        height=_req(d, "height", int),
+        scale=scale,
+        output_scale=_output_scale(d, scale),
+    )
+
+
+def _output_scale(d: dict[str, Any], scale: int) -> float:
+    """Parse `viewport.output_scale`, the delivery scale in (0, scale] (default: scale, no downscale)."""
+    value = d.get("output_scale", scale)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("field 'output_scale' must be a number")
+    value = float(value)
+    if not 0 < value <= scale:
+        raise ValueError(f"field 'output_scale' must be in (0, {scale}], got {value}")
+    return value
+
+
+_WEBP_MODES = ("lossy", "lossless", "mixed", "near_lossless")
 
 
 def _parse_output(d: dict[str, Any]) -> Output:
-    return Output(
+    """Parse the `output` block: optional `gif` / `webp` sub-blocks (≥ 1 required)."""
+    gif = _parse_gif(_opt_dict(d, "gif")) if "gif" in d else None
+    webp = _parse_webp(_opt_dict(d, "webp")) if "webp" in d else None
+    if gif is None and webp is None:
+        raise ValueError("output must declare 'gif' and/or 'webp'")
+    return Output(loop=bool(d.get("loop", True)), gif=gif, webp=webp)
+
+
+def _parse_gif(d: dict[str, Any]) -> Gif:
+    return Gif(
         path=_req(d, "path", str),
-        loop=bool(d.get("loop", True)),
-        quality=int(d.get("quality", 80)),
+        quality=_int_in_range(d, "quality", 80, 0, 100),
+    )
+
+
+def _parse_webp(d: dict[str, Any]) -> Webp:
+    return Webp(
+        path=_req(d, "path", str),
+        quality=_float_in_range(d, "quality", 80.0, 0.0, 100.0),
+        method=_int_in_range(d, "method", 4, 0, 6),
+        mode=_choice(d, "mode", "lossy", _WEBP_MODES),
+        near_lossless=_int_in_range(d, "near_lossless", 60, 0, 100),
     )
 
 
@@ -453,6 +536,39 @@ def _opt_dict(d: dict[str, Any], key: str) -> dict[str, Any]:
     value = d[key]
     if not isinstance(value, dict):
         raise ValueError(f"field {key!r} must be an object")
+    return value
+
+
+def _choice(d: dict[str, Any], key: str, default: str, allowed: tuple[str, ...]) -> str:
+    """Read a string field constrained to ``allowed``, or ``default`` if absent."""
+    value = d.get(key, default)
+    if value not in allowed:
+        raise ValueError(f"field {key!r} must be one of {allowed}, got {value!r}")
+    return value
+
+
+def _int_in_range(d: dict[str, Any], key: str, default: int, lo: int, hi: int) -> int:
+    """Read an int field constrained to ``[lo, hi]``, or ``default`` if absent."""
+    if key not in d:
+        return default
+    value = d[key]
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"field {key!r} must be an int in [{lo}, {hi}]")
+    if not lo <= value <= hi:
+        raise ValueError(f"field {key!r} must be in [{lo}, {hi}], got {value}")
+    return value
+
+
+def _float_in_range(d: dict[str, Any], key: str, default: float, lo: float, hi: float) -> float:
+    """Read a numeric field constrained to ``[lo, hi]``, or ``default`` if absent."""
+    if key not in d:
+        return default
+    value = d[key]
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"field {key!r} must be a number in [{lo}, {hi}]")
+    value = float(value)
+    if not lo <= value <= hi:
+        raise ValueError(f"field {key!r} must be in [{lo}, {hi}], got {value}")
     return value
 
 

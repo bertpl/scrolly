@@ -1,18 +1,20 @@
-"""Stage 2 — Pillow overlay compositing + gifski assembly.
+"""Stage 2 — Pillow overlay compositing + GIF / WebP assembly.
 
 Reads the raw frames captured by stage 1, paints the recipe's overlays
 (`FramePlan.overlay_draws`) onto them — captions, a cursor sprite, click
-pulses, key chips — and hands the composited frames to gifski for
-assembly. This stage is browser-free, so re-running it after an
+pulses, key chips — and hands the composited frames to gifski (GIF)
+and / or img2webp (WebP) for assembly, one per output block the recipe
+declares. This stage is browser-free, so re-running it after an
 overlay-only recipe change is fast (the slow capture frames are reused).
 
 Overlay coordinates in the recipe are capture-viewport pixels; frames
 are rendered at ``deviceScaleFactor`` (``viewport.scale``), so all draw
 coordinates are multiplied by ``scale`` here.
 
-Requires the optional ``capture`` dependency group (Pillow) and a
-``gifski`` binary on PATH (from ``make capture-setup``). Pillow is
-imported lazily so the rest of the engine loads without it.
+Requires the optional ``capture`` dependency group (Pillow) and, on
+PATH, a ``gifski`` and / or ``img2webp`` binary per the requested
+format (from ``make capture-setup``). Pillow is imported lazily so the
+rest of the engine loads without it.
 """
 
 from __future__ import annotations
@@ -62,6 +64,7 @@ def run_composite(recipe: Recipe, plan: FramePlan, frames_dir: Path, work_dir: P
     from PIL import Image
 
     scale = recipe.viewport.scale
+    output_scale = recipe.viewport.output_scale
     out_dir = work_dir / "composited"
     _prepare(out_dir)
     fonts = _Fonts(
@@ -74,6 +77,7 @@ def run_composite(recipe: Recipe, plan: FramePlan, frames_dir: Path, work_dir: P
         draws = plan.overlay_draws[index]
         if draws:
             _paint(frame, draws, scale, fonts)
+        frame = _downscale(frame, scale, output_scale)
         frame = _add_chrome(frame, recipe, index, plan.total_frames)
         frame.convert("RGB").save(out_dir / frame_filename(index))
 
@@ -107,6 +111,33 @@ def _paint(frame, draws, scale: int, fonts: _Fonts) -> None:
         elif isinstance(d, ScrollHintDraw):
             _draw_scroll_hint(draw, d, scale)
     frame.alpha_composite(layer)
+
+
+# --- supersample downscale ------------------------
+def _downscale(frame, scale: int, output_scale: float):
+    """Lanczos-downsample a frame from capture to delivery resolution.
+
+    The deck is captured at `scale`x for crisp supersampling and the
+    asset is delivered at `output_scale`x (CSS-relative), so this
+    resamples by `output_scale / scale`. Runs before `_add_chrome`, so
+    the chrome's absolute-pixel sizes land crisp at the delivery
+    resolution rather than being blurred by the downscale.
+
+    Args:
+        frame: The composited RGBA frame at capture resolution.
+        scale: Capture device-pixel scale.
+        output_scale: Delivery device-pixel scale (≤ `scale`).
+
+    Returns:
+        The resampled frame, or the input unchanged when the scales match.
+    """
+    if output_scale == scale:
+        return frame
+    from PIL import Image
+
+    factor = output_scale / scale
+    w, h = frame.size
+    return frame.resize((round(w * factor), round(h * factor)), Image.Resampling.LANCZOS)
 
 
 # --- chrome (border + progress bar) ---------------
@@ -261,17 +292,126 @@ def _load_font(size: int, candidates: tuple[str, ...] = _FONT_CANDIDATES):
 
 
 # --- assembly -------------------------------------
-def _assemble(recipe: Recipe, plan: FramePlan, composited_dir: Path) -> Path:
-    """Assemble composited frames into the output animation via gifski."""
-    out = Path(recipe.output.path)
-    out.parent.mkdir(parents=True, exist_ok=True)
+def _assemble(recipe: Recipe, plan: FramePlan, composited_dir: Path) -> list[Path]:
+    """Assemble composited frames into each configured output animation.
+
+    Runs gifski and / or img2webp over the same PNG frame sequence — one
+    per output block present in the recipe (`output.gif` / `output.webp`).
+    Consuming the frames directly, rather than transcoding a finished GIF,
+    keeps the WebP path free of a quantized-256-color round-trip.
+
+    Args:
+        recipe: The validated recipe (fps / output config).
+        plan: The frame plan (for the frame count).
+        composited_dir: Directory of composited ``frame-NNNNN.png``.
+
+    Returns:
+        The written output paths, one per output block present.
+    """
     frames = [str(composited_dir / frame_filename(i)) for i in range(plan.total_frames)]
-    cmd = ["gifski", "--fps", str(recipe.fps), "--quality", str(recipe.output.quality), "-o", str(out)]
-    if not recipe.output.loop:
-        cmd += ["--repeat", "-1"]
-    cmd += frames
+    output = recipe.output
+    outputs: list[Path] = []
+    if output.gif is not None:
+        out = Path(output.gif.path)
+        outputs.append(_encode(_gif_cmd(recipe, out, frames, _frame_width(frames[0])), out))
+    if output.webp is not None:
+        out = Path(output.webp.path)
+        outputs.append(_encode(_webp_cmd(recipe, out, frames), out))
+    return outputs
+
+
+def _encode(cmd: list[str], out: Path) -> Path:
+    """Run one assembly command, creating the output's parent directory first."""
+    out.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(cmd, check=True)
     return out
+
+
+def _frame_width(frame_path: str) -> int:
+    """Read a composited frame's pixel width (gifski renders at this native width)."""
+    from PIL import Image
+
+    with Image.open(frame_path) as im:
+        return im.width
+
+
+def _gif_cmd(recipe: Recipe, out: Path, frames: list[str], width: int) -> list[str]:
+    """Build the gifski command for the GIF output.
+
+    Passes ``--width`` at the composited frame's native width so gifski
+    renders 1:1 rather than applying its built-in downsize cap — leaving
+    `viewport.output_scale` the single resolution control, shared with the
+    WebP path.
+
+    Args:
+        recipe: The validated recipe (fps / output config).
+        out: The GIF file to write.
+        frames: Ordered composited PNG frame paths.
+        width: Native composited frame width, passed as gifski ``--width``.
+
+    Returns:
+        The full ``gifski`` argument vector.
+    """
+    cmd = [
+        "gifski",
+        "--fps",
+        str(recipe.fps),
+        "--quality",
+        str(recipe.output.gif.quality),
+        "--width",
+        str(width),
+        "-o",
+        str(out),
+    ]
+    if not recipe.output.loop:
+        cmd += ["--repeat", "-1"]
+    return cmd + frames
+
+
+def _webp_cmd(recipe: Recipe, out: Path, frames: list[str]) -> list[str]:
+    """Build the img2webp command for the WebP output.
+
+    fps becomes a per-frame duration (`-d <ms>`); ``output.loop == False``
+    maps to a single play-through (`-loop 1`, against the infinite-loop
+    default). The `webp.mode` knob selects the libwebp coding strategy.
+
+    Args:
+        recipe: The validated recipe (fps / output / webp config).
+        out: The WebP file to write.
+        frames: Ordered PNG frame paths.
+
+    Returns:
+        The full ``img2webp`` argument vector.
+    """
+    webp = recipe.output.webp
+    duration_ms = round(1000 / recipe.fps)
+    cmd = ["img2webp", "-loop", "0" if recipe.output.loop else "1"]
+    cmd += _webp_file_opts(webp)
+    cmd += ["-d", str(duration_ms), "-m", str(webp.method)]
+    cmd += _webp_quality_opts(webp)
+    cmd += frames
+    cmd += ["-o", str(out)]
+    return cmd
+
+
+def _webp_file_opts(webp) -> list[str]:
+    """File-level img2webp flags (apply to the whole sequence): mixed / near-lossless modes."""
+    if webp.mode == "mixed":
+        return ["-mixed"]
+    if webp.mode == "near_lossless":
+        return ["-near_lossless", str(webp.near_lossless)]
+    return []
+
+
+def _webp_quality_opts(webp) -> list[str]:
+    """Per-frame img2webp flags selecting the coding mode and (where it applies) quality."""
+    if webp.mode == "lossless":
+        return ["-lossless"]
+    if webp.mode == "near_lossless":
+        return []  # -near_lossless (file-level) implies lossless coding; -q does not apply
+    if webp.mode == "mixed":
+        return ["-q", str(webp.quality)]  # tunes the lossy-coded frames
+    return ["-lossy", "-q", str(webp.quality)]
 
 
 def _prepare(out_dir: Path) -> None:

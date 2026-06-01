@@ -12,8 +12,9 @@
 #                Use this while tuning overlays only (captions, cursor, timing).
 #
 # Format-neutral on purpose: the target produces whatever the recipe's
-# output declares (GIF today). Requires `make capture-setup` first
-# (Playwright browser + Pillow + a gifski binary on PATH).
+# output declares (GIF and / or WebP). Requires `make capture-setup`
+# first (Playwright browser + Pillow + a gifski and / or img2webp binary
+# on PATH, per the recipe's output format).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -6,7 +6,7 @@ The engine runs in two stages from a single committed recipe file:
    hook and screenshots raw frames to a cache directory.
 2. **Composite** (`composite.py`) — Pillow burns the recipe's overlays
    (captions, cursor, click / key cues) onto the cached frames, then
-   gifski assembles the result.
+   gifski (GIF) and / or img2webp (WebP) assembles the result.
 
 Stage 1 and the heavy Pillow/Playwright dependencies are isolated in
 `capture.py` / `composite.py` and imported lazily, so the pure logic in
