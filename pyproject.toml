@@ -54,6 +54,8 @@ capture = [
 scrolly = "scrolly._cli._cli:cli"
 
 [project.urls]
+Homepage = "https://scrolly.readthedocs.io/en/stable/"
+Documentation = "https://scrolly.readthedocs.io/en/stable/"
 Source = "https://github.com/bertpl/scrolly"
 Changelog = "https://github.com/bertpl/scrolly/blob/main/CHANGELOG.md"
 Issues = "https://github.com/bertpl/scrolly/issues"
