@@ -5,22 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.5 (2026-06-02)
 
 ### Added
 
 - `scrolly --help-for-ai-tools` prints the full CLI reference — commands, schemas, and error codes — as a single markdown document for AI agents.
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.2.4 (2026-06-02)
 
 ### Added
