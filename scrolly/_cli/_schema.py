@@ -83,11 +83,11 @@ def schema_file(type_name: str | None, list_types: bool) -> None:
         _print_file_index()
         return
 
-    schema_dict = _file_schema(type_name)
-    if schema_dict is None:
+    schema_text = file_schema_json(type_name)
+    if schema_text is None:
         _err_console.print(f"[red]error:[/red] unknown file type '{type_name}' (known: {', '.join(names)})")
         sys.exit(1)
-    click.echo(json.dumps(schema_dict, indent=2))
+    click.echo(schema_text)
 
 
 @schema.command(name="element")
@@ -119,10 +119,11 @@ def schema_element(type_name: str | None, list_types: bool) -> None:
         _print_element_index()
         return
 
-    if type_name not in elements:
+    schema_text = element_schema_json(type_name)
+    if schema_text is None:
         _err_console.print(f"[red]error:[/red] unknown element type '{type_name}' (known: {', '.join(elements)})")
         sys.exit(1)
-    click.echo(json.dumps(elements[type_name].source_schema(), indent=2))
+    click.echo(schema_text)
 
 
 # --------------------------------------------------------------------------
@@ -146,6 +147,22 @@ def _file_schema(type_name: str) -> dict | None:
     if type_name in ir_types:
         return ir_types[type_name].source_schema()
     return None
+
+
+def file_schema_json(type_name: str) -> str | None:
+    """Render a source-file type's JSON Schema as indented JSON text, or ``None`` if unknown."""
+    schema_dict = _file_schema(type_name)
+    return None if schema_dict is None else json.dumps(schema_dict, indent=2)
+
+
+def element_schema_json(type_name: str) -> str | None:
+    """Render an element type's JSON Schema as indented JSON text, or ``None`` if unknown."""
+    from scrolly.slide import element_source_types
+
+    elements = element_source_types()
+    if type_name not in elements:
+        return None
+    return json.dumps(elements[type_name].source_schema(), indent=2)
 
 
 def _print_file_index() -> None:

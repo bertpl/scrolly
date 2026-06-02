@@ -7,6 +7,7 @@ import json
 from click.testing import CliRunner
 
 from scrolly._cli._cli import cli
+from scrolly._cli._schema import element_schema_json, file_schema_json
 
 runner = CliRunner()
 
@@ -124,6 +125,33 @@ def test_schema_element_list_types_is_bare_and_sorted():
         assert " " not in line
     assert lines == sorted(lines)
     assert lines == ["html", "iframe", "image", "image_sequence", "markdown", "mermaid"]
+
+
+# --- render functions (shared schema-text seam) ----
+def test_file_schema_json_renders_parseable_json():
+    # --- act --------------------------
+    text = file_schema_json("deck")
+
+    # --- assert -----------------------
+    assert json.loads(text)["type"] == "object"
+
+
+def test_file_schema_json_unknown_type_returns_none():
+    # --- act / assert -----------------
+    assert file_schema_json("bogus") is None
+
+
+def test_element_schema_json_renders_parseable_json():
+    # --- act --------------------------
+    text = element_schema_json("markdown")
+
+    # --- assert -----------------------
+    assert json.loads(text)["title"] == "MarkdownElement"
+
+
+def test_element_schema_json_unknown_type_returns_none():
+    # --- act / assert -----------------
+    assert element_schema_json("bogus") is None
 
 
 # --- breaking change: old flat form no longer works -
