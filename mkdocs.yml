@@ -51,23 +51,26 @@ markdown_extensions:
 plugins:
   - search
   # Generate the element-schema and error-code reference pages (and their
-  # literate-nav SUMMARY.md files) from the installed scrolly at build time.
+  # literate-nav SUMMARY.md files) from the installed scrolly at build time,
+  # plus the live homepage deck embed (the hero deck built into live/hero/).
   - gen-files:
       scripts:
         - docs/_gen/gen_reference.py
+        - docs/_gen/gen_live_deck.py
   - literate-nav:
       nav_file: SUMMARY.md
 
 hooks:
   - docs/_gen/mkdocs_hooks.py
 
-# docs/ also holds the dev-only animation engine (_gen/), the docs
-# toolchain pin (requirements.txt), and build-time deck output (live/).
-# None of those are documentation pages — keep them out of the site.
+# docs/ also holds the dev-only animation engine (_gen/) and the docs
+# toolchain pin (requirements.txt) — neither is a documentation page, so
+# keep them out of the site. (The build-time deck output under live/ is
+# NOT excluded: it's a static file the homepage iframe-embeds, copied
+# verbatim into the site like any other asset.)
 exclude_docs: |
   _gen/
   requirements.txt
-  live/
 
 nav:
   - Home: index.md
