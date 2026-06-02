@@ -1,5 +1,7 @@
 # Help screen
 
+![Opening the built-in help screen with the question-mark button, scrolling it, and closing it with the h key](../assets/clips/help.webp)
+
 Every built deck carries a built-in help screen, so readers can learn
 the controls without leaving the presentation.
 

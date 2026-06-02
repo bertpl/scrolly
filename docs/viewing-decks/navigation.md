@@ -6,6 +6,8 @@ None of it requires authoring knowledge; it's what your audience does.
 
 ## Moving between slides
 
+![Moving between slides with the arrow keys, with edge glows for dead-end and ambiguous directions, then clicking a slide in deck view](../assets/clips/navigation.webp)
+
 - **Arrow keys** move between grid-neighboring slides along the deck's
   edges.
 - **Clicking a slide** in the deck map zooms into it.
@@ -13,6 +15,8 @@ None of it requires authoring knowledge; it's what your audience does.
   pointing to its neighbors.
 
 ## Scrolling a slide
+
+![Scrolling a slide with the mouse wheel, Shift and arrow keys, and the snap control's arrows](../assets/clips/scrolling.webp)
 
 - **Mouse wheel / trackpad** scrolls the current slide, driving its
   animation.
@@ -28,6 +32,8 @@ See [Deck view & mini-map](deck-view-and-mini-map.md) for the
 zoomed-out map and its mini-map control.
 
 ## Snapping
+
+![Toggling scroll snapping off and back on with the snap control and the s key](../assets/clips/snapping.webp)
 
 - **`s`** toggles scroll snapping on or off, and brings the scrollbar
   and snap control back into view so the change is visible.

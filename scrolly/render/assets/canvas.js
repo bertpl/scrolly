@@ -1651,6 +1651,18 @@
     };
   }
 
+  // ---- resolveVersionLabel (pure — help-screen version display) ------------
+  // The " vX.Y.Z" fragment shown after "scrolly" in the help About panel, or
+  // "" when there is nothing to show. A `scrolly-version` URL override (null
+  // when the param is absent) takes precedence over the built-in
+  // `meta.version`; an empty override hides the version entirely — used by the
+  // capture pipeline so rendered help screens don't bake in a pre-release
+  // version number.
+  function resolveVersionLabel(override, metaVersion) {
+    const version = override !== null ? override : metaVersion;
+    return version ? " v" + version : "";
+  }
+
   // ---- Exports (for Node.js / Vitest testing) -------------------------------
 
   if (typeof exports !== "undefined") {
@@ -1668,6 +1680,7 @@
     exports.resolveTarget = resolveTarget;
     exports.decompressBundle = decompressBundle;
     exports.buildAutomationHook = buildAutomationHook;
+    exports.resolveVersionLabel = resolveVersionLabel;
   }
 
   // ---- DOM code (skipped in Node.js) ----------------------------------------
@@ -2054,11 +2067,12 @@
       const uniqueLine = formatCounts(p.unique);
       const compressedLine = p.compressed ? "yes" : "no";
       const savedLine = p.bytes_saved > 0 ? formatBytes(p.bytes_saved) : "0 B";
+      const versionParam = new URLSearchParams(window.location.search).get("scrolly-version");
 
       body.innerHTML =
         '<h2>About</h2>' +
         '<div class="help-about">' +
-        '<p class="help-about-title"><strong>scrolly</strong> v' + meta.version + '</p>' +
+        '<p class="help-about-title"><strong>scrolly</strong>' + resolveVersionLabel(versionParam, meta.version) + '</p>' +
         '<p><a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener">MIT License</a></p>' +
         '<p>' + meta.author + '</p>' +
         '<p><a href="' + meta.pypi_url + '" target="_blank" rel="noopener">' + meta.pypi_url + '</a></p>' +

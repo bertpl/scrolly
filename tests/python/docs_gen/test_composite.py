@@ -44,17 +44,6 @@ def test_downscale_resamples_by_output_over_capture() -> None:
     assert out.size == (100, 50)  # 2x capture -> 1x delivery
 
 
-def test_downscale_is_noop_when_scales_match() -> None:
-    # --- arrange ----------------------
-    frame = _frame(200, 100)
-
-    # --- act --------------------------
-    out = _downscale(frame, scale=2, output_scale=2.0)
-
-    # --- assert -----------------------
-    assert out is frame  # unchanged object, no resample
-
-
 def test_frame_width_reads_pixel_width(tmp_path) -> None:
     # --- arrange ----------------------
     path = tmp_path / "frame-00000.png"

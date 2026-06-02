@@ -1,0 +1,42 @@
+{
+  // ================================================================
+  //  Demo clip — Debug mode (d)
+  //
+  //  One `d` press toggles the debug overlay on for BOTH views:
+  //  slide view (10% grid + per-snap values + live scroll readout),
+  //  then deck view (slide-grid boundaries + coordinate pills). A
+  //  second `d` turns it off.
+  //
+  //  Coords are capture-viewport px (pre-scale). Control targets come
+  //  from canvas.css; cursor starts / deck-slide centers are estimates
+  //  to nudge against the render.
+  // ================================================================
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/clips/debug.webp", mode: "lossless" } },
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
+
+  steps: [
+    { type: "hold",   view: "slide", slide: "slide-3", ms: 1800 },        // 0
+    { type: "press",  key: "d", ms: 2000 },                               // 1  debug on (slide view)
+    { type: "scroll", slide: "slide-3", from: 0.0, to: 0.3276, ms: 4000 }, // 2  slide-view debug; ends on the 950 snap (0.3276 * 2900 = 950)
+    { type: "hold",   view: "slide", slide: "slide-3", ms: 800 },         // 3  settle: scroll stopped + caption faded, before the view switch
+    { type: "view",   to: "deck", ms: 1100 },                             // 4  (debug persists)
+    { type: "hold",   view: "deck", slide: "slide-3", ms: 4500 },         // 5  deck-view debug
+    { type: "press",  key: "d", ms: 1600 },                               // 6  debug off
+  ],
+
+  overlays: [
+    { type: "caption", step: [0, 1], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Press d to toggle debug mode", fade_ms: 250 },
+    { type: "key", step: 1, at: 0.0, label: "D" },
+    { type: "caption", step: 2, span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Slide view: layout grid and snap positions", fade_ms: 250 },
+    // Deck caption appears once the deck view has settled (~750ms after the zoom ends), not under it.
+    { type: "caption", step: 5, span: [0.17, 0.96], anchor: "bottom-center",
+      text: "Deck view: grid boundaries and coordinates", fade_ms: 250 },
+    { type: "key", step: 6, at: 0.0, label: "D" },
+  ],
+}

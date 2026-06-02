@@ -1,0 +1,43 @@
+{
+  // ================================================================
+  //  Demo clip — Help screen (? / h)
+  //
+  //  Open the built-in help by clicking the top-right `?` button: the
+  //  cursor glides in and the click pulse lands just before the real
+  //  `h` keypress that actually drives the open (step 1). Scroll the
+  //  modal, then close it with the `h` key (key chip). Open is narrated
+  //  as a click, close as a keypress — never both affordances at once.
+  //
+  //  Coords are capture-viewport px. Help button is top-right at
+  //  ~[1252, 28] (canvas.css: top/right 8px, 40x40).
+  // ================================================================
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/clips/help.webp", mode: "lossless" } },
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
+
+  steps: [
+    { type: "scroll",    slide: "overview", from: 1.0, to: 1.0, ms: 4400 },                            // 0  overview held at its final scroll position; caption plays out + fades, then cursor glides to ? and clicks
+    { type: "press",     key: "h", ms: 2000 },                                                         // 1  modal opens (the click at step-0 end narrates it)
+    { type: "scroll_el", selector: ".help-modal-body", from: 0.0, to: 1.0, ms: 3400, ease: "ease-in-out" }, // 2
+    { type: "hold",      view: "slide", slide: "overview", ms: 1900 },                                 // 3  dwell + "press h to close" caption (overview stays at its final scroll)
+    { type: "press",     key: "h", ms: 1300 },                                                         // 4  closes (H chip)
+    { type: "hold",      view: "slide", slide: "overview", ms: 900 },                                  // 5  settle on the closed slide
+  ],
+
+  overlays: [
+    { type: "caption", step: 0, span: [0.0, 0.82], anchor: "bottom-center",
+      text: "Open help — click the ? button", fade_ms: 250 },
+    { type: "cursor", step: 0, span: [0.5, 0.836], from: [720, 380], to: [1252, 28] },
+    // Dwell: tiny drift so the cursor stays on screen through the 0.5s pause before it clicks.
+    { type: "cursor", step: 0, span: [0.836, 0.97], from: [1252, 28], to: [1255, 30] },
+    { type: "click",  step: 0, at: 0.95, pos: [1252, 28] },
+    { type: "caption", step: 2, span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Shortcuts, About & deck stats", fade_ms: 250 },
+    { type: "caption", step: [3, 4], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Press h to close", fade_ms: 250 },
+    { type: "key", step: 4, at: 0.0, label: "H" },
+  ],
+}

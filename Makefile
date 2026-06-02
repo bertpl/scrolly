@@ -1,4 +1,4 @@
-.PHONY: help dev-setup build test lint lint-check update-deps install release hero-animation capture-setup
+.PHONY: help dev-setup build test lint lint-check update-deps install release hero-animation demo-clips capture-setup
 
 help:
 	@echo 'Commands:'
@@ -12,6 +12,7 @@ help:
 	@echo '  release        Bump version, validate, tag, push (VERSION=X.Y.Z)'
 	@echo '  capture-setup  One-time: install the hero-animation capture deps (Playwright + browser; see notes)'
 	@echo '  hero-animation Build + capture + composite the hero animation from its recipe'
+	@echo '  demo-clips     Build every viewing-decks demo clip (one work dir each; REUSE=1 to re-encode)'
 
 dev-setup:
 	uv sync --group dev
@@ -58,5 +59,19 @@ capture-setup:
 	@echo '    macOS:  brew install webp'
 	@echo '    apt:    apt install webp'
 
+# Version stamped into rendered help screens (hero + demo clips). The package
+# version is still pre-release at render time, so set this to the release these
+# assets ship with; update it when re-rendering for a new version.
+CLIP_VERSION ?= 0.2.4
+
 hero-animation:
-	bash scripts/make_animation.sh
+	SCROLLY_CLIP_VERSION=$(CLIP_VERSION) bash scripts/make_animation.sh
+
+# Each clip gets its own work dir so cached frames don't collide and
+# per-clip REUSE=1 (re-composite without re-capturing) works.
+demo-clips:
+	@for recipe in docs/_gen/animation_engine/clips/*.recipe.json; do \
+		name=$$(basename "$$recipe" .recipe.json); \
+		echo "==> clip: $$name"; \
+		SCROLLY_CLIP_VERSION=$(CLIP_VERSION) WORK="$${TMPDIR:-/tmp}/scrolly-clips/$$name" bash scripts/make_animation.sh "$$recipe"; \
+	done

@@ -1,0 +1,40 @@
+{
+  // ================================================================
+  //  Demo clip — Slide ↔ deck view
+  //
+  //  Zoom out via the top-left mini-map (cursor + click pulse, the
+  //  view->deck driven under the hood), then zoom back in with `z`.
+  //
+  //  Mini-map / zoom-out control is top-left at ~[34, 28] (canvas.css:
+  //  top 8px, left 8-18px, 40x40) — estimate to nudge.
+  // ================================================================
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/clips/slide_and_deck_view.webp", mode: "lossless" } },
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
+
+  steps: [
+    { type: "hold", view: "slide", slide: "slide-2", ms: 2000 },  // 0
+    { type: "view", to: "deck", ms: 1200 },                       // 1  faked mini-map click
+    { type: "hold", view: "deck", slide: "slide-2", ms: 4800 },   // 2
+    { type: "press", key: "z", ms: 1300 },                        // 3  toggle back to slide view
+    { type: "hold", view: "slide", slide: "slide-2", ms: 1900 },  // 4  dwell + "z also works" caption
+  ],
+
+  overlays: [
+    // cap0 narrates the zoom-out, so it deliberately overlaps the step-1 transition.
+    { type: "caption", step: [0, 1], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Zoom out with the mini-map", fade_ms: 250, allow_transition_overlap: true },
+    { type: "cursor", step: 0, span: [0.35, 0.9], from: [220, 200], to: [34, 28] },
+    { type: "click",  step: 0, at: 0.92, pos: [34, 28] },
+    // Deck caption buffered ~750ms off both the zoom-in (step 1) and the zoom-back (step 3).
+    { type: "caption", step: 2, span: [0.16, 0.84], anchor: "bottom-center",
+      text: "The mini-map marks the current slide", fade_ms: 250 },
+    // cap2 narrates the z zoom-back (the other way to switch views), so it overlaps step 3.
+    { type: "caption", step: [3, 4], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Or toggle the view with z", fade_ms: 250, allow_transition_overlap: true },
+    { type: "key", step: 3, at: 0.1, label: "Z" },
+  ],
+}

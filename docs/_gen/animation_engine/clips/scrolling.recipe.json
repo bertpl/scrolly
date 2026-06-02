@@ -1,0 +1,54 @@
+{
+  // ================================================================
+  //  Demo clip — Scrolling
+  //
+  //  Three ways to drive scroll on a snapped slide (overview): the
+  //  mouse wheel, Shift+↑/↓, and the snap control's prev / next
+  //  chevrons. The chevron clicks are narrated (cursor + pulse) while
+  //  Shift+↑/↓ drives the identical action under the hood.
+  //
+  //  Snap control is bottom-left: next ~[38, 698], prev ~[38, 648]
+  //  (canvas.css vertical pill) — estimates to nudge.
+  // ================================================================
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/clips/scrolling.webp", mode: "lossless" } },
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
+
+  steps: [
+    { type: "hold",   view: "slide", slide: "overview", ms: 1200 },               // 0
+    { type: "scroll", slide: "overview", from: 0.0, to: 0.5, ms: 2400 },          // 1  wheel
+    { type: "press",  key: "Shift+ArrowDown", ms: 1600 },                         // 2  keyboard step down
+    { type: "press",  key: "Shift+ArrowUp", ms: 1600 },                           // 3  keyboard step up
+    { type: "hold",   view: "slide", slide: "overview", ms: 1000 },               // 4  cursor glides to the next chevron, clicks at the end
+    { type: "press",  key: "Shift+ArrowDown", ms: 1400 },                         // 5  next chevron -> scroll to next snap (coincides with the click)
+    { type: "hold",   view: "slide", slide: "overview", ms: 1000 },               // 6  cursor glides to the prev chevron, clicks at the end
+    { type: "press",  key: "Shift+ArrowUp", ms: 1400 },                           // 7  prev chevron -> scroll to prev snap
+    { type: "hold",   view: "slide", slide: "overview", ms: 900 },                // 8
+  ],
+
+  overlays: [
+    { type: "caption", step: [0, 1], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Scroll with the mouse wheel", fade_ms: 250 },
+    { type: "scroll_hint", step: 1, span: [0.0, 1.0], pos: [1150, 360] },
+    // Caption text avoids the arrow glyphs (the caption font lacks them, rendering squares);
+    // the actual arrows live in the key chips below, which use a glyph-complete font.
+    { type: "caption", step: [2, 3], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Or Shift + arrow keys", fade_ms: 250 },
+    { type: "key", step: 2, at: 0.1, label: "⇧↓" },
+    { type: "key", step: 3, at: 0.1, label: "⇧↑" },
+    // Each chevron click lands at the end of its approach hold, just before the Shift+arrow
+    // press (next step) snaps the scroll — so the click coincides with the motion. The cursor
+    // then dwells on the chevron through that press instead of blinking out.
+    { type: "caption", step: [4, 7], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Or the snap control's arrows", fade_ms: 250 },
+    { type: "cursor", step: 4, span: [0.1, 0.9], from: [220, 520], to: [38, 698] },
+    { type: "click",  step: 4, at: 0.92, pos: [38, 698] },
+    { type: "cursor", step: 5, span: [0.0, 0.85], from: [38, 698], to: [39, 697] },
+    { type: "cursor", step: 6, span: [0.1, 0.9], from: [38, 698], to: [38, 648] },
+    { type: "click",  step: 6, at: 0.92, pos: [38, 648] },
+    { type: "cursor", step: 7, span: [0.0, 0.85], from: [38, 648], to: [39, 647] },
+  ],
+}

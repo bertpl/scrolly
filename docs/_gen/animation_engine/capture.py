@@ -137,7 +137,12 @@ def run_capture(recipe: Recipe, plan: FramePlan, deck_html: Path, frames_dir: Pa
     from playwright.sync_api import sync_playwright
 
     _prepare_frames_dir(frames_dir)
-    url = f"{deck_html.resolve().as_uri()}?scrolly-automation=1"
+    # The help screen stamps the package version at build time, which is still
+    # pre-release at render time. `scrolly-version` overrides it for captures:
+    # `SCROLLY_CLIP_VERSION` sets the version to show (the release these assets
+    # ship with), or hides it entirely when empty / unset.
+    clip_version = os.environ.get("SCROLLY_CLIP_VERSION", "")
+    url = f"{deck_html.resolve().as_uri()}?scrolly-automation=1&scrolly-version={clip_version}"
 
     # Default headless; SCROLLY_CAPTURE_HEADED=1 runs a real (headed) window
     # for pixel-exact parity with a desktop browser if the CSS fix ever isn't
