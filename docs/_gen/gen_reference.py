@@ -18,6 +18,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mkdocs_gen_files  # noqa: E402
 import reference_content as rc  # noqa: E402
 
+# --- file schemas -----------------------------------
+with mkdocs_gen_files.open("reference/files/index.md", "w") as f:
+    f.write(rc.file_index_page())
+for _key in rc.file_schema_keys():
+    with mkdocs_gen_files.open(f"reference/files/{_key}.md", "w") as f:
+        f.write(rc.file_schema_page(_key))
+
 # --- element schemas --------------------------------
 with mkdocs_gen_files.open("reference/elements/index.md", "w") as f:
     f.write(rc.element_index_page())

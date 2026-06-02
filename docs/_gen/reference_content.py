@@ -14,12 +14,14 @@ import types
 from pathlib import Path
 from typing import Literal, Union, get_args, get_origin
 
+from scrolly.deck import deck_source_schema
 from scrolly.errors import registered_codes
 from scrolly.errors._catalog import load_body, load_summary
 from scrolly.slide import element_source_types
-from scrolly.slide.ir import SlideElement
+from scrolly.slide.ir import SlideElement, SlideIR
 
-_SNIPPET_DIR = Path(__file__).resolve().parent / "element_snippets"
+_ELEMENT_SNIPPET_DIR = Path(__file__).resolve().parent / "element_snippets"
+_FILE_SNIPPET_DIR = Path(__file__).resolve().parent / "file_snippets"
 
 _ANIMATED_LABELS = {
     "AnimatedScalar": "number (animatable)",
@@ -106,6 +108,39 @@ def _common_field_names() -> list[str]:
     return list(SlideElement.model_fields)
 
 
+def _schema_type_label(prop: dict) -> str:
+    """Return a readable type label for a raw JSON-Schema property dict.
+
+    Used for the file-schema (deck / slide) pages, whose schemas are plain
+    dicts rather than Pydantic models. Arrays render as a bare ``array`` —
+    their item shape is carried by the page's example snippet.
+    """
+    if "$ref" in prop:
+        return prop["$ref"].rsplit("/", 1)[-1]
+    for combinator in ("anyOf", "oneOf"):
+        if combinator in prop:
+            return " | ".join(_schema_type_label(sub) for sub in prop[combinator])
+    if "const" in prop:
+        return _literal_value(prop["const"])
+    if "enum" in prop:
+        return " | ".join(_literal_value(v) for v in prop["enum"])
+    return prop.get("type", "object")
+
+
+def _schema_fields_table(schema: dict) -> str:
+    """Render the top-level properties of a raw JSON Schema as a Markdown table."""
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
+
+    rows = ["| Field | Type | Default | Description |", "|---|---|---|---|"]
+    for name, prop in props.items():
+        type_label = _cell(_schema_type_label(prop))
+        default = "**required**" if name in required else _default_label(prop.get("default"))
+        description = _cell(prop.get("description", ""))
+        rows.append(f"| `{name}` | {type_label} | {default} | {description} |")
+    return "\n".join(rows)
+
+
 # ==================================================================================================
 #  Element pages
 # ==================================================================================================
@@ -114,9 +149,9 @@ def element_keys() -> list[str]:
     return list(element_source_types())
 
 
-def _snippet(key: str) -> str:
-    """Return the hand-authored example snippet for an element key."""
-    return (_SNIPPET_DIR / f"{key}.json5").read_text().strip()
+def _snippet(directory: Path, key: str) -> str:
+    """Return the hand-authored example snippet for a key from ``directory``."""
+    return (directory / f"{key}.json5").read_text().strip()
 
 
 def element_page(key: str) -> str:
@@ -141,7 +176,7 @@ def element_page(key: str) -> str:
             "## Example",
             "",
             "```json5",
-            _snippet(key),
+            _snippet(_ELEMENT_SNIPPET_DIR, key),
             "```",
             "",
         ]
@@ -169,6 +204,65 @@ def element_index_page() -> str:
             "Every element shares these positioning and animation fields:",
             "",
             _fields_table(SlideElement, _common_field_names()),
+            "",
+        ]
+    )
+
+
+# ==================================================================================================
+#  File-schema pages (deck, slide)
+# ==================================================================================================
+_FILE_DESCRIPTIONS = {
+    "deck": "The deck manifest: slides positioned on an integer grid, plus optional navigation edges.",
+    "slide": "A single slide: a list of positioned, animatable elements plus its scroll behavior.",
+}
+
+
+def file_schema_keys() -> list[str]:
+    """Return the source-file schema keys, in display order."""
+    return ["deck", "slide"]
+
+
+def _file_schema(key: str) -> dict:
+    """Return the JSON Schema for a source-file type."""
+    return deck_source_schema() if key == "deck" else SlideIR.source_schema()
+
+
+def file_schema_page(key: str) -> str:
+    """Render the reference page for a source-file type (deck or slide)."""
+    parts = [
+        f"# `{key}` source file",
+        "",
+        _FILE_DESCRIPTIONS[key],
+        "",
+        "## Fields",
+        "",
+        _schema_fields_table(_file_schema(key)),
+        "",
+    ]
+    if key == "slide":
+        parts += [
+            "Each entry in `elements` is one of the element types — see [Element schemas](../elements/index.md).",
+            "",
+        ]
+    parts += ["## Example", "", "```json5", _snippet(_FILE_SNIPPET_DIR, key), "```", ""]
+    return "\n".join(parts)
+
+
+def file_index_page() -> str:
+    """Render the file-schemas overview page (deck / slide table)."""
+    rows = ["| File | Description |", "|---|---|"]
+    for key in file_schema_keys():
+        rows.append(f"| [`{key}`]({key}.md) | {_cell(_FILE_DESCRIPTIONS[key])} |")
+
+    return "\n".join(
+        [
+            "# File schemas",
+            "",
+            "A scrolly deck is a `.deck.json` manifest plus one `.slide.json` "
+            "file per slide — the two source file formats below.",
+            "",
+            "\n".join(rows),
             "",
         ]
     )
@@ -214,7 +308,9 @@ def reference_summary() -> str:
     wires the static CLI page together with the generated element and
     error-code sub-sections.
     """
-    lines = ["- [CLI](cli.md)", "- Element schemas:", "    - [Overview](elements/index.md)"]
+    lines = ["- [CLI](cli.md)", "- File schemas:", "    - [Overview](files/index.md)"]
+    lines += [f"    - [{key}](files/{key}.md)" for key in file_schema_keys()]
+    lines += ["- Element schemas:", "    - [Overview](elements/index.md)"]
     lines += [f"    - [{key}](elements/{key}.md)" for key in element_keys()]
     lines += ["- Error codes:", "    - [Overview](errors/index.md)"]
     lines += [f"    - [{code}](errors/{code}.md)" for code in error_codes()]
