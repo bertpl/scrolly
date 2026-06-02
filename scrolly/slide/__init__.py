@@ -7,7 +7,7 @@ renderers with the element-IR registry.
 
 from scrolly.slide.element_ir import renderers as _element_renderers  # noqa: F401 — register element renderers
 from scrolly.slide.html import SlideHTML
-from scrolly.slide.ir import SlideIR
+from scrolly.slide.ir import SlideIR, element_source_types
 from scrolly.slide.processor import Renderer
 from scrolly.slide.registry import (
     find_renderer,
@@ -26,6 +26,7 @@ __all__ = [
     "Renderer",
     "SlideHTML",
     "SlideIR",
+    "element_source_types",
     "find_renderer",
     "get_ir_class_for_path",
     "register_ir",

@@ -7,8 +7,8 @@
     the source of truth:
 
     ```bash
-    scrolly schema --list-types
-    scrolly schema <type>
+    scrolly schema element --list-types
+    scrolly schema element <type>
     ```
 
 For the element model and how schemas fit in, see

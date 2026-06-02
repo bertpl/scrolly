@@ -12,7 +12,7 @@ animation definition (piecewise linear, held constant beyond extremes).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -30,6 +30,9 @@ from scrolly.slide.ir._framework.animated_values import (
 # ==================================================================================================
 class SlideElement(ElementIR, frozen=True):
     """Base for all positioned visual units within a slide."""
+
+    SOURCE_KEY: ClassVar[str]
+    DESCRIPTION: ClassVar[str]
 
     name: str | None = Field(
         default=None,
@@ -97,12 +100,20 @@ class SlideElement(ElementIR, frozen=True):
             raise SlideSourceError(code="E302", message=f"numeric height must be > 0, got {self.height.static_value}")
         return self
 
+    @classmethod
+    def source_schema(cls) -> dict:
+        """JSON-serialisable description of this element type's source schema."""
+        return cls.model_json_schema()
+
 
 # ==================================================================================================
 #  Concrete element types
 # ==================================================================================================
 class ImageElement(SlideElement, PrimitiveElement, frozen=True):
     """An element backed by an external image file (PNG, JPEG, SVG, etc.)."""
+
+    SOURCE_KEY: ClassVar[str] = "image"
+    DESCRIPTION: ClassVar[str] = "Image from an external file (PNG, JPEG, SVG, …)."
 
     image: Path = Field(
         description="Path to the image file, relative to the slide source file.",
@@ -147,6 +158,9 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     Optional ``fade_in`` / ``fade_out`` add leading / trailing opacity ramps
     independent of the inter-frame crossfade timing.
     """
+
+    SOURCE_KEY: ClassVar[str] = "image_sequence"
+    DESCRIPTION: ClassVar[str] = "Scroll-driven filmstrip of crossfading images."
 
     image_sequence: list[Path | None] = Field(
         description=(
@@ -295,6 +309,9 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
 class HtmlElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with inline HTML content."""
 
+    SOURCE_KEY: ClassVar[str] = "html"
+    DESCRIPTION: ClassVar[str] = "Inline raw HTML content."
+
     html: str = Field(description="Raw HTML content, inserted verbatim into the slide.")
 
 
@@ -316,6 +333,9 @@ class IframeElement(SlideElement, PrimitiveElement, frozen=True):
     ``box-sizing: border-box`` so the declared ``width`` / ``height`` remain
     the outer footprint including the border.
     """
+
+    SOURCE_KEY: ClassVar[str] = "iframe"
+    DESCRIPTION: ClassVar[str] = "Sandboxed iframe embedding a self-contained HTML document."
 
     iframe_html: str = Field(
         description=(
@@ -365,6 +385,9 @@ class IframeElement(SlideElement, PrimitiveElement, frozen=True):
 class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with markdown content, rendered to HTML at build time."""
 
+    SOURCE_KEY: ClassVar[str] = "markdown"
+    DESCRIPTION: ClassVar[str] = "Markdown content, rendered to HTML at build time."
+
     markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
     color: str = Field(
         default="inherit",
@@ -379,4 +402,29 @@ class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
 class MermaidElement(SlideElement, PrimitiveElement, frozen=True):
     """An element with mermaid diagram source, rendered client-side."""
 
+    SOURCE_KEY: ClassVar[str] = "mermaid"
+    DESCRIPTION: ClassVar[str] = "Mermaid diagram, rendered client-side."
+
     mermaid: str = Field(description="Mermaid diagram source code, rendered client-side by mermaid.js.")
+
+
+# ==================================================================================================
+#  Element source registry
+# ==================================================================================================
+_ELEMENT_TYPES: tuple[type[SlideElement], ...] = (
+    ImageElement,
+    ImageSequenceElement,
+    HtmlElement,
+    IframeElement,
+    MarkdownElement,
+    MermaidElement,
+)
+
+
+def element_source_types() -> dict[str, type[SlideElement]]:
+    """Return a mapping of source key to element source model, for every element type.
+
+    Keyed by each element's author-facing ``SOURCE_KEY`` (e.g. ``"image_sequence"``)
+    and ordered by key for stable output.
+    """
+    return {cls.SOURCE_KEY: cls for cls in sorted(_ELEMENT_TYPES, key=lambda c: c.SOURCE_KEY)}
