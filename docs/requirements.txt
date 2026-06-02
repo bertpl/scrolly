@@ -9,3 +9,10 @@
 # and critical fixes only); its successor, Zensical, reads this project's
 # mkdocs.yml, so staying on Material now keeps the migration path open.
 mkdocs-material>=9.5,<10
+
+# Auto-generated reference: mkdocs-click renders the CLI tree; gen-files
+# emits the element / error-code pages from the installed scrolly;
+# literate-nav turns the generated SUMMARY.md files into nav sections.
+mkdocs-click>=0.8,<1
+mkdocs-gen-files>=0.5,<1
+mkdocs-literate-nav>=0.6,<1

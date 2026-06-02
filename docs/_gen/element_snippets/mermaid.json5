@@ -1,0 +1,7 @@
+{
+  // Mermaid diagram source, rendered client-side by mermaid.js.
+  mermaid: "graph LR; A[Author] --> B[scrolly build] --> C[HTML];",
+  position: [50, 50],
+  anchor: [50, 50],
+  width: 70,
+}

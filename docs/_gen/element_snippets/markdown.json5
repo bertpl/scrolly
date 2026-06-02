@@ -1,0 +1,10 @@
+{
+  // A text block, 80% wide, inset from the top-left.
+  // Multi-line content uses JSON5 line continuations (\ at end of line)
+  // so the markdown stays readable in source.
+  markdown: "## Section title\n\
+\n\
+Body copy with **bold** and _italic_.",
+  position: [10, 10],
+  width: 80,
+}

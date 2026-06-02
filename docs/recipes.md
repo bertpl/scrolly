@@ -35,4 +35,4 @@ advances.
 !!! note
     More recipes will be added over time. For the full set of fields
     each pattern uses, see the
-    [Element schemas](reference/element-schemas.md) reference.
+    [Element schemas](reference/elements/index.md) reference.

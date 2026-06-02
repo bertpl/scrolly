@@ -1,0 +1,7 @@
+{
+  // Centered image, preserving its aspect ratio (height "auto").
+  image: "assets/diagram.png",
+  position: [50, 50],
+  anchor: [50, 50],
+  width: 60,
+}

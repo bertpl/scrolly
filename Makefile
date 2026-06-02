@@ -1,4 +1,4 @@
-.PHONY: help dev-setup build test lint lint-check update-deps install release hero-animation demo-clips capture-setup
+.PHONY: help dev-setup build test lint lint-check update-deps install release hero-animation demo-clips capture-setup docs-serve docs-build
 
 help:
 	@echo 'Commands:'
@@ -13,6 +13,8 @@ help:
 	@echo '  capture-setup  One-time: install the hero-animation capture deps (Playwright + browser; see notes)'
 	@echo '  hero-animation Build + capture + composite the hero animation from its recipe'
 	@echo '  demo-clips     Build every viewing-decks demo clip (one work dir each; REUSE=1 to re-encode)'
+	@echo '  docs-serve     Serve the docs site locally with live reload'
+	@echo '  docs-build     Build the docs site into site/ (--strict)'
 
 dev-setup:
 	uv sync --group dev
@@ -39,6 +41,14 @@ update-deps:
 
 install:
 	uv tool install --editable .
+
+# `uv run` installs the current project (scrolly), which the reference
+# generation imports; --with-requirements layers in the docs toolchain.
+docs-serve:
+	uv run --with-requirements docs/requirements.txt mkdocs serve
+
+docs-build:
+	uv run --with-requirements docs/requirements.txt mkdocs build --strict
 
 release:
 	@test -n "$(VERSION)" || (echo "Usage: make release VERSION=X.Y.Z" && exit 1)

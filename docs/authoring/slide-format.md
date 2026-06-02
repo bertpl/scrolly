@@ -31,5 +31,5 @@ crammed into one long string. See
 external files.
 
 The authoritative, per-field schema for slides and every element type
-lives in the [Element schemas](../reference/element-schemas.md)
+lives in the [Element schemas](../reference/elements/index.md)
 reference, generated from the installed scrolly version.

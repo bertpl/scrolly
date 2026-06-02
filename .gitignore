@@ -5,6 +5,9 @@ dist/
 .pytest_cache/
 .ruff_cache/
 
+# Docs site build output (mkdocs build)
+/site/
+
 # Golden-test debug output (written next to the fixture on mismatch)
 *.actual.html
 

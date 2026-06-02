@@ -1,0 +1,8 @@
+{
+  // Scroll-driven filmstrip: three frames crossfading on a scroll grid.
+  image_sequence: ["frames/01.png", "frames/02.png", "frames/03.png"],
+  frame_distance: 400,
+  position: [50, 50],
+  anchor: [50, 50],
+  width: 70,
+}

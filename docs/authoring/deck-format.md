@@ -39,4 +39,4 @@ explicitly to override it. Both `color` and `label_color` accept the
 same hex forms (`#RGB` or `#RRGGBB`).
 
 The complete manifest field list is in the
-[Element schemas](../reference/element-schemas.md) reference.
+[Element schemas](../reference/elements/index.md) reference.

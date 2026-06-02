@@ -12,7 +12,10 @@ mkdocs:
 
 python:
   install:
-    # The docs toolchain (MkDocs + Material). scrolly itself is not
-    # installed here yet — the auto-generated reference and live-deck
-    # build, which need the CLI, are not part of this scaffold.
+    # The docs toolchain (MkDocs + Material + the gen-files / mkdocs-click
+    # reference plugins).
     - requirements: docs/requirements.txt
+    # scrolly itself — the auto-generated reference imports the CLI and the
+    # element / error schemas from the installed package at build time.
+    - method: pip
+      path: .
