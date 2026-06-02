@@ -1,6 +1,6 @@
 [project]
 name = "scrolly"
-version = "0.2.3"
+version = "0.2.4"
 description = "CLI that compiles a JSON5 deck + slide files into a self-contained 2D-canvas HTML presentation."
 readme = "README.md"
 license = "MIT"
