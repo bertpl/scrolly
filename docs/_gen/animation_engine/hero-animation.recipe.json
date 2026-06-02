@@ -29,15 +29,15 @@
   //  slide-2, slide-1 (bottom) — so slide-1->2->3->4 reads as "up" and the
   //  detail slides sit one column to the right ("right" from a main slide).
   //
-  //  Output: 1282x725 WebP @ 20 fps (lossy q80, method 4, ~4.9 MB), captured 2x and delivered 1x.
+  //  Output: 1282x725 WebP @ 30 fps (near-lossless 50, method 4), captured + delivered natively at 1x.
   // ================================================================
 
   // deck file — the path `scrolly build` takes (not the directory).
   deck: "examples/stacked-diffs/deck.deck.json",
-  // Captured at 2x for crisp supersampling, delivered at 1x (downscaled).
-  viewport: { width: 1280, height: 720, scale: 2, output_scale: 1 },
-  fps: 20,
-  output: { loop: true, webp: { path: "docs/assets/hero-v3.webp", quality: 80, method: 4 } },
+  // Captured natively at 1x (no supersample); Chrome's own AA keeps content crisp.
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/hero-v4.webp", mode: "near_lossless", near_lossless: 50, method: 4 } },
 
   // ---- whole-run chrome ---------------------------------------------
   // Added around the captured frame (never over content): a thin frame,

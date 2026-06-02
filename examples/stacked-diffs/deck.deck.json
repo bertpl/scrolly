@@ -31,6 +31,7 @@
   edges: [
     ["title", "overview"],
     ["overview|right", "slide-1|left"],
+    ["title|right", "slide-1|left"],   // skip-ahead shortcut: jump past the overview straight to slide-1
     ["slide-1", "slide-2"],
     ["slide-2", "slide-3"],
     ["slide-3", "slide-4"],

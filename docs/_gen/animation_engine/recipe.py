@@ -72,6 +72,8 @@ class Webp:
     `mode` defaults to universally-safe `lossy`. `method` defaults to 4:
     libwebp's m6 spends ~25x the time of m4 for only ~3% smaller output,
     so m4 sits at the speed/size knee for a hero's 1000+ large frames.
+    `min_size` (`-min_size`) brute-forces per-frame dispose/blend choices
+    to minimize total size — slower encode, smaller file; off by default.
     """
 
     path: str
@@ -79,6 +81,7 @@ class Webp:
     method: int = 4
     mode: str = "lossy"
     near_lossless: int = 60
+    min_size: bool = False
 
 
 @dataclass(frozen=True)
@@ -202,6 +205,12 @@ class CaptionOverlay:
     (equal for a single step); `span` is a ``(start, end)`` fraction of
     the *combined* duration of that range, so a caption can persist
     across several steps (e.g. a transition or a run of quick hops).
+
+    `allow_transition_overlap` opts a caption out of the timing
+    checker's transition-buffer rule: set it when the caption
+    deliberately narrates a full-screen transition it overlaps (e.g. a
+    "zoom out" label shown during the zoom), where the overlap is the
+    intent rather than a mistake.
     """
 
     step_start: int
@@ -210,6 +219,7 @@ class CaptionOverlay:
     text: str
     anchor: str = "bottom-center"
     fade_ms: int = 200
+    allow_transition_overlap: bool = False
 
 
 @dataclass(frozen=True)
@@ -387,6 +397,7 @@ def _parse_webp(d: dict[str, Any]) -> Webp:
         method=_int_in_range(d, "method", 4, 0, 6),
         mode=_choice(d, "mode", "lossy", _WEBP_MODES),
         near_lossless=_int_in_range(d, "near_lossless", 60, 0, 100),
+        min_size=bool(d.get("min_size", False)),
     )
 
 
@@ -464,6 +475,7 @@ def _parse_overlay(d: Any, n_steps: int) -> Overlay:
             text=_req(d, "text", str),
             anchor=d.get("anchor", "bottom-center"),
             fade_ms=int(d.get("fade_ms", 200)),
+            allow_transition_overlap=bool(d.get("allow_transition_overlap", False)),
         )
 
     step = _req(d, "step", int)

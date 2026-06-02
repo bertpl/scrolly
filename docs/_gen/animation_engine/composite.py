@@ -77,7 +77,8 @@ def run_composite(recipe: Recipe, plan: FramePlan, frames_dir: Path, work_dir: P
         draws = plan.overlay_draws[index]
         if draws:
             _paint(frame, draws, scale, fonts)
-        frame = _downscale(frame, scale, output_scale)
+        if output_scale != scale:
+            frame = _downscale(frame, scale, output_scale)
         frame = _add_chrome(frame, recipe, index, plan.total_frames)
         frame.convert("RGB").save(out_dir / frame_filename(index))
 
@@ -123,16 +124,17 @@ def _downscale(frame, scale: int, output_scale: float):
     the chrome's absolute-pixel sizes land crisp at the delivery
     resolution rather than being blurred by the downscale.
 
+    Only called when `output_scale != scale`; the caller skips it
+    entirely when capture and delivery resolutions match.
+
     Args:
         frame: The composited RGBA frame at capture resolution.
         scale: Capture device-pixel scale.
-        output_scale: Delivery device-pixel scale (≤ `scale`).
+        output_scale: Delivery device-pixel scale (< `scale`).
 
     Returns:
-        The resampled frame, or the input unchanged when the scales match.
+        The resampled frame at delivery resolution.
     """
-    if output_scale == scale:
-        return frame
     from PIL import Image
 
     factor = output_scale / scale
@@ -395,12 +397,15 @@ def _webp_cmd(recipe: Recipe, out: Path, frames: list[str]) -> list[str]:
 
 
 def _webp_file_opts(webp) -> list[str]:
-    """File-level img2webp flags (apply to the whole sequence): mixed / near-lossless modes."""
+    """File-level img2webp flags (apply to the whole sequence): size minimization + mixed / near-lossless modes."""
+    opts: list[str] = []
+    if webp.min_size:
+        opts.append("-min_size")
     if webp.mode == "mixed":
-        return ["-mixed"]
-    if webp.mode == "near_lossless":
-        return ["-near_lossless", str(webp.near_lossless)]
-    return []
+        opts.append("-mixed")
+    elif webp.mode == "near_lossless":
+        opts += ["-near_lossless", str(webp.near_lossless)]
+    return opts
 
 
 def _webp_quality_opts(webp) -> list[str]:

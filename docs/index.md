@@ -5,7 +5,7 @@ Compile a JSON5 *deck* into a single, self-contained, scrollable
 
 *Liked by humans; understood by agents.*
 
-![scrolly — scroll-driven 2D-canvas presentations](assets/hero-v3.webp)
+![scrolly — scroll-driven 2D-canvas presentations](assets/hero-v4.webp)
 
 ## Why it's different
 

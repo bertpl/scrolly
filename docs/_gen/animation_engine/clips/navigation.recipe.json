@@ -1,0 +1,65 @@
+{
+  // ================================================================
+  //  Demo clip — Navigating between slides
+  //
+  //  Real arrow-key presses drive the deck's own resolver, so the
+  //  glows are genuine. slide-1 is the richest demo slide:
+  //    up    -> slide-2        (single link, moves)
+  //    down  -> nothing        (no link -> no-target glow)
+  //    left  -> overview/title (two links -> disambiguation glow,
+  //                             both left arrows pulse)
+  //    right -> detail-1       (single link)
+  //  Closes by zooming to deck view and clicking a slide.
+  //
+  //  Sequencing note: `press` does not reset the slide, but `hold` /
+  //  `scroll` do — so no hold/scroll sits between the arrow presses.
+  //  Deck-view slide center [880, 540] is an estimate to nudge.
+  // ================================================================
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/clips/navigation.webp", mode: "lossless" } },
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
+
+  steps: [
+    { type: "hold",  view: "slide", slide: "slide-1", ms: 1500 },         // 0  start on slide-1
+    { type: "press", key: "ArrowUp", ms: 1100 },                          // 1  slide-1 -> slide-2 (valid)
+    { type: "press", key: "ArrowDown", ms: 1100 },                        // 2  slide-2 -> slide-1 (valid, back)
+    { type: "press", key: "ArrowDown", ms: 550 },                         // 3  no link -> no-target glow (1/3)
+    { type: "press", key: "ArrowDown", ms: 550 },                         // 4  no-target glow (2/3)
+    { type: "press", key: "ArrowDown", ms: 2100 },                        // 5  no-target glow (3/3) + caption dwell
+    { type: "press", key: "ArrowLeft", ms: 550 },                         // 6  two links -> disambiguation glow (1/3)
+    { type: "press", key: "ArrowLeft", ms: 550 },                         // 7  disambiguation glow (2/3)
+    { type: "press", key: "ArrowLeft", ms: 2100 },                        // 8  disambiguation glow (3/3) + caption dwell
+    { type: "hold",  view: "slide", slide: "slide-1", ms: 800 },          // 9  settle: glow clears before the zoom (buffer)
+    { type: "view",  to: "deck", ms: 1100 },                              // 10
+    { type: "hold",  view: "deck", slide: "slide-1", ms: 2400 },          // 11
+    { type: "view",  to: "slide", slide: "detail-1", ms: 1300 },          // 12  faked deck-view click
+    { type: "hold",  view: "slide", slide: "detail-1", ms: 1500 },        // 13
+  ],
+
+  overlays: [
+    { type: "caption", step: [0, 2], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Arrow keys follow the slide connections", fade_ms: 250 },
+    { type: "key", step: 1, at: 0.1, label: "↑" },
+    { type: "key", step: 2, at: 0.1, label: "↓" },
+    // Each glow is a one-shot 250ms pulse fired per press, so we tap the same key
+    // 3x (red no-target, then green disambiguation) to make it clearly visible.
+    { type: "caption", step: [3, 5], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "No connection that way", fade_ms: 200 },
+    { type: "key", step: 3, at: 0.1, label: "↓" },
+    { type: "key", step: 4, at: 0.1, label: "↓" },
+    { type: "key", step: 5, at: 0.1, label: "↓" },
+    { type: "caption", step: [6, 8], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Two connections — click to choose", fade_ms: 200 },
+    { type: "key", step: 6, at: 0.1, label: "←" },
+    { type: "key", step: 7, at: 0.1, label: "←" },
+    { type: "key", step: 8, at: 0.1, label: "←" },
+    // Deck caption appears once deck view settles, then stays up through the click-zoom it narrates.
+    { type: "caption", step: [11, 13], span: [0.15, 0.857], anchor: "bottom-center",
+      text: "…or click a slide in deck view", fade_ms: 250 },
+    { type: "cursor", step: 11, span: [0.2, 0.85], from: [640, 360], to: [860, 565] },
+    { type: "click",  step: 11, at: 0.9, pos: [860, 565] },
+  ],
+}

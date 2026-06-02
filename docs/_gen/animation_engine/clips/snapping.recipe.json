@@ -1,0 +1,48 @@
+{
+  // ================================================================
+  //  Demo clip — Snapping on / off (s)
+  //
+  //  Toggle scroll snapping two ways: the `s` key and the snap
+  //  control's center dot (cursor + pulse, with `s` driving it). Show
+  //  snapped scroll, toggle off, free scroll, toggle back on.
+  //
+  //  Snap control center dot (toggle) is bottom-left at ~[38, 673].
+  //  The snap-off state persists through the free-scroll step (its hook
+  //  re-selects the slide but does not reset the toggle — confirmed).
+  // ================================================================
+  deck: "examples/stacked-diffs/deck.deck.json",
+  viewport: { width: 1280, height: 720, scale: 1 },
+  fps: 30,
+  output: { loop: true, webp: { path: "docs/assets/clips/snapping.webp", mode: "lossless" } },
+  border:       { width: 1, color: "#bbbbbb" },
+  progress_bar: { height: 3, color: "#bbbbbb", track_color: "#444444" },
+
+  steps: [
+    { type: "hold",   view: "slide", slide: "overview", ms: 1200 },               // 0
+    { type: "scroll", slide: "overview", from: 0.0, to: 0.5, ms: 2100 },          // 1  snapped scroll
+    { type: "hold",   view: "slide", slide: "overview", ms: 1600 },               // 2  cursor glides to the center dot, clicks at the end
+    { type: "press",  key: "s", ms: 1700 },                                       // 3  toggle OFF (the click at step-2 end narrates it)
+    { type: "scroll", slide: "overview", from: 0.5, to: 1.0, ms: 3200 },          // 4  free scroll
+    { type: "press",  key: "s", ms: 1700 },                                       // 5  toggle ON (narrated as the s key)
+    { type: "hold",   view: "slide", slide: "overview", ms: 1500 },               // 6  settle
+  ],
+
+  overlays: [
+    { type: "caption", step: [0, 1], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Snapping locks scroll to key positions", fade_ms: 250 },
+    { type: "scroll_hint", step: 1, span: [0.0, 1.0], pos: [1150, 360] },
+    // Toggle off is narrated as a center-dot click: the cursor glides in during step 2 and
+    // clicks just before the real `s` press (step 3) fires the toggle.
+    { type: "caption", step: [2, 3], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Toggle with the center dot", fade_ms: 250 },
+    { type: "cursor", step: 2, span: [0.2, 0.9], from: [220, 520], to: [38, 673] },
+    { type: "click",  step: 2, at: 0.92, pos: [38, 673] },
+    { type: "caption", step: 4, span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Now scroll flows freely", fade_ms: 250 },
+    { type: "scroll_hint", step: 4, span: [0.0, 1.0], pos: [1150, 360] },
+    // Toggle back on is narrated as the `s` key (no cursor) — the other affordance.
+    { type: "caption", step: [5, 6], span: [0.0, 0.96], anchor: "bottom-center",
+      text: "Snap back on with s", fade_ms: 250 },
+    { type: "key", step: 5, at: 0.1, label: "S" },
+  ],
+}

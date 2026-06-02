@@ -1,5 +1,7 @@
 # Deck view & mini-map
 
+![Zooming out to the deck map with the mini-map control, then back into a slide with the z key](../assets/clips/slide_and_deck_view.webp)
+
 A built deck has two zoom levels. **Deck view** (the deck map) is the
 zoomed-out overview; **slide view** is a single slide the reader
 scrolls through. This page covers the map and the control used to

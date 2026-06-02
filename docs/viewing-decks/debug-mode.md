@@ -1,5 +1,7 @@
 # Debug mode
 
+![Debug mode showing the layout grid, snap positions, and grid coordinates across slide and deck view](../assets/clips/debug.webp)
+
 Debug mode overlays the grid and scroll geometry on a deck, which is
 invaluable while authoring — it makes coordinates and snap positions
 visible instead of guessed at.
