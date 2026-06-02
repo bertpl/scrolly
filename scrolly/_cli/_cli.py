@@ -8,6 +8,7 @@ from rich.console import Console
 from scrolly import __version__
 from scrolly._cli._errors import errors_command
 from scrolly._cli._introspect import introspect
+from scrolly._cli._schema import schema
 from scrolly.errors import ScrollyError, ValidationError
 from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
@@ -80,52 +81,6 @@ def build(
         _report_diagnostics(deck)
 
     click.echo(f"Built '{deck.title or '(untitled)'}': {len(deck.slides)} slides, {len(deck.edges)} edges → {out_dir}")
-
-
-@cli.command()
-@click.argument("type_name", required=False)
-@click.option(
-    "--list-types",
-    "list_types",
-    is_flag=True,
-    help="Print bare type names one per line (no descriptions) for scripting use.",
-)
-def schema(type_name: str | None, list_types: bool) -> None:
-    """Show source file schemas.
-
-    \b
-    scrolly schema              → formatted index of available types
-    scrolly schema <type>       → JSON Schema for <type>
-    scrolly schema --list-types → bare type names, one per line (agent / scripting)
-    """
-    from scrolly.deck import deck_source_schema
-    from scrolly.slide import registered_ir_types
-
-    ir_types = registered_ir_types()
-    all_type_names = sorted(["deck", *ir_types])
-
-    if list_types:
-        for name in all_type_names:
-            click.echo(name)
-        return
-
-    if type_name is None:
-        click.echo("Available schemas:\n")
-        click.echo(f"  {'deck':<17}{'.deck.json':<24}Deck structure (slides + edges)")
-        for name in sorted(ir_types):
-            cls = ir_types[name]
-            click.echo(f"  {name:<17}{cls.SUFFIX:<24}{cls.DESCRIPTION}")
-        return
-
-    if type_name == "deck":
-        click.echo(json.dumps(deck_source_schema(), indent=2))
-        return
-
-    if type_name not in ir_types:
-        _err_console.print(f"[red]error:[/red] unknown type '{type_name}' (known: {', '.join(all_type_names)})")
-        sys.exit(1)
-
-    click.echo(json.dumps(ir_types[type_name].source_schema(), indent=2))
 
 
 @cli.command()
@@ -217,3 +172,4 @@ def init(dir_path: Path) -> None:
 
 cli.add_command(errors_command)
 cli.add_command(introspect)
+cli.add_command(schema)

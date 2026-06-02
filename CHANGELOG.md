@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scrolly schema element` shows the schema for each slide element type.
+
 ### Changed
 
 - Lighter backdrop behind the help screen.
+- **Breaking:** `scrolly schema <type>` is now `scrolly schema file <type>` (deck and slide schemas moved under a `file` subcommand).
 
 ### Deprecated
 

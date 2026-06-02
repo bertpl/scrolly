@@ -474,3 +474,41 @@ def test_timeline_start_and_end() -> None:
     # last snap = 100 + 2*400 = 900
     assert el.timeline_start() == 100 - 80
     assert el.timeline_end() == 900 + 150
+
+
+# ── element source registry ───────────────────────────────────────
+
+
+def test_element_source_types_keys() -> None:
+    """Registry is keyed by each element's author-facing source key."""
+    # --- arrange / act ----------------
+    from scrolly.slide.ir import element_source_types
+
+    registry = element_source_types()
+
+    # --- assert -----------------------
+    assert set(registry) == {"html", "iframe", "image", "image_sequence", "markdown", "mermaid"}
+    assert registry["image_sequence"] is ImageSequenceElement
+
+
+def test_element_source_types_matches_slide_union() -> None:
+    """Registry stays in lockstep with the ``AnyElement`` union the slide parses."""
+    # --- arrange ----------------------
+    from typing import get_args
+
+    from scrolly.slide.ir import element_source_types
+    from scrolly.slide.ir.slide import AnyElement
+
+    # --- act / assert -----------------
+    assert set(element_source_types().values()) == set(get_args(AnyElement))
+
+
+def test_element_source_schema_is_json_serialisable() -> None:
+    """Each element exposes a JSON-schema dict via ``source_schema``."""
+    # --- arrange / act ----------------
+    from scrolly.slide.ir import element_source_types
+
+    # --- assert -----------------------
+    for key, cls in element_source_types().items():
+        schema = cls.source_schema()
+        assert schema["title"] == cls.__name__, key

@@ -15,6 +15,7 @@ from scrolly.slide.ir._framework.element import (
     MarkdownElement,
     MermaidElement,
     SlideElement,
+    element_source_types,
 )
 from scrolly.slide.ir._framework.utils import parse_json5_ir, resolve_asset_paths
 from scrolly.slide.ir.slide import SlideIR
@@ -33,6 +34,7 @@ __all__ = [
     "SlideElement",
     "SlideIR",
     "Vec2Keyframes",
+    "element_source_types",
     "parse_json5_ir",
     "resolve_asset_paths",
 ]
