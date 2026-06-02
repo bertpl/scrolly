@@ -1,0 +1,8 @@
+/* Left-nav section headers: render in the header's primary color so the
+   grouping (Concepts, Authoring, Reference, …) stands out from the leaf
+   links beneath it. !important is needed to beat Material's own
+   higher-specificity `.md-nav--primary .md-nav__item--section` rule. */
+.md-nav__item--section > .md-nav__link {
+  color: var(--md-primary-fg-color) !important;
+  font-weight: 700;
+}

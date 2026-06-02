@@ -1,0 +1,10 @@
+{
+  title: "My Deck",
+  slides: [
+    { id: "intro", position: [0, 0], source: "slides/intro.slide.json" },
+    { id: "details", position: [1, 0], source: "slides/details.slide.json" },
+  ],
+  edges: [
+    ["intro", "details"],
+  ],
+}

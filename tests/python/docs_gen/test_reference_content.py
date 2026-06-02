@@ -66,6 +66,80 @@ def test_element_table_escapes_pipes_in_literal_types():
     assert "\\|" in page
 
 
+# --- file schemas -----------------------------------
+def test_file_schema_keys():
+    # --- act / assert -----------------
+    assert rc.file_schema_keys() == ["deck", "slide"]
+
+
+@pytest.mark.parametrize("key", ["deck", "slide"])
+def test_file_schema_page_has_fields_and_example(key):
+    # --- act --------------------------
+    page = rc.file_schema_page(key)
+
+    # --- assert -----------------------
+    assert page.startswith(f"# `{key}` source file")
+    assert "## Fields" in page
+    assert "## Example" in page
+    assert "```json5" in page
+
+
+def test_file_schema_deck_table_lists_top_level_fields():
+    # --- act --------------------------
+    page = rc.file_schema_page("deck")
+
+    # --- assert -----------------------
+    for field in ("`title`", "`slides`", "`edges`"):
+        assert field in page
+
+
+def test_file_schema_slide_table_lists_elements_and_links_out():
+    # --- act --------------------------
+    page = rc.file_schema_page("slide")
+
+    # --- assert -----------------------
+    assert "`elements`" in page
+    assert "`scroll_range`" in page
+    assert "../elements/index.md" in page
+
+
+def test_file_index_lists_both_formats():
+    # --- act --------------------------
+    page = rc.file_index_page()
+
+    # --- assert -----------------------
+    assert "[`deck`](deck.md)" in page
+    assert "[`slide`](slide.md)" in page
+
+
+def test_slide_snippet_validates_against_slide_ir():
+    # --- arrange ----------------------
+    from scrolly.slide.ir import SlideIR
+
+    page = rc.file_schema_page("slide")
+    snippet = page.split("```json5\n", 1)[1].split("```", 1)[0]
+
+    # --- act --------------------------
+    slide = SlideIR.model_validate(json5.loads(snippet))
+
+    # --- assert -----------------------
+    assert slide.title == "Intro"
+    assert slide.elements[0].markdown == "# Hello\n\nWelcome to the deck."
+
+
+def test_deck_snippet_parses_with_required_keys():
+    # --- arrange ----------------------
+    page = rc.file_schema_page("deck")
+    snippet = page.split("```json5\n", 1)[1].split("```", 1)[0]
+
+    # --- act --------------------------
+    parsed = json5.loads(snippet)
+
+    # --- assert -----------------------
+    assert "slides" in parsed
+    assert parsed["slides"][0]["source"].endswith(".slide.json")
+
+
 # --- error pages ------------------------------------
 def test_error_codes_match_registry():
     # --- act / assert -----------------
@@ -97,6 +171,8 @@ def test_reference_summary_wires_cli_elements_and_errors():
 
     # --- assert -----------------------
     assert "- [CLI](cli.md)" in summary
+    assert "- File schemas:" in summary
+    assert "    - [deck](files/deck.md)" in summary
     assert "- Element schemas:" in summary
     assert "    - [markdown](elements/markdown.md)" in summary
     assert "- Error codes:" in summary

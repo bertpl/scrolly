@@ -1,0 +1,13 @@
+{
+  title: "Intro",
+  elements: [
+    {
+      // Multi-line content uses JSON5 line continuations (\ at end of line).
+      markdown: "# Hello\n\
+\n\
+Welcome to the deck.",
+      position: [10, 10],
+      width: 80,
+    },
+  ],
+}
