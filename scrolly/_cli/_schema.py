@@ -72,7 +72,7 @@ def schema_file(type_name: str | None, list_types: bool) -> None:
     scrolly schema file <type>       → JSON Schema for <type>
     scrolly schema file --list-types → bare type names, one per line (agent / scripting)
     """
-    names = _file_type_names()
+    names = file_type_names()
 
     if list_types:
         for name in names:
@@ -129,7 +129,7 @@ def schema_element(type_name: str | None, list_types: bool) -> None:
 # --------------------------------------------------------------------------
 #  Schema lookup + index rendering
 # --------------------------------------------------------------------------
-def _file_type_names() -> list[str]:
+def file_type_names() -> list[str]:
     """Return the sorted source-file type names (deck + registered slide types)."""
     from scrolly.slide import registered_ir_types
 

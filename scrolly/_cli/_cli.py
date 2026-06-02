@@ -16,8 +16,26 @@ from scrolly.pipeline.lint import lint_deck
 _err_console = Console(stderr=True, highlight=False)
 
 
+def _emit_ai_help(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+    """Eager ``--help-for-ai-tools`` callback: print the full CLI reference and exit."""
+    if not value or ctx.resilient_parsing:
+        return
+    from scrolly._cli._ai_help import build_ai_help
+
+    click.echo(build_ai_help(ctx.find_root().command, __version__))
+    ctx.exit()
+
+
 @click.group()
 @click.version_option(__version__, prog_name="scrolly")
+@click.option(
+    "--help-for-ai-tools",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=_emit_ai_help,
+    help="Print the entire CLI reference (commands, schemas, error codes) as one markdown document for AI agents.",
+)
 def cli() -> None:
     """scrolly — compile a JSON5 deck into a self-contained 2D-canvas HTML presentation."""
 

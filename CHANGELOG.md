@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scrolly --help-for-ai-tools` prints the full CLI reference — commands, schemas, and error codes — as a single markdown document for AI agents.
+
 ### Changed
 
 ### Deprecated
