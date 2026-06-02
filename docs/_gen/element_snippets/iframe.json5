@@ -1,0 +1,8 @@
+{
+  // Sandboxed embed of a self-contained HTML document, with a thin border.
+  iframe_html: "<!doctype html><html><body><h1>Embedded</h1></body></html>",
+  position: [10, 10],
+  width: 80,
+  height: 60,
+  border_width: 1,
+}

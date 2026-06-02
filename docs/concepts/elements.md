@@ -28,5 +28,5 @@ size. Any of these can be a fixed value or an animated one — see
 [Animation](animation.md).
 
 The exact field list for each element type is in the
-[Element schemas](../reference/element-schemas.md) reference, generated
+[Element schemas](../reference/elements/index.md) reference, generated
 from the installed scrolly version so it never drifts from the code.

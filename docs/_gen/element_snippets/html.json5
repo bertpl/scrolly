@@ -1,0 +1,6 @@
+{
+  // Inline HTML, inserted verbatim into the slide.
+  html: "<div class=\"badge\">Inline HTML</div>",
+  position: [10, 10],
+  width: 40,
+}
