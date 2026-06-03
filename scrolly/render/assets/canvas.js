@@ -383,6 +383,10 @@
 
     setSnapManager(snapManager) { this._snapManager = snapManager; }
 
+    // The scrollbar track element; SnapManager reads it to place snap dots
+    // and reflect the snap-disabled state.
+    get scrollbarEl() { return this._scrollbarEl; }
+
     position(slideId) { return this._positions.get(slideId) || 0; }
     range(slideId) { return this._ranges.get(slideId) || 0; }
     scrollSpeed(slideId) { return (this._config[slideId] && this._config[slideId].scrollSpeed) || 1.0; }
@@ -396,8 +400,10 @@
     // so every call site can stay direction-agnostic. The same formula
     // applies to deltas: dragging the thumb by dy pixels translates to the
     // same dPosition via `_offsetToPosition(slideId, dy, geo)` (with the
-    // appropriate sign in reverse mode).
-    _positionToOffset(slideId, position, geo) {
+    // appropriate sign in reverse mode). `positionToOffset` is public —
+    // SnapManager uses it to place snap dots; `_offsetToPosition` stays
+    // internal (drag only).
+    positionToOffset(slideId, position, geo) {
       const range = this._ranges.get(slideId) || 0;
       if (range <= 0 || geo.maxOffset <= 0) return 0;
       const base = (position / range) * geo.maxOffset;
@@ -476,7 +482,7 @@
       if (!thumb) return;
 
       const position = this._positions.get(slideId) || 0;
-      const offset = this._positionToOffset(slideId, position, geo);
+      const offset = this.positionToOffset(slideId, position, geo);
 
       thumb.style.height = geo.thumbHeight + "px";
       thumb.style.top = offset + "px";
@@ -564,7 +570,7 @@
       this._drag = {
         slideId: selectedSlide,
         startY: e.clientY,
-        startOffset: this._positionToOffset(selectedSlide, startPosition, geo),
+        startOffset: this.positionToOffset(selectedSlide, startPosition, geo),
         geo,
       };
       target.classList.add("dragging");
@@ -820,7 +826,7 @@
 
     _applyEnabledState() {
       if (!this._controlEl) return;
-      const scrollbarEl = this._scrollManager._scrollbarEl;
+      const scrollbarEl = this._scrollManager.scrollbarEl;
       if (this._enabled) {
         this._controlEl.classList.remove("snap-off");
         if (scrollbarEl) scrollbarEl.classList.remove("snap-disabled");
@@ -861,7 +867,7 @@
     }
 
     syncDots(slideId) {
-      const trackEl = this._scrollManager._scrollbarEl;
+      const trackEl = this._scrollManager.scrollbarEl;
       if (!trackEl) return;
       trackEl.querySelectorAll(".slide-scrollbar-snap").forEach((el) => el.remove());
       const snaps = this._snapsFor(slideId);
@@ -872,7 +878,7 @@
       for (const pos of snaps) {
         const dot = document.createElement("div");
         dot.className = "slide-scrollbar-snap";
-        const offset = this._scrollManager._positionToOffset(slideId, pos, geo);
+        const offset = this._scrollManager.positionToOffset(slideId, pos, geo);
         dot.style.top = geo.thumbHeight / 2 + offset + "px";
         // Debug-mode label showing the snap's numeric scroll position. Hidden
         // unless `body.debug-mode.view-slide` is active.
