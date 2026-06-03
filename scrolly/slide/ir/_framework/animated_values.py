@@ -89,7 +89,7 @@ class ScalarKeyframes(BaseModel, frozen=True):
 
     @model_validator(mode="after")
     def _validate(self) -> ScalarKeyframes:
-        """Validate keyframe list is non-empty and sorted by scroll position."""
+        """Validate keyframe list has ≥2 entries and is sorted by scroll position."""
         _validate_keyframe_positions(self.keyframes)
         return self
 
@@ -106,7 +106,7 @@ class Vec2Keyframes(BaseModel, frozen=True):
 
     @model_validator(mode="after")
     def _validate(self) -> Vec2Keyframes:
-        """Validate keyframe list is non-empty and sorted by scroll position."""
+        """Validate keyframe list has ≥2 entries and is sorted by scroll position."""
         _validate_keyframe_positions(self.keyframes)
         return self
 

@@ -83,8 +83,7 @@ def resolve_asset_paths(
     elements: list,
     source_dir: Path,
 ) -> list:
-    """Resolve relative image paths to absolute for any ``ImageElement`` /
-    ``ImageSequenceElement`` instances.
+    """Resolve relative image paths to absolute for any ``ImageElement`` / ``ImageSequenceElement``.
 
     Returns a new list (frozen models require copies).
     """

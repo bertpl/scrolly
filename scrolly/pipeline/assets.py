@@ -96,6 +96,7 @@ def copy_assets(chunks: dict[str, SlideHTML], output_dir: Path) -> None:
 
 
 def _validate_assets(slide_id: str, assets: tuple[Path, ...]) -> None:
+    """Check that every declared asset exists and has a unique, non-trivial filename."""
     filenames: set[str] = set()
     for path in assets:
         if not path.exists():
@@ -109,6 +110,7 @@ def _validate_assets(slide_id: str, assets: tuple[Path, ...]) -> None:
 
 
 def _rewrite_refs(slide_id: str, chunk: SlideHTML) -> SlideHTML:
+    """Rewrite ``__asset__/`` refs to ``_assets/<slide_id>/`` paths (the non-inline path)."""
     target = f"_assets/{slide_id}/"
     return replace(
         chunk,
@@ -203,6 +205,7 @@ def _bundle_img_refs(
 
 
 def _mime_type(path: Path, slide_id: str) -> str:
+    """Return the MIME type for a supported image extension, raising ``E403`` otherwise."""
     ext = path.suffix.lower()
     if ext not in _MIME_TYPES:
         raise SlideSourceError(

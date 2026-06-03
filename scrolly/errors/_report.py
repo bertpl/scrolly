@@ -13,13 +13,7 @@ from scrolly.errors._validation_error import ValidationError
 
 
 class ValidationReport:
-    """Append-only accumulator for ``ValidationError`` instances.
-
-    Methods:
-        add: Append a single error.
-        errors: Defensive-copy tuple of all accumulated errors.
-        is_clean: True iff no errors have been added.
-    """
+    """Append-only accumulator for ``ValidationError`` instances."""
 
     def __init__(self) -> None:
         self._errors: list[ValidationError] = []

@@ -9,6 +9,7 @@ from scrolly._cli._introspect import introspect
 from scrolly._cli.console import err_console, error_exit, print_error
 from scrolly._cli.errors import errors_command
 from scrolly._cli.schema import schema
+from scrolly.deck import Deck
 from scrolly.errors import ScrollyError, ValidationError
 from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
@@ -141,7 +142,7 @@ def _error_to_dict(err: ScrollyError) -> dict:
     return {"code": None, "message": str(err)}
 
 
-def _report_diagnostics(deck) -> None:
+def _report_diagnostics(deck: Deck) -> None:
     """Run lint checks and print any diagnostics to stderr."""
     diagnostics = lint_deck(deck)
     for d in diagnostics:
@@ -160,7 +161,7 @@ _INIT_DECK = """\
 
 _INIT_SLIDE = """\
 {
-  title: "My Deck",
+  title: "Intro",
   elements: [
     { markdown: "# My Deck\\n\\nWelcome to your new presentation." },
   ],

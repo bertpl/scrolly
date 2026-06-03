@@ -15,10 +15,10 @@ arrows line up with the rough direction of their targets.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
-from scrolly.deck.model import Deck, Side
+from scrolly.deck.model import Deck, Position, Side
 
 # Fan spacing along the side, expressed as a fraction of the side's length.
 # Adjacent arrows in a fan are this far apart (center-to-center) along the
@@ -59,9 +59,10 @@ def compute_fan_lookup(deck: Deck) -> FanLookup:
     """
     positions = {s.id: s.position for s in deck.slides}
 
-    # Bucket per (slide_id, side): the *raw* list of (target_id, edge_index)
-    # pairs. The edge_index is a stable tiebreaker for repeated targets that
-    # would otherwise collapse to the same sort key.
+    # Bucket per (slide_id, side): the raw list of target slide ids reachable
+    # from that side, kept in edge-declaration order with duplicates intact.
+    # Ordering and tiebreaking happen later in `_sort_key_for` (which falls
+    # back to `target_id`), so no separate index is stored here.
     buckets: dict[tuple[str, Side], list[str]] = {}
     for edge in deck.edges:
         buckets.setdefault((edge.a.slide_id, edge.a.side), []).append(edge.b.slide_id)
@@ -74,7 +75,7 @@ def compute_fan_lookup(deck: Deck) -> FanLookup:
     return lookup
 
 
-def _sort_key_for(side: Side, positions):
+def _sort_key_for(side: Side, positions: dict[str, Position]) -> Callable[[str], tuple[int, int, str]]:
     """Return a sort-key callable for a given side.
 
     LEFT/RIGHT sides sort by target.y first (smaller y = upper = smaller
@@ -96,6 +97,7 @@ def _sort_key_for(side: Side, positions):
 
 
 def _entries_for(ordered_targets: list[str]) -> tuple[FanEntry, ...]:
+    """Build the per-edge ``FanEntry`` tuple for one side's already-ordered targets."""
     n = len(ordered_targets)
     if n == 1:
         return (FanEntry(target_id=ordered_targets[0], fan_index=0, fan_size=1),)

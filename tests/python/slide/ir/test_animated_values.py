@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import (
