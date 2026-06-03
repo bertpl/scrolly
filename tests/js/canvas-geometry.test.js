@@ -1357,41 +1357,41 @@ describe("ScrollManager position <-> offset mapping", () => {
   const geo = { maxOffset: 200 };
 
   it("non-reverse: position 0 maps to offset 0", () => {
-    expect(_mgr(false)._positionToOffset("s1", 0, geo)).toBeCloseTo(0);
+    expect(_mgr(false).positionToOffset("s1", 0, geo)).toBeCloseTo(0);
   });
 
   it("non-reverse: position == range maps to maxOffset", () => {
-    expect(_mgr(false)._positionToOffset("s1", 1000, geo)).toBeCloseTo(200);
+    expect(_mgr(false).positionToOffset("s1", 1000, geo)).toBeCloseTo(200);
   });
 
   it("non-reverse: half position maps to half offset", () => {
-    expect(_mgr(false)._positionToOffset("s1", 500, geo)).toBeCloseTo(100);
+    expect(_mgr(false).positionToOffset("s1", 500, geo)).toBeCloseTo(100);
   });
 
   it("reverse: position 0 maps to maxOffset (thumb at bottom)", () => {
-    expect(_mgr(true)._positionToOffset("s1", 0, geo)).toBeCloseTo(200);
+    expect(_mgr(true).positionToOffset("s1", 0, geo)).toBeCloseTo(200);
   });
 
   it("reverse: position == range maps to 0 (thumb at top)", () => {
-    expect(_mgr(true)._positionToOffset("s1", 1000, geo)).toBeCloseTo(0);
+    expect(_mgr(true).positionToOffset("s1", 1000, geo)).toBeCloseTo(0);
   });
 
   it("reverse: half position maps to half offset (symmetric)", () => {
-    expect(_mgr(true)._positionToOffset("s1", 500, geo)).toBeCloseTo(100);
+    expect(_mgr(true).positionToOffset("s1", 500, geo)).toBeCloseTo(100);
   });
 
-  it("non-reverse: _offsetToPosition is the inverse of _positionToOffset", () => {
+  it("non-reverse: _offsetToPosition is the inverse of positionToOffset", () => {
     const mgr = _mgr(false);
     for (const p of [0, 250, 500, 750, 1000]) {
-      const off = mgr._positionToOffset("s1", p, geo);
+      const off = mgr.positionToOffset("s1", p, geo);
       expect(mgr._offsetToPosition("s1", off, geo)).toBeCloseTo(p);
     }
   });
 
-  it("reverse: _offsetToPosition is the inverse of _positionToOffset", () => {
+  it("reverse: _offsetToPosition is the inverse of positionToOffset", () => {
     const mgr = _mgr(true);
     for (const p of [0, 250, 500, 750, 1000]) {
-      const off = mgr._positionToOffset("s1", p, geo);
+      const off = mgr.positionToOffset("s1", p, geo);
       expect(mgr._offsetToPosition("s1", off, geo)).toBeCloseTo(p);
     }
   });
@@ -1399,13 +1399,13 @@ describe("ScrollManager position <-> offset mapping", () => {
   it("returns 0 when range is 0", () => {
     const mgr = _mgr(false);
     mgr.setRange("s1", 0);
-    expect(mgr._positionToOffset("s1", 100, geo)).toBe(0);
+    expect(mgr.positionToOffset("s1", 100, geo)).toBe(0);
     expect(mgr._offsetToPosition("s1", 100, geo)).toBe(0);
   });
 
   it("returns 0 when maxOffset is 0", () => {
     const mgr = _mgr(false);
-    expect(mgr._positionToOffset("s1", 100, { maxOffset: 0 })).toBe(0);
+    expect(mgr.positionToOffset("s1", 100, { maxOffset: 0 })).toBe(0);
     expect(mgr._offsetToPosition("s1", 100, { maxOffset: 0 })).toBe(0);
   });
 });
