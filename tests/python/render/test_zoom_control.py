@@ -43,7 +43,7 @@ def test_empty_deck_returns_minimum_container_and_no_cells() -> None:
     assert geo.cells == ()
 
 
-def test_small_deck_fits_inside_minimum_container_with_grid_centred() -> None:
+def test_small_deck_fits_inside_minimum_container_with_grid_centered() -> None:
     # --- arrange ----------------------
     deck = _deck(_slide("a", 0, 0), _slide("b", 1, 0))
 

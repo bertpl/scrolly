@@ -104,7 +104,7 @@ def test_visibility_auto_range_held_constant_positive_at_end() -> None:
 # --------------------------------------------------------------------------
 #  Helpers operating on the regression deck
 # --------------------------------------------------------------------------
-def test_snaps_cast_includes_derived_hold_centres() -> None:
+def test_snaps_cast_includes_derived_hold_centers() -> None:
     """``cast`` slide's image_sequence contributes derived snap positions."""
     # --- arrange ----------------------
     deck, slide_irs = load_deck(REGRESSION_DECK)

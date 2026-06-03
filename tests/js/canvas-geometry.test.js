@@ -194,13 +194,13 @@ describe("CanvasGeometry — negative & off-origin coordinates", () => {
   it("applies LABEL_EXTRA on a negative top row", () => {
     const noLabel = _geoWithGroup({ a: [0, -1], b: [1, -1] }, []);
     noLabel.refresh(1000, 1000);
-    const labelled = _geoWithGroup(
+    const labeled = _geoWithGroup(
       { a: [0, -1], b: [1, -1] },
       [{ label: "G", slide_ids: ["a", "b"] }],
     );
-    labelled.refresh(1000, 1000);
+    labeled.refresh(1000, 1000);
     const nl = noLabel.deckBounds();
-    const l = labelled.deckBounds();
+    const l = labeled.deckBounds();
     expect(l.top).toBeCloseTo(nl.top);  // top edge stays on the cell line (-1)
     expect((l.bottom - l.top) - (nl.bottom - nl.top)).toBeCloseTo(0.04);  // LABEL_EXTRA
   });
@@ -533,19 +533,19 @@ describe("CanvasGeometry", () => {
     });
 
     it("grows the deck by LABEL_EXTRA when the topmost row carries a label", () => {
-      // The labelled version inflates cumulativeRowGap above the topmost
+      // The labeled version inflates cumulativeRowGap above the topmost
       // slide; the label-extra subtraction in deckBounds.top compensates
       // so the visible top stays put, and the visible bottom shifts down
       // by LABEL_EXTRA — net effect: the deck is taller by that amount.
       const noLabel = _geoWithGroup({ a: [0, 0], b: [1, 0] }, []);
       noLabel.refresh(1000, 1000);
-      const labelled = _geoWithGroup(
+      const labeled = _geoWithGroup(
         { a: [0, 0], b: [1, 0] },
         [{ label: "G", slide_ids: ["a", "b"] }],
       );
-      labelled.refresh(1000, 1000);
+      labeled.refresh(1000, 1000);
       const nlBounds = noLabel.deckBounds();
-      const lBounds = labelled.deckBounds();
+      const lBounds = labeled.deckBounds();
       expect(lBounds.top).toBeCloseTo(nlBounds.top);
       // LABEL_EXTRA = 4 dvmax → 0.04 in row units on a square viewport.
       expect((lBounds.bottom - lBounds.top) - (nlBounds.bottom - nlBounds.top)).toBeCloseTo(0.04);
@@ -622,13 +622,13 @@ describe("CanvasGeometry", () => {
       // overlayBounds inherits the taller box.
       const noLabel = _geoWithGroup({ a: [0, 0], b: [1, 0] }, []);
       noLabel.refresh(1000, 1000);
-      const labelled = _geoWithGroup(
+      const labeled = _geoWithGroup(
         { a: [0, 0], b: [1, 0] },
         [{ label: "G", slide_ids: ["a", "b"] }],
       );
-      labelled.refresh(1000, 1000);
+      labeled.refresh(1000, 1000);
       const oNo = noLabel.overlayBounds(2);
-      const oLab = labelled.overlayBounds(2);
+      const oLab = labeled.overlayBounds(2);
       expect(oLab.top).toBeCloseTo(oNo.top);
       expect(oLab.height - oNo.height).toBeCloseTo(0.04);  // LABEL_EXTRA = 4 dvmax
     });
