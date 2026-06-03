@@ -1,6 +1,6 @@
 """Parse a JSON5 deck file into a `RawDeck`.
 
-Purely syntactic: checks file shape (required fields, types) and returns a
+Purely syntactic: checks file schema (required fields, types) and returns a
 `RawDeck` whose edges may still have omitted sides. Semantic checks (unique
 ids, edges reference real slides, one-slide-per-cell, diagonal-inference
 rejection) live in `validator.py` and `inference.py`.

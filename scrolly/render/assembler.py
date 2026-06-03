@@ -135,7 +135,7 @@ def _build_meta(
 
 
 def _payload_stats(bundle_stats: BundleStats | None) -> dict[str, Any]:
-    """Convert ``BundleStats`` into the help-screen-friendly shape.
+    """Convert ``BundleStats`` into the help-screen-friendly schema.
 
     Returns a dict with four keys:
 

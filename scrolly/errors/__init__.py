@@ -18,7 +18,7 @@ Two categories are deliberately **out** of the framework:
   stderr messages with a non-zero exit code. They describe how the
   tool was invoked, not what's in the deck; numbering them would
   dilute the catalog from "deck content errors" into "every Click-level
-  usage failure," which is the wrong shape.
+  usage failure," which is the wrong category.
 
 Module layout:
     _validation_error.py — ``ScrollyError`` base + ``ValidationError`` +

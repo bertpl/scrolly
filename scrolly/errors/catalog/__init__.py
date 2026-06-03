@@ -4,7 +4,7 @@ Codes follow the pattern ``E<digits>`` (3+ digits), grouped into
 phase-banded numbering so the band of a code communicates *where* in
 the pipeline the failure was detected:
 
-* **E0xx** — Parse / file-level syntax (JSON5 parsing, manual deck-shape
+* **E0xx** — Parse / file-level syntax (JSON5 parsing, manual deck-schema
   checks, slide-source loading).
 * **E1xx** — Deck-schema invariants on the parsed object (uniqueness,
   grid geometry, edge/group structure).
@@ -12,7 +12,7 @@ the pipeline the failure was detected:
   custom ``@model_validator`` checks). E299 is the umbrella for any
   Pydantic-internal ``ValidationError`` raised while loading a
   ``.slide.json`` — covering both slide-level and element-level
-  type/shape failures.
+  type/schema failures.
 * **E3xx** — Element-schema validation (per-element custom validators
   on ``SlideElement`` subtypes + animated keyframes). Pydantic-internal
   failures at the element level fall under E299, not here — E3xx is
