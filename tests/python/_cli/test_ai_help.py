@@ -8,8 +8,8 @@ import re
 from click.testing import CliRunner
 
 from scrolly import __version__
-from scrolly._cli._ai_help import build_ai_help
-from scrolly._cli._cli import cli
+from scrolly._cli.ai_help import build_ai_help
+from scrolly._cli.cli import cli
 from scrolly.errors import registered_codes
 from scrolly.slide import element_source_types
 

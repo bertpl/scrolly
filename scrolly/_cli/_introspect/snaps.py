@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from scrolly._cli._introspect._common import run_introspect_command
+from scrolly._cli._introspect.common import run_introspect_command
 from scrolly.slide.introspect import snaps_to_json
 
 

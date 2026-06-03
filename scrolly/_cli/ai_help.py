@@ -14,7 +14,7 @@ from collections.abc import Iterator
 
 import click
 
-from scrolly._cli._schema import element_schema_json, file_schema_json, file_type_names
+from scrolly._cli.schema import element_schema_json, file_schema_json, file_type_names
 from scrolly.errors import registered_codes
 from scrolly.errors._catalog import load_body
 from scrolly.slide import element_source_types

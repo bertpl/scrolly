@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from click.testing import CliRunner
 
-from scrolly._cli._cli import cli
+from scrolly._cli.cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
