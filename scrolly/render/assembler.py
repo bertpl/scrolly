@@ -198,6 +198,7 @@ def _collect_scoped_css(deck: Deck, chunks: dict[str, SlideHTML]) -> list[str]:
 
 
 def _env() -> Environment:
+    """Build the Jinja environment for the canvas templates (no autoescape, strict undefined)."""
     return Environment(
         loader=PackageLoader("scrolly.render", "templates"),
         autoescape=select_autoescape(default=False),

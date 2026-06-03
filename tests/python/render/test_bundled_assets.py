@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import urllib.error
 from typing import Any
 

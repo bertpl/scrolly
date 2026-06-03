@@ -9,17 +9,13 @@ from pydantic import BaseModel, ValidationError
 
 from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import (
-    AnimatedScalar,
-    AnimatedVec2,
     HtmlElement,
     IframeElement,
     ImageElement,
     ImageSequenceElement,
     MarkdownElement,
     MermaidElement,
-    ScalarKeyframes,
     SlideElement,
-    Vec2Keyframes,
 )
 
 # ── helpers ───────────────────────────────────────────────────────

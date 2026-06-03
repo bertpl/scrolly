@@ -50,6 +50,7 @@ def parse_deck(deck_path: Path) -> RawDeck:
 
 
 def _parse_slides_and_groups(slides_raw: list, deck_path: Path) -> tuple[tuple[Slide, ...], tuple[SlideGroup, ...]]:
+    """Parse the raw slides list (bare slides and group objects) into flat slides + groups."""
     deck_dir = deck_path.parent
     slides: list[Slide] = []
     groups: list[SlideGroup] = []
@@ -199,6 +200,7 @@ def _parse_edge(raw: Any, idx: int) -> RawEdge:
 
 
 def _parse_endpoint(raw: Any, ctx: str) -> RawEndpoint:
+    """Parse one edge endpoint string (``"slide_id"`` or ``"slide_id|side"``) into a RawEndpoint."""
     if not isinstance(raw, str):
         raise DeckParseError(code="E004", message=f"{ctx}: endpoint must be a string, got {type(raw).__name__}")
 

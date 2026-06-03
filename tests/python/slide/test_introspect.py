@@ -7,8 +7,6 @@ without going through Click.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from scrolly.pipeline import load_deck
 from scrolly.slide.introspect import (
     _compute_visibility_intervals,

@@ -12,7 +12,6 @@ from __future__ import annotations
 import types
 from pathlib import Path
 
-import pytest
 from animation_engine import composite
 from animation_engine.composite import _gif_cmd, _webp_cmd
 from animation_engine.recipe import Gif, Output, Recipe, Viewport, Webp

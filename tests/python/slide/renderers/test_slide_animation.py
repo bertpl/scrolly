@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from scrolly.slide.element_ir.renderers._shared import ramp_expr
 
 # ── ramp_expr ─────────────────────────────────────────────────────

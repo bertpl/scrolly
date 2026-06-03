@@ -9,15 +9,11 @@ from pydantic import ValidationError
 
 from scrolly.errors import SlideSourceError
 from scrolly.slide.ir import (
-    AnimatedScalar,
-    AnimatedVec2,
     HtmlElement,
     ImageElement,
     MarkdownElement,
     MermaidElement,
-    ScalarKeyframes,
     SlideIR,
-    Vec2Keyframes,
 )
 from scrolly.slide.ir.slide import SlideIR
 
