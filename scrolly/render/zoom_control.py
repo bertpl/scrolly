@@ -77,7 +77,7 @@ def compute_minimap_geometry(deck: Deck) -> MinimapGeometry:
           + (cols - 1) * MARGIN_PX_DEFAULT`` — the around-margin on
          both sides plus the cells and the between-margins.
       2. If the larger axis fits within ``MIN_SIZE_PX``, the container
-         stays at ``MIN_SIZE_PX`` and the grid is centred inside it.
+         stays at ``MIN_SIZE_PX`` and the grid is centered inside it.
       3. If it fits between ``MIN_SIZE_PX`` and ``MAX_SIZE_PX``, the
          container grows to match.
       4. If it exceeds ``MAX_SIZE_PX``, the container is pinned at

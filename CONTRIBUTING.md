@@ -83,6 +83,6 @@ whether to upgrade, not for someone reviewing the implementation. Focus on
 what changed from the user's perspective.
 
 **Keep each entry to a single line.** Avoid verbosity; omit internal details
-(class names, wiring, refactors that don't affect behaviour). Expand to a
+(class names, wiring, refactors that don't affect behavior). Expand to a
 second line only when a single line genuinely can't convey what the change
 is about.

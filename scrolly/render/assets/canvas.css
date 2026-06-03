@@ -122,11 +122,11 @@ body {
   width: 100dvw;
   height: 100dvh;
   /* Single transform driven by the (selected_slide, zoom_level) tuple:
-   *   cx, cy  — interpolated viewport centre in grid units
+   *   cx, cy  — interpolated viewport center in grid units
    *   scale   — interpolated scale, 1 at slide view, fit-all at deck view
    * Both rest states (deck / slide) are specific evaluations of this one
    * formula. transform-origin must be 0 0 so the scale is around the
-   * canvas's top-left, not its own centre. */
+   * canvas's top-left, not its own center. */
   transform-origin: 0 0;
   transform: translate(
     calc(50dvw - var(--view-scale, 1) * var(--view-cx, 0.5) * 100dvw),
@@ -175,7 +175,7 @@ body {
    * `--scroll-position` custom property so content scrolls into view.
    * For short slides whose content fits, the chunk is shorter than the
    * subcanvas — visually unchanged from a 100%-height chunk because the
-   * subcanvas background colour matches. */
+   * subcanvas background color matches. */
   min-height: 100%;
   /* Per-slide font-size = global rem baseline × --font-scale (defaults
    * to 1 when the slide-container does not set the property). The
@@ -185,7 +185,7 @@ body {
    * universal Layer A plumbing — every chunk's metadata supplies a
    * font_scale, and the consumption rule is part of that plumbing.
    * Per-type renderers can override in their own scoped_css if they
-   * want different font-scaling behaviour. */
+   * want different font-scaling behavior. */
   font-size: calc(1rem * var(--font-scale, 1));
   /* No padding declaration here — content-presentation framing is a
    * per-slide-type concern, carried in SlideHTML.scoped_css. Layer A
@@ -302,7 +302,7 @@ body {
  * for animation mode), which broke physical-scroll content-driven
  * slides because the cascade carried a stray transform across all
  * wrappers regardless of mode. Hoisting the wrapper rules here gives
- * every slide a deterministic baseline; mode-specific behaviour is
+ * every slide a deterministic baseline; mode-specific behavior is
  * opted into via the `scroll-mode-animation` class.
  */
 .slide-type-slide-json {
@@ -495,12 +495,12 @@ body.view-deck .slide-type-slide-json iframe {
 }
 
 /* Fan placement. `--fan-offset` is a number in [0, 1] written by canvas.js
- * per arrow: 0.5 for single-edge sides (centred); spread along a centred
+ * per arrow: 0.5 for single-edge sides (centered); spread along a centered
  * band for multi-edge sides (see fan.py). On the side's *variable* axis
  * (top/bottom → x; left/right → y) the arrow sits at
  * `--fan-offset * 100%` of the viewport, then backs off by half the
- * arrow's 48 px width so it centres on that point. The fallback `0.5`
- * keeps any arrow rendered without the property visually centred. */
+ * arrow's 48 px width so it centers on that point. The fallback `0.5`
+ * keeps any arrow rendered without the property visually centered. */
 .edge-arrow-top    { top: 8px;    left: calc(var(--fan-offset, 0.5) * 100% - 24px); }
 .edge-arrow-bottom { bottom: 8px; left: calc(var(--fan-offset, 0.5) * 100% - 24px); }
 .edge-arrow-left   { left: 8px;   top: calc(var(--fan-offset, 0.5) * 100% - 24px); }
@@ -549,7 +549,7 @@ body.view-slide:has(.slide-container.selected.has-scroll) .edge-arrow-left {
  * whose text comes from the arrow's data-title attribute (set by canvas.js
  * from the target slide's chunk metadata, so titles can carry punctuation
  * and casing the slide-id handle can't). Sits on the inside face of the
- * arrow (toward the viewport centre) so it never extends off-viewport.
+ * arrow (toward the viewport center) so it never extends off-viewport.
  * Hidden at rest; opacity 1 on `:hover` or `:focus-visible`. The
  * accessible name is already on the parent button via aria-label, so
  * the pseudo-element is purely visual. */
@@ -575,7 +575,7 @@ body.view-slide:has(.slide-container.selected.has-scroll) .edge-arrow-left {
 }
 
 /* Side-conditional placement of the label, on the inside face of each
- * arrow, so the label grows toward the viewport centre. */
+ * arrow, so the label grows toward the viewport center. */
 .edge-arrow-top::after {
   top: calc(100% + 6px);
   left: 50%;
@@ -960,7 +960,7 @@ body.pan-transitioning .canvas {
 
 /* ---- Help button -------------------------------------------------------- */
 
-/* Styled like the simplified zoom control: same size, background, colour,
+/* Styled like the simplified zoom control: same size, background, color,
  * border-radius, box-shadow, idle-fade pipeline. Positioned top-right. */
 .help-button {
   position: absolute;

@@ -26,7 +26,7 @@
       frame_distance: 200,
       hold_fraction: 0.5,
       // +50 vs the pre-redesign offset: grid snaps now land on the old
-      // hold-centres (550, 750, …), keeping the step/banner keyframes aligned.
+      // hold-centers (550, 750, …), keeping the step/banner keyframes aligned.
       scroll_offset: 550,
       fade_in: 500,
       fade_out: 500,

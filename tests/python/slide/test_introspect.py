@@ -1,6 +1,6 @@
 """Tests for the per-helper logic in ``scrolly.slide.introspect``.
 
-CLI-level behaviour lives in ``tests/python/_cli/test_introspect_*.py``;
+CLI-level behavior lives in ``tests/python/_cli/test_introspect_*.py``;
 these tests pin the JSON-shaping and visibility-interval math directly,
 without going through Click.
 """

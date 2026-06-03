@@ -13,7 +13,7 @@ knob; this script post-processes the freeze output to:
   contrasts with the body (`#282a36`, dracula default) and the bottom
   edge of the chrome is a clean straight line against the body.
 - The chrome height (24) is chosen so freeze's traffic-light circles
-  (cy=12, r=5.5) sit vertically centred within it.
+  (cy=12, r=5.5) sit vertically centered within it.
 
 Run: `python _gen/build_machete_terminal.py` (from the deck root, or
 anywhere — output path is resolved relative to this file).

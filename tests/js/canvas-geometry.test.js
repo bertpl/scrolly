@@ -103,13 +103,13 @@ describe("AxisGeometry", () => {
       expect(a.deckLeadingEdge()).toBeCloseTo(0);
     });
 
-    it("extent is shift-invariant and centre tracks the shift", () => {
+    it("extent is shift-invariant and center tracks the shift", () => {
       const atOrigin = _axis(0, 2);
       atOrigin.setFactor(0.01);
       const negative = _axis(-5, -3);
       negative.setFactor(0.01);
       expect(negative.deckExtent()).toBeCloseTo(atOrigin.deckExtent());
-      // origins differ by 5 → centres differ by 5
+      // origins differ by 5 → centers differ by 5
       expect(atOrigin.deckCenter() - negative.deckCenter()).toBeCloseTo(5);
     });
   });
@@ -645,7 +645,7 @@ describe("CanvasGeometry", () => {
     });
 
     it("tracks the bounding-box centroid for off-origin decks", () => {
-      // Same shape as above but shifted by (+3, +2). Centre is the midpoint
+      // Same shape as above but shifted by (+3, +2). Center is the midpoint
       // of the bbox-relative bounds, not ((maxX+1)/2, (maxY+1)/2).
       const g = _geo({ a: [3, 2], b: [4, 2] });
       g.refresh(1000, 1000);
@@ -1685,7 +1685,7 @@ describe("IdleTimer", () => {
 // two entries at the same scroll position to express an instantaneous
 // opacity step (1 → 0 at the instant the next frame reaches full opacity).
 // The evaluator already handles this correctly via its early-outs and the
-// "<=" loop comparison; these tests pin that behaviour so it cannot
+// "<=" loop comparison; these tests pin that behavior so it cannot
 // regress silently.
 describe("evaluatePiecewiseLinear — step functions", () => {
   it("returns post-step value when the step is at the end of the keyframes", () => {

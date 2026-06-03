@@ -49,7 +49,7 @@ def deck_source_schema() -> dict:
                         },
                         {
                             "type": "object",
-                            "description": "A group wrapper containing slides. Rendered as a labelled rectangle in deck view.",
+                            "description": "A group wrapper containing slides. Rendered as a labeled rectangle in deck view.",
                             "properties": {
                                 "group": {
                                     "type": "string",

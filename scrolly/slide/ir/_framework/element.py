@@ -51,7 +51,7 @@ class SlideElement(ElementIR, frozen=True):
         default=AnimatedSizeDim(90.0),
         description=(
             'Element width as % of slide viewport, "auto", or animated via keyframes. '
-            "Default 90, pairing with position [5, 5] for a centred 90%-wide column. "
+            "Default 90, pairing with position [5, 5] for a centered 90%-wide column. "
             'Use "auto" to preserve aspect ratio (images) or size to content (text).'
         ),
     )
@@ -102,7 +102,7 @@ class SlideElement(ElementIR, frozen=True):
 
     @classmethod
     def source_schema(cls) -> dict:
-        """JSON-serialisable description of this element type's source schema."""
+        """JSON-serializable description of this element type's source schema."""
         return cls.model_json_schema()
 
 
@@ -153,7 +153,7 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     Each image is shown in turn on an equidistant scroll grid. Repeating the same
     path consecutively in ``image_sequence`` extends its visible duration by one
     slot per repeat. An empty string (``""``) in any slot reserves that slot in
-    the timeline but renders nothing — neighbouring frames fade out before and
+    the timeline but renders nothing — neighboring frames fade out before and
     in after the blank, so the slot is a clean "no image visible" period.
     Optional ``fade_in`` / ``fade_out`` add leading / trailing opacity ramps
     independent of the inter-frame crossfade timing.
@@ -165,7 +165,7 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     image_sequence: list[Path | None] = Field(
         description=(
             "Ordered image paths, relative to the slide source file. Min 2 entries. "
-            'An empty string ("") reserves a blank slot in the timeline — neighbouring frames '
+            'An empty string ("") reserves a blank slot in the timeline — neighboring frames '
             "crossfade out before and in after it. "
             "Repeating the same path consecutively extends its visible duration by one slot per repeat."
         ),
@@ -174,7 +174,7 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     @field_validator("image_sequence", mode="before")
     @classmethod
     def _empty_string_means_blank(cls, value: object) -> object:
-        """Normalise ``""`` entries to ``None`` so blank slots are represented uniformly."""
+        """Normalize ``""`` entries to ``None`` so blank slots are represented uniformly."""
         if isinstance(value, list):
             return [None if item == "" else item for item in value]
         return value
@@ -188,7 +188,7 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     hold_fraction: float = Field(
         default=0.2,
         description=(
-            "Fraction of frame_distance each frame stays at full opacity, centred "
+            "Fraction of frame_distance each frame stays at full opacity, centered "
             "on its snap position. Must be in [0, 1) so the crossfade "
             "(frame_distance * (1 - hold_fraction)) stays positive. Default 0.2."
         ),
@@ -282,7 +282,7 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
         """Return the per-slot snap positions on the frame grid.
 
         Each slot ``i`` in ``image_sequence`` snaps at
-        ``scroll_offset + i * frame_distance`` — the centre of that frame's
+        ``scroll_offset + i * frame_distance`` — the center of that frame's
         symmetric hold and the natural settle point where the frame is most
         clearly on display. Repeated frames and blank slots (``None`` entries)
         each contribute one snap per slot.
@@ -391,7 +391,7 @@ class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
     markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
     color: str = Field(
         default="inherit",
-        description="CSS color value for the rendered text. Default 'inherit' picks up the slide-level body colour.",
+        description="CSS color value for the rendered text. Default 'inherit' picks up the slide-level body color.",
     )
     text_align: Literal["left", "center", "right"] = Field(
         default="left",

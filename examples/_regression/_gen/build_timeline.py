@@ -1,6 +1,6 @@
 """Generate the vertical SVG timeline used by the `contributions` slide.
 
-A ~600x2800 SVG visualising the timeline of CVE-2024-3094 — the xz utils
+A ~600x2800 SVG visualizing the timeline of CVE-2024-3094 — the xz utils
 backdoor, from Jan 2021 to March 29 2024. The slide containing this SVG
 pans through it via animated ``anchor`` keyframes; reader scrolls = walk
 through the timeline.

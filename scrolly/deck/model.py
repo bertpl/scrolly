@@ -77,7 +77,7 @@ class Edge:
 
 @dataclass(frozen=True)
 class SlideGroup:
-    """A named group of slides, visualised as a background rectangle in deck view."""
+    """A named group of slides, visualized as a background rectangle in deck view."""
 
     label: str
     slide_ids: tuple[str, ...]

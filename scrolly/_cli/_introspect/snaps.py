@@ -26,10 +26,10 @@ from scrolly.slide.introspect import snaps_to_json
     help="Write JSON to this file instead of stdout.",
 )
 def snaps_command(deck_path: Path, slide_ids: tuple[str, ...], output_path: Path | None) -> None:
-    """Per-slide snap positions: author-supplied + element-derived (image_sequence hold-centres).
+    """Per-slide snap positions: author-supplied + element-derived (image_sequence hold-centers).
 
     Author entries come from each slide's ``snap_positions`` field;
-    derived entries come from ``ImageSequenceElement`` hold-centres
+    derived entries come from ``ImageSequenceElement`` hold-centers
     (one per frame). The ``merged`` list is the deduplicated + sorted
     union — what the canvas runtime actually uses.
 

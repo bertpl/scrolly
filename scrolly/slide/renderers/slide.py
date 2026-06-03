@@ -72,7 +72,7 @@ class SlideRenderer(Renderer):
         # slide later in the document could leak its counter-translate
         # transform onto every other wrapper — breaking physical scroll
         # on auto-range slides. The `scroll-mode-animation` class opts
-        # the wrapper into the counter-translate behaviour for numeric-
+        # the wrapper into the counter-translate behavior for numeric-
         # range slides; content-driven slides omit the class and let
         # the chunk's translation reach their content unobstructed.
         is_content_driven = not (isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0)

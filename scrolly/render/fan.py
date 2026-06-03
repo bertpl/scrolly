@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from scrolly.deck.model import Deck, Side
 
 # Fan spacing along the side, expressed as a fraction of the side's length.
-# Adjacent arrows in a fan are this far apart (centre-to-centre) along the
+# Adjacent arrows in a fan are this far apart (center-to-center) along the
 # viewport side. `0.1` gives a tight "just-spread" look — adjacent arrows
 # clearly distinct but not splayed across the side.
 # Exported (and emitted via nav_data) so `canvas.js` can use this single
@@ -54,7 +54,7 @@ def compute_fan_offsets(deck: Deck) -> FanLookup:
 
     A side with no edges has no entry in the lookup. A side with one edge
     has a single `FanEntry` at offset `0.5`. A side with `n >= 2` edges has
-    `n` entries spread evenly inside a centred band, ordered along the
+    `n` entries spread evenly inside a centered band, ordered along the
     side's axis (see module docstring).
     """
     positions = {s.id: s.position for s in deck.slides}

@@ -139,7 +139,7 @@ class PayloadBundler:
     #  Constructor
     # --------------------------------------------------------------------------
     def __init__(self) -> None:
-        """Initialise an empty bundler."""
+        """Initialize an empty bundler."""
         self._payloads: list[_Payload] = []
         self._targets: list[_Target] = []
         self._payload_dedup: dict[tuple[str, str | None, bytes], int] = {}

@@ -30,7 +30,7 @@ SLIDES_DIR = DECK_ROOT / "slides"
 # list is ordered step-1 → step-N (i.e. visual bottom → top). Slides
 # have different step counts and therefore different total timing
 # windows — `hold_end` / `fade_out_end` are per-slide so each can
-# extend independently without disturbing its neighbour.
+# extend independently without disturbing its neighbor.
 SLIDE_1_STEPS: list[str] = [
     "create branch 1",
     "create branch 2",
@@ -87,7 +87,7 @@ SLIDE_4_POSITION_Y = 80
 # function of which fonts the inline content happens to use. The
 # `<code>` row would otherwise produce a slightly (or, in some
 # viewport / font combinations, dramatically) taller line-box than its
-# sans-serif neighbours and break the visible pitch — a layout
+# sans-serif neighbors and break the visible pitch — a layout
 # primitive that owns vertical pitch independently of font metrics
 # would be the engine-level version of this same workaround.
 # `line-height` on the
