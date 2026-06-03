@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from click.testing import CliRunner
 
-from scrolly._cli._cli import cli
+from scrolly._cli.cli import cli
 
 
 def test_errors_index_lists_all_codes() -> None:

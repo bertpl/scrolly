@@ -7,7 +7,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from scrolly._cli._cli import cli
+from scrolly._cli.cli import cli
 
 
 def _write_valid_deck(tmp_path: Path) -> Path:

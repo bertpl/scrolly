@@ -7,7 +7,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from scrolly._cli._cli import cli
+from scrolly._cli.cli import cli
 from tests.python.conftest import PROJECT_ROOT
 
 REGRESSION_DECK = PROJECT_ROOT / "examples" / "_regression" / "deck.deck.json"

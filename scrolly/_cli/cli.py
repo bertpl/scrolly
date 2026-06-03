@@ -6,9 +6,9 @@ import click
 from rich.console import Console
 
 from scrolly import __version__
-from scrolly._cli._errors import errors_command
 from scrolly._cli._introspect import introspect
-from scrolly._cli._schema import schema
+from scrolly._cli.errors import errors_command
+from scrolly._cli.schema import schema
 from scrolly.errors import ScrollyError, ValidationError
 from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
@@ -20,7 +20,7 @@ def _emit_ai_help(ctx: click.Context, param: click.Parameter, value: bool) -> No
     """Eager ``--help-for-ai-tools`` callback: print the full CLI reference and exit."""
     if not value or ctx.resilient_parsing:
         return
-    from scrolly._cli._ai_help import build_ai_help
+    from scrolly._cli.ai_help import build_ai_help
 
     click.echo(build_ai_help(ctx.find_root().command, __version__))
     ctx.exit()

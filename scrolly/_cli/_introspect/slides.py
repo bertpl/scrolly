@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from scrolly._cli._introspect._common import run_introspect_command
+from scrolly._cli._introspect.common import run_introspect_command
 from scrolly.deck.introspect import slides_to_json
 
 

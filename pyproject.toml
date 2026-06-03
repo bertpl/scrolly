@@ -51,7 +51,7 @@ capture = [
 ]
 
 [project.scripts]
-scrolly = "scrolly._cli._cli:cli"
+scrolly = "scrolly._cli.cli:cli"
 
 [project.urls]
 Homepage = "https://scrolly.readthedocs.io/en/stable/"

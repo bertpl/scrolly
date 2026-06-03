@@ -23,13 +23,13 @@ from __future__ import annotations
 
 import click
 
-from scrolly._cli._introspect._assets import assets_command
-from scrolly._cli._introspect._dom import dom_command
-from scrolly._cli._introspect._elements import elements_command
-from scrolly._cli._introspect._slides import slides_command
-from scrolly._cli._introspect._snaps import snaps_command
-from scrolly._cli._introspect._snapshot import snapshot_command
-from scrolly._cli._introspect._timeline import timeline_command
+from scrolly._cli._introspect.assets import assets_command
+from scrolly._cli._introspect.dom import dom_command
+from scrolly._cli._introspect.elements import elements_command
+from scrolly._cli._introspect.slides import slides_command
+from scrolly._cli._introspect.snaps import snaps_command
+from scrolly._cli._introspect.snapshot import snapshot_command
+from scrolly._cli._introspect.timeline import timeline_command
 
 
 @click.group(name="introspect")
