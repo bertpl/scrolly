@@ -135,9 +135,9 @@ class PayloadBundler:
     page is written. Not thread-safe.
     """
 
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     #  Constructor
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     def __init__(self) -> None:
         """Initialise an empty bundler."""
         self._payloads: list[_Payload] = []
@@ -146,9 +146,9 @@ class PayloadBundler:
         self._next_target_id: int = 0
         self._baseline_total: int = 0
 
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     #  Public API — sink
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     def add(
         self,
         *,
@@ -209,9 +209,9 @@ class PayloadBundler:
 
         return target_id
 
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     #  Public API — source
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     def stats(self) -> BundleStats:
         """Snapshot the bundler's counts without building the bundle.
 
@@ -233,7 +233,7 @@ class PayloadBundler:
         Concatenates all unique payloads (in registration order) into
         one binary stream, gzip-compresses it once, base64-encodes the
         result, and packages it with the manifest into a single JSON
-        object of the shape ``{"payloads": […], "targets": […],
+        object of the schema ``{"payloads": […], "targets": […],
         "blob": "…"}``. The gate then compares the emitted JSON's
         length to the summed inline baseline.
 
@@ -266,9 +266,9 @@ class PayloadBundler:
             compressed=True,
         )
 
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     #  Internal — stats construction
-    # --------------------------------------------------------
+    # --------------------------------------------------------------------------
     def _make_stats(self, *, compressed_bytes: int, compressed: bool) -> BundleStats:
         """Assemble a ``BundleStats`` from current internal state."""
         text_targets = 0

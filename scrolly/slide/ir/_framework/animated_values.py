@@ -3,7 +3,7 @@
 Each animatable property on a slide element accepts either a static value
 or a keyframe-based animation (piecewise linear, held constant beyond the
 extremal keyframe points).  Three ``RootModel`` wrapper types handle the
-serialization/deserialization for each value shape.
+serialization/deserialization for each value schema.
 """
 
 from __future__ import annotations

@@ -73,7 +73,7 @@ class ValidationError(ScrollyError):
 
 
 class DeckParseError(ValidationError):
-    """Deck or slide file could not be parsed (syntactic or shape error)."""
+    """Deck or slide file could not be parsed (syntactic or schema error)."""
 
 
 class DeckValidationError(ValidationError):

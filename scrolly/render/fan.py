@@ -24,7 +24,6 @@ from scrolly.deck.model import Deck, Side
 # Adjacent arrows in a fan are this far apart (centre-to-centre) along the
 # viewport side. `0.1` gives a tight "just-spread" look — adjacent arrows
 # clearly distinct but not splayed across the side.
-# See `design/implementation_v0_0_3.md` §"Defaults adopted" #1.
 # Exported (and emitted via nav_data) so `canvas.js` can use this single
 # source of truth at runtime when computing the effective fan-spacing
 # floor for small viewports.
