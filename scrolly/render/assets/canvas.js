@@ -1356,6 +1356,34 @@
     }
   }
 
+  // Append an overlapping black+white dashed line pair to `svg`: the white
+  // line is offset by one dash so each boundary alternates black/white and
+  // stays legible against any background. Coordinates are forwarded verbatim,
+  // so each caller passes them in its own SVG's units (abstract-grid fractions
+  // for the deck grid, `%` strings for the slide grid); `dash` is the dash/gap
+  // length in those same units. `nonScaling` adds
+  // `vector-effect: non-scaling-stroke` so the deck grid's stroke width and
+  // dashes stay constant in screen pixels under the deck-view transform — the
+  // slide grid, drawn directly in CSS pixels, omits it.
+  function _appendDashedLinePair(svg, x1, y1, x2, y2, { strokeWidth, dash, nonScaling }) {
+    const ns = "http://www.w3.org/2000/svg";
+    const addLine = (stroke, dashOffset) => {
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", x1);
+      line.setAttribute("y1", y1);
+      line.setAttribute("x2", x2);
+      line.setAttribute("y2", y2);
+      line.setAttribute("stroke", stroke);
+      line.setAttribute("stroke-width", strokeWidth);
+      line.setAttribute("stroke-dasharray", dash + " " + dash);
+      if (dashOffset !== undefined) line.setAttribute("stroke-dashoffset", dashOffset);
+      if (nonScaling) line.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(line);
+    };
+    addLine("black");
+    addLine("white", dash);
+  }
+
   // ---- DebugGrid ------------------------------------------------------------
   //
   // Renders the deck-view debug-mode grid as 1px lines at every cell boundary
@@ -1436,8 +1464,6 @@
       }
       ys.push(rowRects[rowRects.length - 1].top + rowRects[rowRects.length - 1].height + rowGap);
 
-      const ns = "http://www.w3.org/2000/svg";
-
       // Extend lines well beyond the deck bounding box so they reach the
       // viewport edges in deck view regardless of the canvas's translate +
       // scale. The SVG has `overflow: visible` so the extension is not
@@ -1445,46 +1471,19 @@
       const yExt = rows * 10;
       const xExt = cols * 10;
 
-      // Per boundary we add two overlapping lines, dashed black and dashed
-      // white with the white offset by one dash length, so the visible line
-      // alternates 50px black / 50px white in true screen pixels. With
-      // `vector-effect: non-scaling-stroke` the dash lengths and stroke
-      // width stay constant in viewport coords regardless of the canvas's
-      // deck-view scale, and the alternation keeps the line visible against
-      // backgrounds of any color.
-      const addDashedLine = (x1, y1, x2, y2) => {
-        const black = document.createElementNS(ns, "line");
-        black.setAttribute("x1", x1);
-        black.setAttribute("y1", y1);
-        black.setAttribute("x2", x2);
-        black.setAttribute("y2", y2);
-        black.setAttribute("stroke", "black");
-        black.setAttribute("stroke-width", "5");
-        black.setAttribute("stroke-dasharray", "50 50");
-        black.setAttribute("vector-effect", "non-scaling-stroke");
-        this._svg.appendChild(black);
-
-        const white = document.createElementNS(ns, "line");
-        white.setAttribute("x1", x1);
-        white.setAttribute("y1", y1);
-        white.setAttribute("x2", x2);
-        white.setAttribute("y2", y2);
-        white.setAttribute("stroke", "white");
-        white.setAttribute("stroke-width", "5");
-        white.setAttribute("stroke-dasharray", "50 50");
-        white.setAttribute("stroke-dashoffset", "50");
-        white.setAttribute("vector-effect", "non-scaling-stroke");
-        this._svg.appendChild(white);
-      };
-
+      // Stroke width 5 / dash 50 held constant in screen pixels via
+      // non-scaling-stroke, so each boundary alternates 50px black / 50px
+      // white and stays legible against any background under the deck-view
+      // scale.
+      const opts = { strokeWidth: 5, dash: 50, nonScaling: true };
       xs.forEach((xPx) => {
         const x = xPx / vw;
-        addDashedLine(x, -yExt, x, rows + yExt);
+        _appendDashedLinePair(this._svg, x, -yExt, x, rows + yExt, opts);
       });
 
       ys.forEach((yPx) => {
         const y = yPx / vh;
-        addDashedLine(-xExt, y, cols + xExt, y);
+        _appendDashedLinePair(this._svg, -xExt, y, cols + xExt, y, opts);
       });
     }
   }
@@ -1774,33 +1773,13 @@
   (function buildSlideDebugGrid() {
     const svg = document.querySelector(".debug-slide-grid");
     if (!svg) return;
-    const ns = "http://www.w3.org/2000/svg";
-    const addDashedLine = (x1, y1, x2, y2) => {
-      const black = document.createElementNS(ns, "line");
-      black.setAttribute("x1", x1);
-      black.setAttribute("y1", y1);
-      black.setAttribute("x2", x2);
-      black.setAttribute("y2", y2);
-      black.setAttribute("stroke", "black");
-      black.setAttribute("stroke-width", "1");
-      black.setAttribute("stroke-dasharray", "5 5");
-      svg.appendChild(black);
-
-      const white = document.createElementNS(ns, "line");
-      white.setAttribute("x1", x1);
-      white.setAttribute("y1", y1);
-      white.setAttribute("x2", x2);
-      white.setAttribute("y2", y2);
-      white.setAttribute("stroke", "white");
-      white.setAttribute("stroke-width", "1");
-      white.setAttribute("stroke-dasharray", "5 5");
-      white.setAttribute("stroke-dashoffset", "5");
-      svg.appendChild(white);
-    };
+    // Stroke width 1 / dash 5 in CSS pixels; no non-scaling-stroke needed —
+    // the SVG has no viewBox, so its user space is already CSS pixels.
+    const opts = { strokeWidth: 1, dash: 5, nonScaling: false };
     for (let i = 1; i <= 9; i++) {
       const p = i * 10 + "%";
-      addDashedLine(p, "0", p, "100%");
-      addDashedLine("0", p, "100%", p);
+      _appendDashedLinePair(svg, p, "0", p, "100%", opts);
+      _appendDashedLinePair(svg, "0", p, "100%", p, opts);
     }
   })();
 
