@@ -115,6 +115,32 @@ def size_dim_expr(field: AnimatedSizeDim) -> str:
     return f"calc(({expr}) * 1%)"
 
 
+def _anchor_axis_exprs(field: AnimatedVec2, axis: int) -> tuple[str, str]:
+    """Build one anchor axis's ``(transform_origin, translate)`` CSS strings.
+
+    Handles all three forms an axis can take — static, animated-but-held-
+    constant, and animated-varying. ``translate`` is the negation of the
+    origin so the element shifts to place its anchor on its position.
+
+    Args:
+        field: The element's anchor field.
+        axis: ``0`` for x, ``1`` for y.
+
+    Returns:
+        Tuple ``(origin, translate)`` for the requested axis.
+    """
+    if not field.is_animated:
+        a = field.static_value[axis]
+        return f"{num(a)}%", (f"-{num(a)}%" if a != 0 else "0%")
+
+    kfs = [(at, v[axis]) for at, v in field.keyframes]
+    expr = ramp_expr(kfs)
+    if expr is None:
+        v0 = kfs[0][1]
+        return f"{num(v0)}%", (f"-{num(v0)}%" if v0 != 0 else "0%")
+    return f"calc({expr} * 1%)", f"calc(-1 * ({expr}) * 1%)"
+
+
 def anchor_exprs(field: AnimatedVec2) -> tuple[str, str, str]:
     """Build the three CSS strings the anchor field contributes to a substrate rule.
 
@@ -128,39 +154,16 @@ def anchor_exprs(field: AnimatedVec2) -> tuple[str, str, str]:
         fragment with trailing space, ready to be concatenated with the
         rest of the ``transform: …`` value.
     """
-    if not field.is_animated:
-        ax, ay = field.static_value
-        origin_x = f"{num(ax)}%"
-        origin_y = f"{num(ay)}%"
-        if ax != 0 or ay != 0:
-            tx = f"-{num(ax)}%" if ax != 0 else "0%"
-            ty = f"-{num(ay)}%" if ay != 0 else "0%"
-            anchor_translate = f"translate({tx}, {ty}) "
-        else:
-            anchor_translate = ""
-        return origin_x, origin_y, anchor_translate
+    origin_x, tx = _anchor_axis_exprs(field, 0)
+    origin_y, ty = _anchor_axis_exprs(field, 1)
 
-    kfs_x = [(at, v[0]) for at, v in field.keyframes]
-    kfs_y = [(at, v[1]) for at, v in field.keyframes]
-
-    ax_expr = ramp_expr(kfs_x)
-    ay_expr = ramp_expr(kfs_y)
-
-    if ax_expr is None:
-        origin_x = f"{num(kfs_x[0][1])}%"
-        tx = f"-{num(kfs_x[0][1])}%" if kfs_x[0][1] != 0 else "0%"
+    # A static [0, 0] anchor contributes no transform at all; every other
+    # case (including an animated anchor that happens to hold at 0) emits a
+    # translate fragment.
+    if not field.is_animated and field.static_value == (0.0, 0.0):
+        anchor_translate = ""
     else:
-        origin_x = f"calc({ax_expr} * 1%)"
-        tx = f"calc(-1 * ({ax_expr}) * 1%)"
-
-    if ay_expr is None:
-        origin_y = f"{num(kfs_y[0][1])}%"
-        ty = f"-{num(kfs_y[0][1])}%" if kfs_y[0][1] != 0 else "0%"
-    else:
-        origin_y = f"calc({ay_expr} * 1%)"
-        ty = f"calc(-1 * ({ay_expr}) * 1%)"
-
-    anchor_translate = f"translate({tx}, {ty}) "
+        anchor_translate = f"translate({tx}, {ty}) "
     return origin_x, origin_y, anchor_translate
 
 
