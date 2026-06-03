@@ -38,7 +38,7 @@ class MarkdownRenderer(ElementRenderer):
 
         # Skip emitting `color: inherit` since that's the CSS default
         # anyway — keeps the rendered <style> tidy when no explicit
-        # colour is set.
+        # color is set.
         extras = ""
         if ir.color != "inherit":
             extras += f"  color: {ir.color};\n"

@@ -20,7 +20,7 @@
 
   function _fmt(n) {
     // Strip floating-point round-off (e.g. 2.2 - 2 = 0.20000000000000018)
-    // before serialising to CSS / SVG attribute strings, so downstream
+    // before serializing to CSS / SVG attribute strings, so downstream
     // values stay legible without changing geometry at any meaningful
     // precision.
     return parseFloat(n.toFixed(4)).toString();
@@ -32,7 +32,7 @@
   // (Y). CanvasGeometry holds one of each, so off-origin and negative cell
   // indices are handled identically on both. The only per-axis differences
   // are the `extras` map (rows reserve group-label tab room on certain
-  // cells; columns reserve none) and the viewport dimension that normalises
+  // cells; columns reserve none) and the viewport dimension that normalizes
   // a gap into abstract units.
   //
   // Cells are integer indices in [min, max]; either bound may be negative.
@@ -146,7 +146,7 @@
 
       // Bounding box of occupied (col, row) cells; either bound may be
       // negative. All axis math is bbox-relative (see AxisGeometry), so an
-      // off-origin deck centres on its occupied region rather than on
+      // off-origin deck centers on its occupied region rather than on
       // [0, maxCol] × [0, maxRow].
       const positions = Object.values(slides);
       if (positions.length === 0) {
@@ -1430,7 +1430,7 @@
       // `vector-effect: non-scaling-stroke` the dash lengths and stroke
       // width stay constant in viewport coords regardless of the canvas's
       // deck-view scale, and the alternation keeps the line visible against
-      // backgrounds of any colour.
+      // backgrounds of any color.
       const addDashedLine = (x1, y1, x2, y2) => {
         const black = document.createElementNS(ns, "line");
         black.setAttribute("x1", x1);
@@ -1631,7 +1631,7 @@
   // Factory for the four-method `window.__scrolly` surface attached in the
   // DOM section below when `?scrolly-automation=1` is present. Pure so
   // vitest can construct one against mock viewState / scrollManager and
-  // exercise its behaviour without a DOM. `isAnimating` is injected so the
+  // exercise its behavior without a DOM. `isAnimating` is injected so the
   // factory itself stays free of `document` access; the DOM call site
   // wires it to the `view-transitioning` body class, which is canvas.js's
   // existing authoritative "transition in flight" signal (it already
@@ -1883,7 +1883,7 @@
   });
 
   // Recompute viewport-aware bits when the window resizes.
-  // uses the same shifts to keep the deck-view fit and centre correct;
+  // uses the same shifts to keep the deck-view fit and center correct;
   // fan offsets re-derive against the new viewport-side length so the
   // small-viewport spacing floor binds correctly when the user shrinks
   // the window with edge-arrows already on screen.

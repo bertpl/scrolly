@@ -13,7 +13,7 @@ Two parity invariants enforced here:
   by ``ValidationError.__init__`` (which rejects unknown codes via
   ``is_registered_code``), so any code path that constructs a
   ``ValidationError(code=...)`` with a missing ``<code>.md`` raises
-  immediately. The unit test below pins that behaviour for the
+  immediately. The unit test below pins that behavior for the
   framework.
 """
 

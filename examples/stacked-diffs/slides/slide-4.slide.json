@@ -24,7 +24,7 @@
       frame_distance: 200,
       hold_fraction: 0.5,
       // +50 vs the pre-redesign offset: grid snaps now land on the old
-      // hold-centres (550, 750, …), keeping the step/banner keyframes aligned.
+      // hold-centers (550, 750, …), keeping the step/banner keyframes aligned.
       scroll_offset: 550,
       fade_in: 500,
       fade_out: 500,
@@ -42,16 +42,16 @@
       frame_distance: 600,
       hold_fraction: 0.8,
       // +250 vs the pre-redesign offset (old hold/2): grid snaps land on the
-      // old hold-centres (750, 1350), keeping the transient bump's crossfade
-      // centred on scroll 1050.
+      // old hold-centers (750, 1350), keeping the transient bump's crossfade
+      // centered on scroll 1050.
       scroll_offset: 750,
       fade_in: 500,
       fade_out: 300,
       compositing: "overlay",
       object_fit: "contain",
       anchor: [0, 0],
-      // Transient 1%-each-side bump centred on scroll 1050 (no snap
-      // there) — visually emphasises the moment the slide-out
+      // Transient 1%-each-side bump centered on scroll 1050 (no snap
+      // there) — visually emphasizes the moment the slide-out
       // command runs and the .git/machete file changes.
       position: { keyframes: [[950, [60, 5]], [1050, [59, 4]], [1150, [60, 5]]] },
       width: { keyframes: [[950, 35], [1050, 37], [1150, 35]] },

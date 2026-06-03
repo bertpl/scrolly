@@ -20,7 +20,7 @@ def test_no_edges_yields_empty_lookup():
     assert compute_fan_offsets(deck) == {}
 
 
-# ---- single-edge sides preserve v0.0.2 centred placement ------------------
+# ---- single-edge sides preserve v0.0.2 centered placement ------------------
 
 
 def test_single_edge_per_side_sits_at_midpoint():
@@ -36,7 +36,7 @@ def test_single_edge_per_side_sits_at_midpoint():
 
 def test_one_edge_per_side_for_each_of_four_sides():
     # A central slide with one edge in each direction — each side gets a
-    # single entry centred at 0.5.
+    # single entry centered at 0.5.
     deck = Deck(
         title=None,
         slides=(
@@ -67,7 +67,7 @@ def test_one_edge_per_side_for_each_of_four_sides():
 
 
 def test_two_edges_on_same_side_sit_one_spacing_apart():
-    # n=2 fan: offsets 0.45, 0.55 (centred ± 0.5 * 0.1).
+    # n=2 fan: offsets 0.45, 0.55 (centered ± 0.5 * 0.1).
     deck = Deck(
         title=None,
         slides=(
@@ -90,7 +90,7 @@ def test_two_edges_on_same_side_sit_one_spacing_apart():
 
 
 def test_three_edges_on_same_side_evenly_spread():
-    # n=3 fan: offsets 0.40, 0.50, 0.60 (spaced 0.1 apart, centred on 0.5).
+    # n=3 fan: offsets 0.40, 0.50, 0.60 (spaced 0.1 apart, centered on 0.5).
     deck = Deck(
         title=None,
         slides=(

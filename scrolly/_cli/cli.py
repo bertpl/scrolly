@@ -131,7 +131,7 @@ def validate(deck_path: Path, strict: bool, as_json: bool) -> None:
 
 
 def _error_to_dict(err: ScrollyError) -> dict:
-    """Serialise a ``ScrollyError`` for JSON output."""
+    """Serialize a ``ScrollyError`` for JSON output."""
     if isinstance(err, ValidationError):
         return {
             "code": err.code,

@@ -103,7 +103,7 @@ class SlideIR(BaseModel, frozen=True):
             "and the sign of user-input deltas (wheel, shift+arrows, "
             "chevrons, drag) are flipped at render time. "
             "Intended for naturally bottom-up content (e.g. git-tree "
-            "visualisations) so authors can keep keyframes and image lists "
+            "visualizations) so authors can keep keyframes and image lists "
             "in their natural ascending order rather than writing them "
             "in reverse."
         ),
@@ -119,7 +119,7 @@ class SlideIR(BaseModel, frozen=True):
 
     @classmethod
     def source_schema(cls) -> dict:
-        """JSON-serialisable description of the source file format."""
+        """JSON-serializable description of the source file format."""
         return cls.model_json_schema()
 
     @classmethod

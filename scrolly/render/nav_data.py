@@ -34,7 +34,7 @@ DEFAULT_GROUP_BACKGROUND = "#dcdcdc"
 
 
 def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
-    """Return a JSON-serialisable representation of the deck for the client.
+    """Return a JSON-serializable representation of the deck for the client.
 
     Shape::
 

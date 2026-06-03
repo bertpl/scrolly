@@ -56,7 +56,7 @@ def test_small_deck_fits_inside_minimum_container_with_grid_centred() -> None:
     assert geo.container_size == MIN_SIZE_PX
     assert geo.cell_size == CELL_PX_DEFAULT
     assert geo.margin_size == MARGIN_PX_DEFAULT
-    # Grid (including the 4px around-margins) centred: x offset
+    # Grid (including the 4px around-margins) centered: x offset
     # = (40 - 28) / 2 = 6, plus 4px around-margin = 10. y offset
     # = (40 - 16) / 2 = 12, plus 4px around-margin = 16.
     assert [(c.slide_id, c.x, c.y) for c in geo.cells] == [
