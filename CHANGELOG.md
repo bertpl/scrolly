@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Elements with an animated or negative `anchor` now render with the correct pivot and offset.
+
 ### Security
 
 ## 0.2.5 (2026-06-02)
