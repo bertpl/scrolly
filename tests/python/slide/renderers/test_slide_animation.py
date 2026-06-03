@@ -133,13 +133,10 @@ def test_anchor_exprs_static(anchor: tuple[float, float], expected: tuple[str, s
     assert anchor_exprs(_static(*anchor)) == expected
 
 
-def test_anchor_exprs_static_negative_documents_current_output() -> None:
-    # Documents (and locks) the CURRENT output for a negative static anchor:
-    # the per-axis negation produces a double-minus "--10%", which is invalid
-    # CSS. This is a pre-existing latent bug, not introduced here — the test
-    # exists so the per-axis refactor preserves behavior exactly. Tracked for
-    # a separate fix.
-    assert anchor_exprs(_static(-10, 0)) == ("-10%", "0%", "translate(--10%, 0%) ")
+def test_anchor_exprs_static_negative() -> None:
+    # A negative anchor negates to a positive translate (origin -10% -> shift
+    # +10%); the component is built numerically so there is no double-minus.
+    assert anchor_exprs(_static(-10, 0)) == ("-10%", "0%", "translate(10%, 0%) ")
 
 
 def test_anchor_exprs_animated_both_axes_vary() -> None:
@@ -151,12 +148,11 @@ def test_anchor_exprs_animated_both_axes_vary() -> None:
     origin_x, origin_y, translate = anchor_exprs(field)
 
     # --- assert -----------------------
-    # The animated origin wraps the ramp expr as `calc(<expr> * 1%)` WITHOUT
-    # parens around <expr> (so `* 1%` binds only the last term — a pre-existing
-    # latent bug locked here); the translate side parenthesizes as
-    # `calc(-1 * (<expr>) * 1%)`. Both reproduced verbatim by the refactor.
-    assert origin_x == f"calc({expr} * 1%)"
-    assert origin_y == f"calc({expr} * 1%)"
+    # The animated origin parenthesizes the ramp expr — `calc((<expr>) * 1%)`
+    # — so the `* 1%` unit applies to the whole sum; the translate negates it
+    # as `calc(-1 * (<expr>) * 1%)`.
+    assert origin_x == f"calc(({expr}) * 1%)"
+    assert origin_y == f"calc(({expr}) * 1%)"
     assert translate == f"translate(calc(-1 * ({expr}) * 1%), calc(-1 * ({expr}) * 1%)) "
 
 
@@ -172,7 +168,7 @@ def test_anchor_exprs_animated_constant_axis_uses_plain_percent() -> None:
 
     # --- assert -----------------------
     assert origin_x == "50%"
-    assert origin_y == f"calc({expr_y} * 1%)"
+    assert origin_y == f"calc(({expr_y}) * 1%)"
     assert translate == f"translate(-50%, calc(-1 * ({expr_y}) * 1%)) "
 
 
@@ -187,5 +183,5 @@ def test_anchor_exprs_animated_constant_zero_axis() -> None:
 
     # --- assert -----------------------
     assert origin_x == "0%"
-    assert origin_y == f"calc({expr_y} * 1%)"
+    assert origin_y == f"calc(({expr_y}) * 1%)"
     assert translate == f"translate(0%, calc(-1 * ({expr_y}) * 1%)) "

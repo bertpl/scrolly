@@ -131,14 +131,16 @@ def _anchor_axis_exprs(field: AnimatedVec2, axis: int) -> tuple[str, str]:
     """
     if not field.is_animated:
         a = field.static_value[axis]
-        return f"{num(a)}%", (f"-{num(a)}%" if a != 0 else "0%")
+        return f"{num(a)}%", (f"{num(-a)}%" if a != 0 else "0%")
 
     kfs = [(at, v[axis]) for at, v in field.keyframes]
     expr = ramp_expr(kfs)
     if expr is None:
         v0 = kfs[0][1]
-        return f"{num(v0)}%", (f"-{num(v0)}%" if v0 != 0 else "0%")
-    return f"calc({expr} * 1%)", f"calc(-1 * ({expr}) * 1%)"
+        return f"{num(v0)}%", (f"{num(-v0)}%" if v0 != 0 else "0%")
+    # Parenthesize the ramp expr (matching the sibling expr helpers) so the
+    # `* 1%` unit applies to the whole sum, not just its trailing term.
+    return f"calc(({expr}) * 1%)", f"calc(-1 * ({expr}) * 1%)"
 
 
 def anchor_exprs(field: AnimatedVec2) -> tuple[str, str, str]:
