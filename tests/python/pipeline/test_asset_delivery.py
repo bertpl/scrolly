@@ -7,9 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from scrolly._shared.mime import _EXT_TO_MIME
 from scrolly.errors import SlideSourceError
 from scrolly.pipeline._bundler import PayloadBundler
-from scrolly.pipeline.assets import _MIME_TYPES, copy_assets, rewrite_asset_refs
+from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.slide.html import SlideHTML
 
 
@@ -193,13 +194,13 @@ def test_skips_chunks_without_assets(tmp_path: Path) -> None:
 # --------------------------------------------------------------------------
 #  MIME-type coverage
 #
-#  Parametrized coverage of every entry in ``_MIME_TYPES``.
+#  Parametrized coverage of every entry in ``_EXT_TO_MIME``.
 #
 #  Guards against silent regressions when a format is added to or removed
 #  from the supported set: every entry must round-trip cleanly through both
 #  the inline (``data:`` URI) and external-asset (file copy) paths.
 # --------------------------------------------------------------------------
-@pytest.mark.parametrize(("ext", "expected_mime"), sorted(_MIME_TYPES.items()))
+@pytest.mark.parametrize(("ext", "expected_mime"), sorted(_EXT_TO_MIME.items()))
 def test_inline_data_uri_uses_correct_mime(
     tmp_path: Path,
     ext: str,
@@ -217,7 +218,7 @@ def test_inline_data_uri_uses_correct_mime(
     assert f"data:{expected_mime};base64," in result["s1"].html
 
 
-@pytest.mark.parametrize("ext", sorted(_MIME_TYPES))
+@pytest.mark.parametrize("ext", sorted(_EXT_TO_MIME))
 def test_external_mode_rewrites_ref(tmp_path: Path, ext: str) -> None:
     # --- arrange ----------------------
     src = _write_file(tmp_path / "src" / f"asset{ext}")
@@ -231,7 +232,7 @@ def test_external_mode_rewrites_ref(tmp_path: Path, ext: str) -> None:
     assert f"_assets/s1/asset{ext}" in result["s1"].html
 
 
-@pytest.mark.parametrize("ext", sorted(_MIME_TYPES))
+@pytest.mark.parametrize("ext", sorted(_EXT_TO_MIME))
 def test_copy_assets_copies_file(tmp_path: Path, ext: str) -> None:
     # --- arrange ----------------------
     content = b"\x00\x01\x02 fake bytes"
