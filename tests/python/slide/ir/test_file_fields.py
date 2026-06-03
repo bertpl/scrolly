@@ -21,12 +21,11 @@ def _write(path: Path, text: str) -> Path:
 # ── markdown_file ────────────────────────────────────────────────
 
 
-class TestMarkdownFile:
-    def test_markdown_file(self, tmp_path: Path) -> None:
-        _write(tmp_path / "content.md", "# Hello from file")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+def test_markdown_file(tmp_path: Path) -> None:
+    _write(tmp_path / "content.md", "# Hello from file")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -35,20 +34,19 @@ class TestMarkdownFile:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert ir.elements[0].markdown == "# Hello from file"
+    )
+    ir = SlideIR.from_file(src)
+    assert ir.elements[0].markdown == "# Hello from file"
 
 
 # ── html_file ────────────────────────────────────────────────────
 
 
-class TestHtmlFile:
-    def test_html_file(self, tmp_path: Path) -> None:
-        _write(tmp_path / "box.html", "<div>hello</div>")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+def test_html_file(tmp_path: Path) -> None:
+    _write(tmp_path / "box.html", "<div>hello</div>")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -57,20 +55,19 @@ class TestHtmlFile:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert ir.elements[0].html == "<div>hello</div>"
+    )
+    ir = SlideIR.from_file(src)
+    assert ir.elements[0].html == "<div>hello</div>"
 
 
 # ── mermaid_file ─────────────────────────────────────────────────
 
 
-class TestMermaidFile:
-    def test_mermaid_file(self, tmp_path: Path) -> None:
-        _write(tmp_path / "diagram.mmd", "graph LR\n  A --> B --> C")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+def test_mermaid_file(tmp_path: Path) -> None:
+    _write(tmp_path / "diagram.mmd", "graph LR\n  A --> B --> C")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -79,21 +76,20 @@ class TestMermaidFile:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert isinstance(ir.elements[0], MermaidElement)
-        assert ir.elements[0].mermaid == "graph LR\n  A --> B --> C"
+    )
+    ir = SlideIR.from_file(src)
+    assert isinstance(ir.elements[0], MermaidElement)
+    assert ir.elements[0].mermaid == "graph LR\n  A --> B --> C"
 
 
 # ── iframe_html_file ─────────────────────────────────────────────
 
 
-class TestIframeHtmlFile:
-    def test_iframe_html_file(self, tmp_path: Path) -> None:
-        _write(tmp_path / "demo.html", "<!doctype html><p>iframe content</p>")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+def test_iframe_html_file(tmp_path: Path) -> None:
+    _write(tmp_path / "demo.html", "<!doctype html><p>iframe content</p>")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -102,22 +98,21 @@ class TestIframeHtmlFile:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert isinstance(ir.elements[0], IframeElement)
-        assert ir.elements[0].iframe_html == "<!doctype html><p>iframe content</p>"
+    )
+    ir = SlideIR.from_file(src)
+    assert isinstance(ir.elements[0], IframeElement)
+    assert ir.elements[0].iframe_html == "<!doctype html><p>iframe content</p>"
 
 
 # ── Path resolution ──────────────────────────────────────────────
 
 
-class TestPathResolution:
-    def test_relative_to_source_file(self, tmp_path: Path) -> None:
-        subdir = tmp_path / "slides"
-        _write(subdir / "content.md", "# Relative")
-        src = _write(
-            subdir / "s.slide.json",
-            """\
+def test_relative_to_source_file(tmp_path: Path) -> None:
+    subdir = tmp_path / "slides"
+    _write(subdir / "content.md", "# Relative")
+    src = _write(
+        subdir / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -126,15 +121,16 @@ class TestPathResolution:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert ir.elements[0].markdown == "# Relative"
+    )
+    ir = SlideIR.from_file(src)
+    assert ir.elements[0].markdown == "# Relative"
 
-    def test_subdirectory_path(self, tmp_path: Path) -> None:
-        _write(tmp_path / "diagrams" / "arch.mmd", "graph LR\n  A --> B")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+
+def test_subdirectory_path(tmp_path: Path) -> None:
+    _write(tmp_path / "diagrams" / "arch.mmd", "graph LR\n  A --> B")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -143,20 +139,19 @@ class TestPathResolution:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert "A --> B" in ir.elements[0].mermaid
+    )
+    ir = SlideIR.from_file(src)
+    assert "A --> B" in ir.elements[0].mermaid
 
 
 # ── Error cases ──────────────────────────────────────────────────
 
 
-class TestErrors:
-    def test_both_inline_and_file_rejected(self, tmp_path: Path) -> None:
-        _write(tmp_path / "content.md", "# Hi")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+def test_both_inline_and_file_rejected(tmp_path: Path) -> None:
+    _write(tmp_path / "content.md", "# Hi")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -165,14 +160,15 @@ class TestErrors:
   ],
 }
 """,
-        )
-        with pytest.raises(SlideSourceError, match="cannot specify both"):
-            SlideIR.from_file(src)
+    )
+    with pytest.raises(SlideSourceError, match="cannot specify both"):
+        SlideIR.from_file(src)
 
-    def test_missing_file_raises_error(self, tmp_path: Path) -> None:
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+
+def test_missing_file_raises_error(tmp_path: Path) -> None:
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -181,15 +177,16 @@ class TestErrors:
   ],
 }
 """,
-        )
-        with pytest.raises(SlideSourceError, match="not found"):
-            SlideIR.from_file(src)
+    )
+    with pytest.raises(SlideSourceError, match="not found"):
+        SlideIR.from_file(src)
 
-    def test_both_html_and_html_file_rejected(self, tmp_path: Path) -> None:
-        _write(tmp_path / "box.html", "<div/>")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+
+def test_both_html_and_html_file_rejected(tmp_path: Path) -> None:
+    _write(tmp_path / "box.html", "<div/>")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -198,15 +195,16 @@ class TestErrors:
   ],
 }
 """,
-        )
-        with pytest.raises(SlideSourceError, match="cannot specify both"):
-            SlideIR.from_file(src)
+    )
+    with pytest.raises(SlideSourceError, match="cannot specify both"):
+        SlideIR.from_file(src)
 
-    def test_both_iframe_html_and_iframe_html_file_rejected(self, tmp_path: Path) -> None:
-        _write(tmp_path / "demo.html", "<!doctype html>")
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+
+def test_both_iframe_html_and_iframe_html_file_rejected(tmp_path: Path) -> None:
+    _write(tmp_path / "demo.html", "<!doctype html>")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -222,20 +220,19 @@ class TestErrors:
   ],
 }
 """,
-        )
-        with pytest.raises(SlideSourceError, match="cannot specify both"):
-            SlideIR.from_file(src)
+    )
+    with pytest.raises(SlideSourceError, match="cannot specify both"):
+        SlideIR.from_file(src)
 
 
 # ── Non-element dicts left untouched ─────────────────────────────
 
 
-class TestNonElementDicts:
-    def test_unrelated_file_suffixed_keys_ignored(self, tmp_path: Path) -> None:
-        """Top-level / non-element ``_file`` keys must not be resolved."""
-        src = _write(
-            tmp_path / "s.slide.json",
-            """\
+def test_unrelated_file_suffixed_keys_ignored(tmp_path: Path) -> None:
+    """Top-level / non-element ``_file`` keys must not be resolved."""
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
 {
   title: "T",
   scroll_range: 100,
@@ -244,6 +241,6 @@ class TestNonElementDicts:
   ],
 }
 """,
-        )
-        ir = SlideIR.from_file(src)
-        assert ir.elements[0].html == "<p>hi</p>"
+    )
+    ir = SlideIR.from_file(src)
+    assert ir.elements[0].html == "<p>hi</p>"
