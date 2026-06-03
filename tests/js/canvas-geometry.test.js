@@ -11,6 +11,10 @@ function _geo(slides, fanSpacingFactor) {
   });
 }
 
+function _geoWithGroup(slides, groups) {
+  return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
+}
+
 describe("AxisGeometry", () => {
   function _axis(min, max, extras) {
     // baseGap = CanvasGeometry.GAP = 10.
@@ -118,10 +122,6 @@ describe("AxisGeometry", () => {
 // ---- CanvasGeometry — negative & off-origin coordinates -------------------
 
 describe("CanvasGeometry — negative & off-origin coordinates", () => {
-  function _geoWithGroup(slides, groups) {
-    return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
-  }
-
   it("cols/rows count inclusively across a negative bounding box", () => {
     const g = _geo({ a: [-1, -1], b: [0, 0] });
     expect(g.cols).toBe(2);
@@ -326,10 +326,6 @@ describe("CanvasGeometry", () => {
   // ---- Per-row gaps (group labels) ----------------------------------------
 
   describe("per-row gaps", () => {
-    function _geoWithGroup(slides, groups) {
-      return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
-    }
-
     it("label row at row 0 adds LABEL_EXTRA above", () => {
       const g = _geoWithGroup(
         { a: [0, 0], b: [1, 0] },
@@ -496,10 +492,6 @@ describe("CanvasGeometry", () => {
   // ---- deckBounds ---------------------------------------------------------
 
   describe("deckBounds", () => {
-    function _geoWithGroup(slides, groups) {
-      return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
-    }
-
     it("returns all zeros for an empty deck", () => {
       const g = _geo({});
       g.refresh(1000, 1000);
@@ -567,10 +559,6 @@ describe("CanvasGeometry", () => {
   // ---- overlayBounds ------------------------------------------------------
 
   describe("overlayBounds", () => {
-    function _geoWithGroup(slides, groups) {
-      return new CanvasGeometry({ slides, groups, fanSpacingFactor: 0.1 });
-    }
-
     it("equals deckBounds when margin is 0", () => {
       const g = _geo({ a: [2, 1], b: [3, 1] });
       g.refresh(1000, 1000);
@@ -675,7 +663,7 @@ describe("CanvasGeometry", () => {
       expect(o1).toBeCloseTo(0.55);
     });
 
-    it("applies MIN_FAN_SPACING_PX floor on small viewports", () => {
+    it("applies FAN_MIN_SPACING_PX floor on small viewports", () => {
       const g = _geo({}, 0.1);
       g.refresh(200, 200);
       const o0 = g.fanOffset("top", 0, 2);

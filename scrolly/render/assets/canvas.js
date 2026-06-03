@@ -26,7 +26,7 @@
     return parseFloat(n.toFixed(4)).toString();
   }
 
-  // ---- AxisGeometry (pure — no DOM access) ---------------------------------
+  // ---- AxisGeometry (pure — no DOM access) ----------------------------------
   //
   // Geometry of a single grid axis — the column axis (X) or the row axis
   // (Y). CanvasGeometry holds one of each, so off-origin and negative cell
@@ -352,6 +352,9 @@
 
   // ---- ScrollManager --------------------------------------------------------
 
+  // Owns each slide's scroll position and range and the scrollbar thumb:
+  // maps scroll value to thumb offset (reverse-aware), handles drag, and
+  // measures content-driven ranges.
   class ScrollManager {
     static DEFAULT_THUMB_HEIGHT = 60;
     static MIN_THUMB_HEIGHT = 10;
@@ -590,8 +593,11 @@
     get isDragging() { return this._drag !== null; }
   }
 
-  // ---- SnapManager ---------------------------------------------------------
+  // ---- SnapManager ----------------------------------------------------------
 
+  // Drives snap behavior for the selected slide: idle settle-to-nearest,
+  // manual prev/next (chevrons and Shift+Arrow), the snap-toggle control,
+  // and the scrollbar snap dots.
   class SnapManager {
     static IDLE_MS = 500;
     static DURATION_MS = 300;
@@ -899,6 +905,9 @@
     '<path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.5" fill="none" ' +
     'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+  // Builds and maintains the clickable edge-arrow affordances around the
+  // selected slide, plus the no-target and disambiguation glow pulses, in
+  // the navigation layer.
   class EdgeArrows {
     constructor(geo, edgeData, navLayer) {
       this._geometry = geo;
@@ -1013,6 +1022,8 @@
   const TAB_H_PAD = 0.03;
   const TAB_PROTRUSION = 0.04;
 
+  // Renders the slide-group background tabs and labels as SVG, sizing each
+  // tab to its measured (transform-immune) label width.
   class GroupLayout {
     constructor(geo, canvasEl) {
       this._geometry = geo;
@@ -1157,6 +1168,10 @@
 
   // ---- ViewState ------------------------------------------------------------
 
+  // The single (selectedSlide, zoomLevel) view tuple and its one
+  // authoritative mutation: writes the transform CSS custom properties,
+  // toggles the body view classes, and re-syncs the edge arrows, snap
+  // control, and scroll UI.
   class ViewState {
     static TRANSITION_MS = 300;
     static TRANSITION_BUFFER_MS = 50;
@@ -1472,6 +1487,8 @@
 
   const VISIBILITY_THRESHOLD = 0.001;
 
+  // Evaluate a piecewise-linear keyframe track ([[pos, value], ...]) at
+  // `position`, clamping to the endpoint values outside the keyframe range.
   function evaluatePiecewiseLinear(keyframes, position) {
     if (keyframes.length === 0) return 1;
     if (position <= keyframes[0][0]) return keyframes[0][1];
@@ -1487,7 +1504,7 @@
     return keyframes[keyframes.length - 1][1];
   }
 
-  // ---- IdleTimer ----------------------------------------------------------
+  // ---- IdleTimer ------------------------------------------------------------
   //
   // Small reusable scheduler for the "fade after N ms of inactivity" pattern.
   // Used twice: once for the scroll-UI fade (scrollbar + snap control), once
@@ -1526,6 +1543,8 @@
     }
   }
 
+  // Toggles per-element CSS visibility from opacity keyframes, hiding an
+  // element once its interpolated opacity falls below VISIBILITY_THRESHOLD.
   class ElementVisibility {
     constructor(canvasEl) {
       this._entries = new Map();
@@ -1554,7 +1573,7 @@
     }
   }
 
-  // ---- resolveTarget (pure navigation resolution) --------------------------
+  // ---- resolveTarget (pure navigation resolution) ---------------------------
 
   const _KEY_TO_SIDE = {
     ArrowLeft: "left",
@@ -1594,7 +1613,7 @@
     };
   }
 
-  // ---- decompressBundle (pure — no DOM access) -----------------------------
+  // ---- decompressBundle (pure — no DOM access) ------------------------------
   //
   // Parses the embedded compressed-payload JSON, base64-decodes the blob,
   // runs DecompressionStream("gzip"), walks payloads[]/targets[] and returns
@@ -1626,7 +1645,7 @@
     });
   }
 
-  // ---- buildAutomationHook (pure — no DOM access) --------------------------
+  // ---- buildAutomationHook (pure — no DOM access) ---------------------------
   //
   // Factory for the four-method `window.__scrolly` surface attached in the
   // DOM section below when `?scrolly-automation=1` is present. Pure so
@@ -1651,7 +1670,7 @@
     };
   }
 
-  // ---- resolveVersionLabel (pure — help-screen version display) ------------
+  // ---- resolveVersionLabel (pure — help-screen version display) -------------
   // The " vX.Y.Z" fragment shown after "scrolly" in the help About panel, or
   // "" when there is nothing to show. A `scrolly-version` URL override (null
   // when the param is absent) takes precedence over the built-in
@@ -1779,7 +1798,7 @@
     }
   })();
 
-  // ---- Event handlers -----------------------------------------------------
+  // ---- Event handlers -------------------------------------------------------
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "h" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -1882,11 +1901,12 @@
     }
   });
 
-  // Recompute viewport-aware bits when the window resizes.
-  // uses the same shifts to keep the deck-view fit and center correct;
-  // fan offsets re-derive against the new viewport-side length so the
-  // small-viewport spacing floor binds correctly when the user shrinks
-  // the window with edge-arrows already on screen.
+  // On window resize, refresh the geometry against the new viewport and
+  // re-sync every viewport-aware surface: the view transform, bezier
+  // overlay, debug grid, edge-arrow fan offsets, group layout, and snap
+  // dots. Fan offsets re-derive against the new viewport-side length so the
+  // small-viewport spacing floor binds when the window shrinks with edge
+  // arrows already on screen.
   window.addEventListener("resize", () => {
     geometry.refresh(window.innerWidth, window.innerHeight);
     updateDeckFitScale();
@@ -1898,7 +1918,7 @@
     snapManager.syncDots(viewState.selectedSlide);
   });
 
-  // ---- Scroll plumbing (ScrollManager) ------------------------------------
+  // ---- Scroll plumbing (ScrollManager) --------------------------------------
 
   function _container(slideId) {
     return canvas.querySelector('.slide-container[data-id="' + slideId + '"]');
@@ -1973,7 +1993,7 @@
 
   snapManager.initControl(document.querySelector(".snap-control"));
 
-  // ---- Idle timers --------------------------------------------------------
+  // ---- Idle timers ----------------------------------------------------------
   //
   // Two independent idle-fade pipelines:
   //
@@ -2139,7 +2159,7 @@
     });
   }
 
-  // ---- Populate DOM targets from compressed bundle -------------------------
+  // ---- Populate DOM targets from compressed bundle --------------------------
   //
   // decompressBundle is the pure parse step (defined near other pure helpers,
   // before the DOM-code guard, so Vitest can import and test it directly).
@@ -2179,7 +2199,7 @@
 
   populateFromBundle();
 
-  // ---- Init ---------------------------------------------------------------
+  // ---- Init -----------------------------------------------------------------
 
   if (viewState.selectedSlide) {
     canvas.querySelectorAll(".slide-container").forEach((el) => {
@@ -2205,7 +2225,7 @@
     hoverUiTimer.reset();
   }
 
-  // ---- Automation hook ----------------------------------------------------
+  // ---- Automation hook ------------------------------------------------------
   //
   // Conditional `window.__scrolly` attachment driven by the
   // `?scrolly-automation=1` URL parameter. Inert by default — without the
