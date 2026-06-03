@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Literal
 
 from scrolly.deck.model import Deck
-from scrolly.slide.ir._framework.animated_values import AnimatedScalar, AnimatedVec2
+from scrolly.slide.ir._framework.animated_values import AnimatedScalar, AnimatedSizeDim, AnimatedVec2
 from scrolly.slide.ir._framework.element import ImageSequenceElement
 from scrolly.slide.ir.slide import SlideIR
 from scrolly.slide.registry import get_ir_class_for_path
@@ -59,71 +59,32 @@ def _check_out_of_range_keyframes(deck: Deck) -> list[Diagnostic]:
         for i, el in enumerate(ir.elements):
             label = f"'{el.name}'" if el.name else f"element [{i}]"
             location = f"slide '{ir.title}', {label}"
-            _check_scalar_field(el.opacity, "opacity", location, scroll_range, diagnostics)
-            _check_scalar_field(el.scale, "scale", location, scroll_range, diagnostics)
-            _check_scalar_field(el.angle, "angle", location, scroll_range, diagnostics)
-            _check_vec2_field(el.position, "position", location, scroll_range, diagnostics)
-            _check_vec2_field(el.anchor, "anchor", location, scroll_range, diagnostics)
-            _check_size_field(el.width, "width", location, scroll_range, diagnostics)
-            _check_size_field(el.height, "height", location, scroll_range, diagnostics)
+            _check_animated_field(el.opacity, "opacity", location, scroll_range, diagnostics)
+            _check_animated_field(el.scale, "scale", location, scroll_range, diagnostics)
+            _check_animated_field(el.angle, "angle", location, scroll_range, diagnostics)
+            _check_animated_field(el.position, "position", location, scroll_range, diagnostics)
+            _check_animated_field(el.anchor, "anchor", location, scroll_range, diagnostics)
+            _check_animated_field(el.width, "width", location, scroll_range, diagnostics)
+            _check_animated_field(el.height, "height", location, scroll_range, diagnostics)
             if isinstance(el, ImageSequenceElement):
                 _check_image_sequence(el, location, scroll_range, diagnostics)
 
     return diagnostics
 
 
-def _check_scalar_field(
-    field: AnimatedScalar,
+def _check_animated_field(
+    field: AnimatedScalar | AnimatedVec2 | AnimatedSizeDim,
     field_name: str,
     location: str,
     scroll_range: float,
     diagnostics: list[Diagnostic],
 ) -> None:
-    """Check an AnimatedScalar field for out-of-range keyframes."""
-    if not field.is_animated:
-        return
-    for at, _ in field.keyframes:
-        if at < 0 or at > scroll_range:
-            diagnostics.append(
-                Diagnostic(
-                    level="warning",
-                    message=f"keyframe at={at} is outside [0, {scroll_range}]",
-                    location=f"{location}, field '{field_name}'",
-                )
-            )
-            break
+    """Warn if any keyframe on an animated field falls outside [0, scroll_range].
 
-
-def _check_vec2_field(
-    field: AnimatedVec2,
-    field_name: str,
-    location: str,
-    scroll_range: float,
-    diagnostics: list[Diagnostic],
-) -> None:
-    """Check an AnimatedVec2 field for out-of-range keyframes."""
-    if not field.is_animated:
-        return
-    for at, _ in field.keyframes:
-        if at < 0 or at > scroll_range:
-            diagnostics.append(
-                Diagnostic(
-                    level="warning",
-                    message=f"keyframe at={at} is outside [0, {scroll_range}]",
-                    location=f"{location}, field '{field_name}'",
-                )
-            )
-            break
-
-
-def _check_size_field(
-    field,
-    field_name: str,
-    location: str,
-    scroll_range: float,
-    diagnostics: list[Diagnostic],
-) -> None:
-    """Check an AnimatedSizeDim field for out-of-range keyframes."""
+    Static fields carry no keyframes and are skipped. The three animated
+    value types share the ``is_animated`` / ``keyframes`` interface, so one
+    check covers scalars, vec2s, and size dimensions alike.
+    """
     if not field.is_animated:
         return
     for at, _ in field.keyframes:

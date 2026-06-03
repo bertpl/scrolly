@@ -80,15 +80,15 @@ class SlideRenderer(Renderer):
 
         rendered_elements = self.render_elements(ir, css_namespace=css_namespace, bundler=bundler)
 
-        element_htmls = [e.html for e in rendered_elements]
-        css_rules = [e.scoped_css for e in rendered_elements if e.scoped_css]
+        element_htmls = [rendered.html for rendered in rendered_elements]
+        css_rules = [rendered.scoped_css for rendered in rendered_elements if rendered.scoped_css]
         asset_paths: list[Path] = []
         element_snaps: list[float] = []
         has_mermaid = False
-        for e in rendered_elements:
-            asset_paths.extend(e.assets)
-            element_snaps.extend(e.snap_positions)
-            if e.has_mermaid:
+        for rendered in rendered_elements:
+            asset_paths.extend(rendered.assets)
+            element_snaps.extend(rendered.snap_positions)
+            if rendered.has_mermaid:
                 has_mermaid = True
 
         if has_mermaid:
@@ -106,12 +106,12 @@ class SlideRenderer(Renderer):
         scoped_css = "\n\n".join(css_rules)
         unique_assets = list(dict.fromkeys(asset_paths))
 
-        if isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0:
-            slide_html_scroll_range: int | None = int(ir.scroll_range)
-        else:
+        if is_content_driven:
             # ``"auto"`` (the substrate default) and ``0`` both signal
             # content-driven height to the canvas runtime.
-            slide_html_scroll_range = None
+            slide_html_scroll_range: int | None = None
+        else:
+            slide_html_scroll_range = int(ir.scroll_range)
 
         # Union author snap positions with element-derived ones (e.g.
         # image-sequence frame snaps), sorted + deduplicated — the same set

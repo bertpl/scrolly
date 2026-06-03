@@ -18,12 +18,10 @@ specific *resolved deck instance* — different surfaces, kept distinct.
 from __future__ import annotations
 
 import json
-import sys
 
 import click
-from rich.console import Console
 
-_err_console = Console(stderr=True, highlight=False)
+from scrolly._cli.console import error_exit
 
 # Width of the name / suffix columns in the human-readable index, matching
 # the alignment used by ``scrolly errors``.
@@ -85,8 +83,7 @@ def schema_file(type_name: str | None, list_types: bool) -> None:
 
     schema_text = file_schema_json(type_name)
     if schema_text is None:
-        _err_console.print(f"[red]error:[/red] unknown file type '{type_name}' (known: {', '.join(names)})")
-        sys.exit(1)
+        error_exit(f"unknown file type '{type_name}' (known: {', '.join(names)})")
     click.echo(schema_text)
 
 
@@ -121,8 +118,7 @@ def schema_element(type_name: str | None, list_types: bool) -> None:
 
     schema_text = element_schema_json(type_name)
     if schema_text is None:
-        _err_console.print(f"[red]error:[/red] unknown element type '{type_name}' (known: {', '.join(elements)})")
-        sys.exit(1)
+        error_exit(f"unknown element type '{type_name}' (known: {', '.join(elements)})")
     click.echo(schema_text)
 
 

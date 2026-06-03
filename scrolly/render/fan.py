@@ -49,7 +49,7 @@ class FanEntry:
 FanLookup = Mapping[tuple[str, Side], tuple[FanEntry, ...]]
 
 
-def compute_fan_offsets(deck: Deck) -> FanLookup:
+def compute_fan_lookup(deck: Deck) -> FanLookup:
     """Return a `(slide_id, side) -> tuple[FanEntry, ...]` lookup.
 
     A side with no edges has no entry in the lookup. A side with one edge

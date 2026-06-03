@@ -24,7 +24,7 @@ from typing import Any
 
 from scrolly.deck import Deck
 from scrolly.render.color import legible_text_color
-from scrolly.render.fan import FAN_SPACING_FACTOR, compute_fan_offsets
+from scrolly.render.fan import FAN_SPACING_FACTOR, compute_fan_lookup
 from scrolly.slide import SlideHTML
 
 # Default group-background fill, used when a group sets no explicit `color`.
@@ -86,7 +86,7 @@ def build_nav_data(deck: Deck, chunks: dict[str, SlideHTML]) -> dict[str, Any]:
         for slide in deck.slides
     }
 
-    fan = compute_fan_offsets(deck)
+    fan = compute_fan_lookup(deck)
     for (slide_id, side), entries in fan.items():
         slides_data[slide_id]["edges"][side.value] = [
             {

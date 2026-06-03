@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from scrolly.deck.model import Deck, Edge, Endpoint, Position, Side, Slide
-from scrolly.render.fan import FanEntry, compute_fan_offsets
+from scrolly.render.fan import FanEntry, compute_fan_lookup
 
 
 def _slide(id_: str, x: int, y: int) -> Slide:
@@ -12,12 +12,12 @@ def _slide(id_: str, x: int, y: int) -> Slide:
 
 
 def test_empty_deck_yields_empty_lookup():
-    assert compute_fan_offsets(Deck(title=None, slides=(), edges=())) == {}
+    assert compute_fan_lookup(Deck(title=None, slides=(), edges=())) == {}
 
 
 def test_no_edges_yields_empty_lookup():
     deck = Deck(title=None, slides=(_slide("a", 0, 0),), edges=())
-    assert compute_fan_offsets(deck) == {}
+    assert compute_fan_lookup(deck) == {}
 
 
 # ---- single-edge sides preserve v0.0.2 centered placement ------------------
@@ -29,7 +29,7 @@ def test_single_edge_per_side_sits_at_midpoint():
         slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
         edges=(Edge(Endpoint("a", Side.RIGHT), Endpoint("b", Side.LEFT)),),
     )
-    lookup = compute_fan_offsets(deck)
+    lookup = compute_fan_lookup(deck)
     assert lookup[("a", Side.RIGHT)] == (FanEntry(target_id="b"),)
     assert lookup[("b", Side.LEFT)] == (FanEntry(target_id="a"),)
 
@@ -53,7 +53,7 @@ def test_one_edge_per_side_for_each_of_four_sides():
             Edge(Endpoint("c", Side.RIGHT), Endpoint("e", Side.LEFT)),
         ),
     )
-    lookup = compute_fan_offsets(deck)
+    lookup = compute_fan_lookup(deck)
     for side, target in [
         (Side.TOP, "n"),
         (Side.BOTTOM, "s"),
@@ -80,7 +80,7 @@ def test_two_edges_on_same_side_sit_one_spacing_apart():
             Edge(Endpoint("a", Side.RIGHT), Endpoint("dn", Side.LEFT)),
         ),
     )
-    lookup = compute_fan_offsets(deck)
+    lookup = compute_fan_lookup(deck)
     entries = lookup[("a", Side.RIGHT)]
     # Upper target first (smaller y), lower target second.
     assert [e.target_id for e in entries] == ["up", "dn"]
@@ -105,7 +105,7 @@ def test_three_edges_on_same_side_evenly_spread():
             Edge(Endpoint("a", Side.RIGHT), Endpoint("dn", Side.LEFT)),
         ),
     )
-    entries = compute_fan_offsets(deck)[("a", Side.RIGHT)]
+    entries = compute_fan_lookup(deck)[("a", Side.RIGHT)]
     assert [e.target_id for e in entries] == ["up", "md", "dn"]
     assert [e.fan_index for e in entries] == [0, 1, 2]
     assert all(e.fan_size == 3 for e in entries)
@@ -128,7 +128,7 @@ def test_left_side_orders_by_target_y_ascending():
             Edge(Endpoint("a", Side.LEFT), Endpoint("lo", Side.RIGHT)),
         ),
     )
-    entries = compute_fan_offsets(deck)[("a", Side.LEFT)]
+    entries = compute_fan_lookup(deck)[("a", Side.LEFT)]
     assert [e.target_id for e in entries] == ["hi", "lo"]
     assert [e.fan_index for e in entries] == [0, 1]
     assert all(e.fan_size == 2 for e in entries)
@@ -147,7 +147,7 @@ def test_top_side_orders_by_target_x_ascending():
             Edge(Endpoint("a", Side.TOP), Endpoint("R", Side.BOTTOM)),
         ),
     )
-    entries = compute_fan_offsets(deck)[("a", Side.TOP)]
+    entries = compute_fan_lookup(deck)[("a", Side.TOP)]
     assert [e.target_id for e in entries] == ["L", "R"]
 
 
@@ -166,7 +166,7 @@ def test_bottom_side_orders_by_target_x_ascending_not_inverted():
             Edge(Endpoint("a", Side.BOTTOM), Endpoint("R", Side.TOP)),
         ),
     )
-    entries = compute_fan_offsets(deck)[("a", Side.BOTTOM)]
+    entries = compute_fan_lookup(deck)[("a", Side.BOTTOM)]
     assert [e.target_id for e in entries] == ["L", "R"]
 
 
@@ -192,7 +192,7 @@ def test_targets_at_same_primary_coord_break_by_secondary_then_id():
         ),
     )
     # Both targets at y=0 → tie on primary coord. Secondary (x): near=1, far=2.
-    entries = compute_fan_offsets(deck)[("a", Side.RIGHT)]
+    entries = compute_fan_lookup(deck)[("a", Side.RIGHT)]
     assert [e.target_id for e in entries] == ["near", "far"]
 
 
@@ -205,7 +205,7 @@ def test_each_edge_contributes_both_endpoints():
         slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
         edges=(Edge(Endpoint("a", Side.RIGHT), Endpoint("b", Side.LEFT)),),
     )
-    lookup = compute_fan_offsets(deck)
+    lookup = compute_fan_lookup(deck)
     assert set(lookup.keys()) == {("a", Side.RIGHT), ("b", Side.LEFT)}
 
 
@@ -218,7 +218,7 @@ def test_single_edge_fan_index_zero_and_size_one():
         slides=(_slide("a", 0, 0), _slide("b", 1, 0)),
         edges=(Edge(Endpoint("a", Side.RIGHT), Endpoint("b", Side.LEFT)),),
     )
-    entry = compute_fan_offsets(deck)[("a", Side.RIGHT)][0]
+    entry = compute_fan_lookup(deck)[("a", Side.RIGHT)][0]
     assert entry.fan_index == 0
     assert entry.fan_size == 1
 
@@ -239,6 +239,6 @@ def test_multi_edge_fan_indices_and_size():
             Edge(Endpoint("a", Side.RIGHT), Endpoint("dn", Side.LEFT)),
         ),
     )
-    entries = compute_fan_offsets(deck)[("a", Side.RIGHT)]
+    entries = compute_fan_lookup(deck)[("a", Side.RIGHT)]
     assert [e.fan_index for e in entries] == [0, 1, 2]
     assert all(e.fan_size == 3 for e in entries)
