@@ -26,6 +26,39 @@ from scrolly.slide.ir._framework.animated_values import (
 
 
 # ==================================================================================================
+#  Shared validators
+# ==================================================================================================
+def _validate_object_fit_rules(
+    width: AnimatedSizeDim,
+    height: AnimatedSizeDim,
+    object_fit: Literal["cover", "contain", "fill"] | None,
+) -> None:
+    """Enforce the object_fit / size-dimension rules shared by image element types.
+
+    ``object_fit`` is required when both dimensions are numeric (or animated)
+    and forbidden when either is ``"auto"``.
+
+    Raises:
+        SlideSourceError: ``E303`` if both dimensions are non-auto and
+            ``object_fit`` is missing; ``E304`` if a dimension is ``"auto"``
+            and ``object_fit`` is set.
+    """
+    w_is_auto = width.is_auto
+    h_is_auto = height.is_auto
+    both_non_auto = not w_is_auto and not h_is_auto
+    if both_non_auto and object_fit is None:
+        raise SlideSourceError(
+            code="E303",
+            message="object_fit is required when both size dimensions are numeric or animated",
+        )
+    if (w_is_auto or h_is_auto) and object_fit is not None:
+        raise SlideSourceError(
+            code="E304",
+            message='object_fit is forbidden when a size dimension is "auto"',
+        )
+
+
+# ==================================================================================================
 #  SlideElement base
 # ==================================================================================================
 class SlideElement(ElementIR, frozen=True):
@@ -131,19 +164,7 @@ class ImageElement(SlideElement, PrimitiveElement, frozen=True):
     @model_validator(mode="after")
     def _validate_object_fit(self) -> ImageElement:
         """Validate object_fit rules based on size dimensions."""
-        w_is_auto = self.width.is_auto
-        h_is_auto = self.height.is_auto
-        both_non_auto = not w_is_auto and not h_is_auto
-        if both_non_auto and self.object_fit is None:
-            raise SlideSourceError(
-                code="E303",
-                message="object_fit is required when both size dimensions are numeric or animated",
-            )
-        if (w_is_auto or h_is_auto) and self.object_fit is not None:
-            raise SlideSourceError(
-                code="E304",
-                message='object_fit is forbidden when a size dimension is "auto"',
-            )
+        _validate_object_fit_rules(self.width, self.height, self.object_fit)
         return self
 
 
@@ -263,19 +284,7 @@ class ImageSequenceElement(SlideElement, PrimitiveElement, frozen=True):
     @model_validator(mode="after")
     def _validate_object_fit(self) -> ImageSequenceElement:
         """Validate object_fit rules based on size dimensions (mirrors ImageElement)."""
-        w_is_auto = self.width.is_auto
-        h_is_auto = self.height.is_auto
-        both_non_auto = not w_is_auto and not h_is_auto
-        if both_non_auto and self.object_fit is None:
-            raise SlideSourceError(
-                code="E303",
-                message="object_fit is required when both size dimensions are numeric or animated",
-            )
-        if (w_is_auto or h_is_auto) and self.object_fit is not None:
-            raise SlideSourceError(
-                code="E304",
-                message='object_fit is forbidden when a size dimension is "auto"',
-            )
+        _validate_object_fit_rules(self.width, self.height, self.object_fit)
         return self
 
     def snap_positions(self) -> list[float]:

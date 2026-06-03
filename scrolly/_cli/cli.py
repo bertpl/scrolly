@@ -3,17 +3,15 @@ import sys
 from pathlib import Path
 
 import click
-from rich.console import Console
 
 from scrolly import __version__
 from scrolly._cli._introspect import introspect
+from scrolly._cli.console import err_console, error_exit, print_error
 from scrolly._cli.errors import errors_command
 from scrolly._cli.schema import schema
 from scrolly.errors import ScrollyError, ValidationError
 from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
-
-_err_console = Console(stderr=True, highlight=False)
 
 
 def _emit_ai_help(ctx: click.Context, param: click.Parameter, value: bool) -> None:
@@ -92,8 +90,7 @@ def build(
             offline=offline,
         )
     except ScrollyError as e:
-        _err_console.print(f"[red]error:[/red] {e}")
-        sys.exit(1)
+        error_exit(str(e))
 
     if strict:
         _report_diagnostics(deck)
@@ -118,7 +115,7 @@ def validate(deck_path: Path, strict: bool, as_json: bool) -> None:
         if as_json:
             click.echo(json.dumps({"ok": False, "errors": [_error_to_dict(e)]}, indent=2))
         else:
-            _err_console.print(f"[red]error:[/red] {e}")
+            print_error(str(e))
         sys.exit(1)
 
     if strict:
@@ -148,7 +145,7 @@ def _report_diagnostics(deck) -> None:
     """Run lint checks and print any diagnostics to stderr."""
     diagnostics = lint_deck(deck)
     for d in diagnostics:
-        _err_console.print(f"[yellow]{d.level}:[/yellow] {d.location}: {d.message}")
+        err_console.print(f"[yellow]{d.level}:[/yellow] {d.location}: {d.message}")
 
 
 _INIT_DECK = """\
@@ -176,8 +173,7 @@ _INIT_SLIDE = """\
 def init(dir_path: Path) -> None:
     """Scaffold a minimal deck in DIR_PATH."""
     if dir_path.exists() and any(dir_path.iterdir()):
-        _err_console.print(f"[red]error:[/red] directory is not empty: {dir_path}")
-        sys.exit(1)
+        error_exit(f"directory is not empty: {dir_path}")
 
     slides_dir = dir_path / "slides"
     slides_dir.mkdir(parents=True, exist_ok=True)

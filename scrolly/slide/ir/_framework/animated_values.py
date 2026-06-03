@@ -16,8 +16,32 @@ from scrolly.errors import SlideSourceError
 
 
 # ==================================================================================================
-#  Internal interpolation helper
+#  Internal helpers
 # ==================================================================================================
+def _validate_keyframe_positions(keyframes: list[tuple]) -> None:
+    """Validate a keyframe list has ≥2 entries with strictly increasing positions.
+
+    Shared by the scalar and vec2 keyframe containers: both store the
+    scroll position as the first tuple element regardless of value schema.
+
+    Raises:
+        SlideSourceError: ``E308`` if the list has fewer than 2 entries or
+            is not strictly sorted by scroll position.
+    """
+    if len(keyframes) < 2:
+        raise SlideSourceError(code="E308", message="keyframes must contain at least 2 entries")
+    positions = [kf[0] for kf in keyframes]
+    for i in range(1, len(positions)):
+        if positions[i] <= positions[i - 1]:
+            raise SlideSourceError(
+                code="E308",
+                message=(
+                    f"keyframes must be sorted by scroll position with no duplicates; "
+                    f"got {positions[i - 1]} followed by {positions[i]}"
+                ),
+            )
+
+
 def _interpolate_scalar(keyframes: list[tuple[float, float]], scroll: float) -> float:
     """Interpolate a scalar keyframe sequence at ``scroll``.
 
@@ -66,18 +90,7 @@ class ScalarKeyframes(BaseModel, frozen=True):
     @model_validator(mode="after")
     def _validate(self) -> ScalarKeyframes:
         """Validate keyframe list is non-empty and sorted by scroll position."""
-        if len(self.keyframes) < 2:
-            raise SlideSourceError(code="E308", message="keyframes must contain at least 2 entries")
-        positions = [kf[0] for kf in self.keyframes]
-        for i in range(1, len(positions)):
-            if positions[i] <= positions[i - 1]:
-                raise SlideSourceError(
-                    code="E308",
-                    message=(
-                        f"keyframes must be sorted by scroll position with no duplicates; "
-                        f"got {positions[i - 1]} followed by {positions[i]}"
-                    ),
-                )
+        _validate_keyframe_positions(self.keyframes)
         return self
 
 
@@ -94,18 +107,7 @@ class Vec2Keyframes(BaseModel, frozen=True):
     @model_validator(mode="after")
     def _validate(self) -> Vec2Keyframes:
         """Validate keyframe list is non-empty and sorted by scroll position."""
-        if len(self.keyframes) < 2:
-            raise SlideSourceError(code="E308", message="keyframes must contain at least 2 entries")
-        positions = [kf[0] for kf in self.keyframes]
-        for i in range(1, len(positions)):
-            if positions[i] <= positions[i - 1]:
-                raise SlideSourceError(
-                    code="E308",
-                    message=(
-                        f"keyframes must be sorted by scroll position with no duplicates; "
-                        f"got {positions[i - 1]} followed by {positions[i]}"
-                    ),
-                )
+        _validate_keyframe_positions(self.keyframes)
         return self
 
 

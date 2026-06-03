@@ -10,15 +10,11 @@ Three forms, mirroring the progressive-disclosure pattern used by
 
 from __future__ import annotations
 
-import sys
-
 import click
-from rich.console import Console
 
+from scrolly._cli.console import error_exit
 from scrolly.errors import is_registered_code, registered_codes
 from scrolly.errors._catalog import load_body, load_summary
-
-_err_console = Console(stderr=True, highlight=False)
 
 
 @click.command(name="errors")
@@ -48,7 +44,6 @@ def errors_command(code: str | None, list_codes: bool) -> None:
         return
 
     if not is_registered_code(code):
-        _err_console.print(f"[red]error:[/red] unknown error code '{code}'")
-        sys.exit(1)
+        error_exit(f"unknown error code '{code}'")
 
     click.echo(load_body(code))
