@@ -87,6 +87,8 @@ def resolve_asset_paths(
 
     Returns a new list (frozen models require copies).
     """
+    # Function-local import to avoid a circular import at module load: the
+    # concrete element types are defined in a sibling module of this one.
     from scrolly.slide.ir._framework.element import ImageElement, ImageSequenceElement
 
     resolved = []
