@@ -503,7 +503,7 @@ def test_element_source_types_matches_slide_union() -> None:
     assert set(element_source_types().values()) == set(get_args(AnyElement))
 
 
-def test_element_source_schema_is_json_serialisable() -> None:
+def test_element_source_schema_is_json_serializable() -> None:
     """Each element exposes a JSON-schema dict via ``source_schema``."""
     # --- arrange / act ----------------
     from scrolly.slide.ir import element_source_types
