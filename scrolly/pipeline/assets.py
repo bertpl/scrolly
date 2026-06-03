@@ -23,6 +23,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scrolly._shared.mime import mime_for, supported_extensions
 from scrolly.errors import SlideSourceError
 from scrolly.slide import SlideHTML
 
@@ -30,16 +31,6 @@ if TYPE_CHECKING:
     from scrolly.pipeline._bundler import PayloadBundler
 
 ASSET_REF_PREFIX = "__asset__/"
-
-_MIME_TYPES: dict[str, str] = {
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-    ".gif": "image/gif",
-    ".webp": "image/webp",
-    ".avif": "image/avif",
-}
 
 
 def rewrite_asset_refs(
@@ -206,13 +197,13 @@ def _bundle_img_refs(
 
 def _mime_type(path: Path, slide_id: str) -> str:
     """Return the MIME type for a supported image extension, raising ``E403`` otherwise."""
-    ext = path.suffix.lower()
-    if ext not in _MIME_TYPES:
+    mime = mime_for(path)
+    if mime is None:
         raise SlideSourceError(
             code="E403",
             message=(
-                f"slide {slide_id!r}: unsupported image format '{ext}' for {path.name}. "
-                f"Supported: {', '.join(sorted(_MIME_TYPES))}"
+                f"slide {slide_id!r}: unsupported image format '{path.suffix.lower()}' for {path.name}. "
+                f"Supported: {', '.join(supported_extensions())}"
             ),
         )
-    return _MIME_TYPES[ext]
+    return mime

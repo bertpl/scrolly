@@ -13,6 +13,7 @@ from typing import Any
 from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescape
 
 from scrolly import __version__
+from scrolly._shared.mime import ext_for
 from scrolly.deck import Deck
 from scrolly.pipeline._bundler import BundleStats
 from scrolly.render.bundled_assets import MermaidAsset, bundled_css, bundled_js
@@ -20,18 +21,10 @@ from scrolly.render.nav_data import build_nav_data
 from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
 from scrolly.slide import SlideHTML
 
-# Reverse of `_MIME_TYPES` in `scrolly/pipeline/assets.py`, plus a sentinel
-# for text-mode payloads. Used for help-screen labelling — the canvas.js
-# `extLabels` map maps these extension keys to friendly display names
-# ("SVG", "PNG", "HTML", etc.).
-_MIME_TO_EXT: dict[str, str] = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/svg+xml": ".svg",
-    "image/gif": ".gif",
-    "image/webp": ".webp",
-    "image/avif": ".avif",
-}
+# Sentinel extension for text-mode (iframe HTML) payloads. Image payloads
+# get their extension label from `_shared.mime.ext_for`; the canvas.js
+# `extLabels` map turns these keys into friendly display names ("SVG",
+# "PNG", "HTML", etc.).
 _TEXT_EXT = ".html"
 
 
@@ -161,14 +154,14 @@ def _payload_stats(bundle_stats: BundleStats | None) -> dict[str, Any]:
     if bundle_stats.text_targets > 0:
         total[_TEXT_EXT] = bundle_stats.text_targets
     for mime, count in bundle_stats.blob_targets_by_mime.items():
-        ext = _MIME_TO_EXT.get(mime, mime)
+        ext = ext_for(mime) or mime
         total[ext] = total.get(ext, 0) + count
 
     unique: dict[str, int] = {}
     if bundle_stats.text_payloads > 0:
         unique[_TEXT_EXT] = bundle_stats.text_payloads
     for mime, count in bundle_stats.blob_payloads_by_mime.items():
-        ext = _MIME_TO_EXT.get(mime, mime)
+        ext = ext_for(mime) or mime
         unique[ext] = unique.get(ext, 0) + count
 
     return {
