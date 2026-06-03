@@ -43,14 +43,10 @@ def test_chunk_is_frozen():
         c.html = "changed"  # type: ignore[misc]
 
 
-def test_empty_title_rejected():
+@pytest.mark.parametrize("title", ["", "   "])
+def test_blank_title_rejected(title):
     with pytest.raises(ValueError, match="title must be a non-empty string"):
-        SlideHTML(title="", html="")
-
-
-def test_whitespace_only_title_rejected():
-    with pytest.raises(ValueError, match="title must be a non-empty string"):
-        SlideHTML(title="   ", html="")
+        SlideHTML(title=title, html="")
 
 
 def test_scroll_range_none_is_content_driven_default():
@@ -58,16 +54,12 @@ def test_scroll_range_none_is_content_driven_default():
     assert c.scroll_range is None
 
 
-def test_scroll_range_zero_rejected():
+@pytest.mark.parametrize("scroll_range", [0, -5])
+def test_non_positive_scroll_range_rejected(scroll_range):
     # Zero would be ambiguous with content-driven mode (None already
     # means "compute at runtime; might be zero").
     with pytest.raises(ValueError, match="scroll_range must be a positive int"):
-        SlideHTML(title="T", html="", scroll_range=0)
-
-
-def test_scroll_range_negative_rejected():
-    with pytest.raises(ValueError, match="scroll_range must be a positive int"):
-        SlideHTML(title="T", html="", scroll_range=-5)
+        SlideHTML(title="T", html="", scroll_range=scroll_range)
 
 
 def test_scroll_range_positive_accepted():
@@ -80,14 +72,10 @@ def test_negative_initial_scroll_position_rejected():
         SlideHTML(title="T", html="", initial_scroll_position=-1)
 
 
-def test_scroll_speed_zero_rejected():
+@pytest.mark.parametrize("scroll_speed", [0, -1.0])
+def test_non_positive_scroll_speed_rejected(scroll_speed):
     with pytest.raises(ValueError, match="scroll_speed must be > 0"):
-        SlideHTML(title="T", html="", scroll_speed=0)
-
-
-def test_scroll_speed_negative_rejected():
-    with pytest.raises(ValueError, match="scroll_speed must be > 0"):
-        SlideHTML(title="T", html="", scroll_speed=-1.0)
+        SlideHTML(title="T", html="", scroll_speed=scroll_speed)
 
 
 def test_scroll_speed_default_is_one():
@@ -107,14 +95,10 @@ def test_font_scale_positive_accepted():
     assert c2.font_scale == 0.5
 
 
-def test_font_scale_zero_rejected():
+@pytest.mark.parametrize("font_scale", [0, -1.0])
+def test_non_positive_font_scale_rejected(font_scale):
     with pytest.raises(ValueError, match="font_scale must be > 0"):
-        SlideHTML(title="T", html="", font_scale=0)
-
-
-def test_font_scale_negative_rejected():
-    with pytest.raises(ValueError, match="font_scale must be > 0"):
-        SlideHTML(title="T", html="", font_scale=-1.0)
+        SlideHTML(title="T", html="", font_scale=font_scale)
 
 
 def test_snap_positions_default_empty():
