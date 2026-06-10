@@ -5,26 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.3.1 (2026-06-10)
 
 ### Added
 
 - `scrolly build --out-file <name>.html` names the output HTML file (default remains `index.html`).
-
-### Changed
-
-### Deprecated
-
-### Removed
 
 ### Fixed
 
 - Fenced code blocks in markdown elements render with their grey rounded box again (regression introduced in 0.2.0).
 - An explicit `scroll_range: 0` now pins the slide static as documented, instead of silently falling back to content-driven scrolling.
 - Content-driven slides no longer gain a phantom scroll range from anchored, scaled, or rotated elements — height measurement now accounts for CSS transforms.
-
-### Security
-
 ## 0.3.0 (2026-06-03)
 
 ### Fixed
