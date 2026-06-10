@@ -29,10 +29,10 @@ class SlideHTML:
     def __post_init__(self) -> None:
         if not self.title or not self.title.strip():
             raise ValueError("title must be a non-empty string")
-        if self.scroll_range is not None and self.scroll_range <= 0:
+        if self.scroll_range is not None and self.scroll_range < 0:
             raise ValueError(
-                f"scroll_range must be a positive int when set, got {self.scroll_range}; "
-                f"use None for content-driven mode"
+                f"scroll_range must be >= 0 when set (0 means a static slide), "
+                f"got {self.scroll_range}; use None for content-driven mode"
             )
         if self.initial_scroll_position < 0:
             raise ValueError(f"initial_scroll_position must be >= 0, got {self.initial_scroll_position}")
