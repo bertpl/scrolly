@@ -1318,6 +1318,73 @@ describe("ScrollManager.computeThumbHeight", () => {
   });
 });
 
+// Mock chunk for measureContentHeight: layout height + screen rect +
+// absolute children exposing only their transformed client rects.
+function _chunk({ scrollHeight, offsetHeight, rectTop, rectHeight, elementRectBottoms }) {
+  return {
+    scrollHeight,
+    offsetHeight,
+    getBoundingClientRect: () => ({ top: rectTop, height: rectHeight }),
+    querySelectorAll: () => (elementRectBottoms || []).map((bottom) => ({
+      getBoundingClientRect: () => ({ bottom }),
+    })),
+  };
+}
+
+describe("ScrollManager.measureContentHeight", () => {
+  it("returns scrollHeight when there are no absolute elements", () => {
+    const chunk = _chunk({ scrollHeight: 500, offsetHeight: 500, rectTop: 0, rectHeight: 500 });
+    expect(ScrollManager.measureContentHeight(chunk)).toBe(500);
+  });
+
+  it("uses transformed rects, so a centered anchored element that fits does not overflow", () => {
+    // Viewport-height chunk (500px). An element with height 90% anchored
+    // at its center sits at top 5% → 95% visually; its rect bottom is
+    // 475. The layout box (offsetTop 250 + offsetHeight 450 = 700) would
+    // have wrongly reported overflow.
+    const chunk = _chunk({
+      scrollHeight: 500, offsetHeight: 500, rectTop: 0, rectHeight: 500,
+      elementRectBottoms: [475],
+    });
+    expect(ScrollManager.measureContentHeight(chunk)).toBe(500);
+  });
+
+  it("reports genuine overflow from an element extending past the chunk", () => {
+    const chunk = _chunk({
+      scrollHeight: 500, offsetHeight: 500, rectTop: 0, rectHeight: 500,
+      elementRectBottoms: [800],
+    });
+    expect(ScrollManager.measureContentHeight(chunk)).toBe(800);
+  });
+
+  it("takes the lowest bottom across multiple elements", () => {
+    const chunk = _chunk({
+      scrollHeight: 500, offsetHeight: 500, rectTop: 0, rectHeight: 500,
+      elementRectBottoms: [300, 650, 420],
+    });
+    expect(ScrollManager.measureContentHeight(chunk)).toBe(650);
+  });
+
+  it("converts screen-space rects back to layout units under canvas zoom", () => {
+    // Canvas zoomed to 0.5: chunk rect is half its layout height, and
+    // element rects shrink with it. 325 screen px below the chunk top
+    // is 650 layout px.
+    const chunk = _chunk({
+      scrollHeight: 500, offsetHeight: 500, rectTop: 100, rectHeight: 250,
+      elementRectBottoms: [100 + 325],
+    });
+    expect(ScrollManager.measureContentHeight(chunk)).toBe(650);
+  });
+
+  it("falls back to scrollHeight when the chunk has no measurable height", () => {
+    const chunk = _chunk({
+      scrollHeight: 500, offsetHeight: 0, rectTop: 0, rectHeight: 0,
+      elementRectBottoms: [800],
+    });
+    expect(ScrollManager.measureContentHeight(chunk)).toBe(500);
+  });
+});
+
 describe("SnapManager.getNumSnaps", () => {
   it("returns 0 for unknown slideId", () => {
     const snap = new SnapManager(null, {}, () => null);

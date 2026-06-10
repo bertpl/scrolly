@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fenced code blocks in markdown elements render with their grey rounded box again (regression introduced in 0.2.0).
 - An explicit `scroll_range: 0` now pins the slide static as documented, instead of silently falling back to content-driven scrolling.
+- Content-driven slides no longer gain a phantom scroll range from anchored, scaled, or rotated elements — height measurement now accounts for CSS transforms.
 
 ### Security
 

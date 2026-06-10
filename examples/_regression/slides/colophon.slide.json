@@ -1,0 +1,17 @@
+// Colophon card: a single box anchored at its center, spanning 5%→95%
+// of the slide. Height is content-driven; because the box fits the
+// viewport, the slide must get no scroll range — a transform-blind
+// height measure would read the centered anchor as overflow and hand
+// the slide a phantom scrollbar.
+{
+  title: "Colophon",
+  // scroll_range omitted — content-driven height.
+  elements: [
+    {
+      name: "card",
+      html: "<div style=\"height: 100%; box-sizing: border-box; border: 2px solid #2c3e50; border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;\"><h2 style=\"margin-top: 0;\">Colophon</h2><p>This deck is the scrolly regression contract: every shipped feature appears on at least one slide.</p><p>It is built from JSON5 slide sources with markdown, HTML, SVG, mermaid, and iframe content, and compiled to the single self-contained HTML file you are reading now.</p></div>",
+      position: [50, 50], anchor: [50, 50],
+      width: 70, height: 90,
+    },
+  ],
+}
