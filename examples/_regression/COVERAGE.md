@@ -22,7 +22,7 @@ comments to intent (*why* an animation looks the way it does).
 
 | Type | Covered by |
 |---|---|
-| `markdown` | most slides; richest syntax (headings, lists, links, code spans, emphasis) on `reference`, a table on `affected` |
+| `markdown` | most slides; richest syntax (headings, lists, links, code spans, a fenced code block, emphasis) on `reference`, a table on `affected` |
 | `image` | `title` (glyph), `maint-bg` (jpg), `contributions` (timeline), `pressure` (png), `capability` (key), `affected` (logos) |
 | `image_sequence` | `cast`, `blank-gap`, `hidden-bytes`, `investigation`, `build-trojan` |
 | `html` | `title` (bg), `handover` (date callout), `anomaly` (terminal), `disclosure` (banner + progress bar) |
