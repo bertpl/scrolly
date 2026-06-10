@@ -1,0 +1,17 @@
+// Postscript: where the project stands today. The body is deliberately
+// taller than the viewport, but the slide pins static — an explicit
+// scroll_range of 0 must NOT fall back to content-driven scrolling;
+// overflow past the viewport stays clipped.
+{
+  title: "Postscript",
+  scroll_range: 0,
+  elements: [
+    {
+      name: "body",
+      markdown: "# Postscript\n\nAfter the disclosure, the xz project was handed back to Lasse Collin, who audited and re-released the codebase.\n\n- The 5.6.0 / 5.6.1 release tarballs were pulled from every mirror.\n- The malicious m4 build scripts were removed and the build system simplified.\n- GitHub restored the repository after the cleanup was verified.\n- Distros rolled back to 5.4.x and rebuilt downstream packages.\n- The project moved to a slower, more conservative release cadence.\n\nThe maintainer's own post-mortem is candid about the social-engineering pressure that preceded the handover — worth reading in full alongside the FAQ linked on the references slide.\n\nThis postscript is intentionally longer than one viewport. The slide pins itself static, so the overflow below the fold stays out of reach — by design, not by accident.\n\n- Filler bullet one: the deck's geometry checks need real overflow here.\n- Filler bullet two: enough lines that the body exceeds 100% height.\n- Filler bullet three: keep scrolling impossible all the same.\n- Filler bullet four: the absence of a scrollbar is the assertion.\n- Filler bullet five: end of the overflow ballast.",
+      position: [10, 5], anchor: [0, 0],
+      width: 80, height: "auto",
+      color: "#2c3e50",
+    },
+  ],
+}

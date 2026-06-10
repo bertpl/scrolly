@@ -54,17 +54,17 @@ def test_scroll_range_none_is_content_driven_default():
     assert c.scroll_range is None
 
 
-@pytest.mark.parametrize("scroll_range", [0, -5])
-def test_non_positive_scroll_range_rejected(scroll_range):
-    # Zero would be ambiguous with content-driven mode (None already
-    # means "compute at runtime; might be zero").
-    with pytest.raises(ValueError, match="scroll_range must be a positive int"):
-        SlideHTML(title="T", html="", scroll_range=scroll_range)
+def test_negative_scroll_range_rejected():
+    with pytest.raises(ValueError, match="scroll_range must be >= 0"):
+        SlideHTML(title="T", html="", scroll_range=-5)
 
 
-def test_scroll_range_positive_accepted():
-    c = SlideHTML(title="T", html="", scroll_range=500)
-    assert c.scroll_range == 500
+@pytest.mark.parametrize("scroll_range", [0, 500])
+def test_non_negative_scroll_range_accepted(scroll_range):
+    # Zero is an explicit author choice — a static slide — distinct
+    # from None (content-driven: compute at runtime; might be zero).
+    c = SlideHTML(title="T", html="", scroll_range=scroll_range)
+    assert c.scroll_range == scroll_range
 
 
 def test_negative_initial_scroll_position_rejected():

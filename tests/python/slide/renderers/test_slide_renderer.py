@@ -376,7 +376,7 @@ def test_scroll_range_fixed_timeline(tmp_path: Path) -> None:
     assert chunk.scroll_range == 1000
 
 
-def test_scroll_range_zero_becomes_none(tmp_path: Path) -> None:
+def test_scroll_range_zero_stays_zero(tmp_path: Path) -> None:
     # --- arrange ----------------------
     src = _write(
         tmp_path / "s.slide.json",
@@ -395,7 +395,11 @@ def test_scroll_range_zero_becomes_none(tmp_path: Path) -> None:
     chunk = _build(src)
 
     # --- assert -----------------------
-    assert chunk.scroll_range is None
+    # An explicit 0 means "static slide" — it must not be conflated
+    # with None (content-driven mode, where overflowing content would
+    # make the slide physically scroll).
+    assert chunk.scroll_range == 0
+    assert "scroll-mode-animation" in chunk.html
 
 
 def test_initial_scroll_position(tmp_path: Path) -> None:
@@ -1817,7 +1821,7 @@ def test_scroll_range_auto_maps_to_none() -> None:
     assert chunk.scroll_range is None
 
 
-def test_scroll_range_zero_still_maps_to_none() -> None:
+def test_scroll_range_zero_passes_through() -> None:
     # --- arrange ----------------------------
     ir = SlideIR(
         title="T",
@@ -1829,7 +1833,8 @@ def test_scroll_range_zero_still_maps_to_none() -> None:
     chunk = _renderer().render(ir)
 
     # --- assert -----------------------------
-    assert chunk.scroll_range is None
+    # Explicit 0 means a static slide — distinct from None (content-driven).
+    assert chunk.scroll_range == 0
 
 
 def test_scroll_range_positive_maps_to_int() -> None:

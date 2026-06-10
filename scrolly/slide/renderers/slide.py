@@ -75,7 +75,7 @@ class SlideRenderer(Renderer):
         # the wrapper into the counter-translate behavior for numeric-
         # range slides; content-driven slides omit the class and let
         # the chunk's translation reach their content unobstructed.
-        is_content_driven = not (isinstance(ir.scroll_range, (int, float)) and ir.scroll_range > 0)
+        is_content_driven = not isinstance(ir.scroll_range, (int, float))
         mode_class = "" if is_content_driven else " scroll-mode-animation"
 
         rendered_elements = self.render_elements(ir, css_namespace=css_namespace, bundler=bundler)
@@ -107,8 +107,9 @@ class SlideRenderer(Renderer):
         unique_assets = list(dict.fromkeys(asset_paths))
 
         if is_content_driven:
-            # ``"auto"`` (the substrate default) and ``0`` both signal
-            # content-driven height to the canvas runtime.
+            # ``"auto"`` (the substrate default) signals content-driven
+            # height to the canvas runtime; an explicit numeric range —
+            # including ``0``, meaning a static slide — passes through.
             slide_html_scroll_range: int | None = None
         else:
             slide_html_scroll_range = int(ir.scroll_range)
