@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scrolly build --out-file <name>.html` names the output HTML file (default remains `index.html`).
+
 ### Changed
 
 ### Deprecated

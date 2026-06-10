@@ -2,7 +2,8 @@
 
 A default `scrolly build` produces a **single self-contained
 `index.html`** with no external resource loads. This page explains what
-that means and the knobs that affect it.
+that means and the knobs that affect it. Pass `--out-file` to name the
+output file something other than `index.html`.
 
 ## The single-file guarantee
 

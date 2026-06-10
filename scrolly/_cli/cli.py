@@ -48,6 +48,13 @@ def cli() -> None:
     type=click.Path(file_okay=False, path_type=Path),
     help="Output directory.",
 )
+@click.option(
+    "--out-file",
+    "out_file",
+    default="index.html",
+    show_default=True,
+    help="Name of the output HTML file inside the output directory.",
+)
 @click.option("--force", is_flag=True, help="Overwrite a non-empty output directory.")
 @click.option("--no-inline", is_flag=True, help="Write assets as separate files instead of inlining.")
 @click.option("--strict", is_flag=True, help="Enable additional lint checks (e.g. out-of-range keyframes).")
@@ -72,6 +79,7 @@ def cli() -> None:
 def build(
     deck_path: Path,
     out_dir: Path,
+    out_file: str,
     force: bool,
     no_inline: bool,
     strict: bool,
@@ -89,6 +97,7 @@ def build(
             simplified_zoom_control=simplified_zoom_control,
             compress=not no_compress,
             offline=offline,
+            out_file=out_file,
         )
     except ScrollyError as e:
         error_exit(str(e))
@@ -96,7 +105,10 @@ def build(
     if strict:
         _report_diagnostics(deck)
 
-    click.echo(f"Built '{deck.title or '(untitled)'}': {len(deck.slides)} slides, {len(deck.edges)} edges → {out_dir}")
+    click.echo(
+        f"Built '{deck.title or '(untitled)'}': {len(deck.slides)} slides, "
+        f"{len(deck.edges)} edges → {out_dir / out_file}"
+    )
 
 
 @cli.command()
