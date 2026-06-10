@@ -17,8 +17,8 @@ def test_validate_regression_deck():
     result = runner.invoke(cli, ["validate", str(deck_file)])
     assert result.exit_code == 0
     assert "Valid" in result.output
-    assert "18 slides" in result.output
-    assert "18 edges" in result.output
+    assert "19 slides" in result.output
+    assert "19 edges" in result.output
 
 
 def test_validate_minimal_deck(tmp_path):

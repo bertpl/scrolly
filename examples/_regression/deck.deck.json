@@ -47,6 +47,7 @@
     { id: "lessons",   position: [1, 3], source: "slides/lessons.slide.json" },
     { id: "reference", position: [4, 3], source: "slides/reference.slide.json" },
     { id: "postscript", position: [5, 3], source: "slides/postscript.slide.json" },
+    { id: "colophon", position: [5, 4], source: "slides/colophon.slide.json" },
   ],
   edges: [
     // Setup column
@@ -77,6 +78,8 @@
     ["lessons|right", "reference|left"],
     // Reference -> postscript (final static slide)
     ["reference|right", "postscript|left"],
+    // Postscript -> colophon (centered-anchor fit check)
+    ["postscript", "colophon"],
     // Discovery -> reference (additional shortcut from disclosure's right edge)
     ["disclosure|right", "reference|left"],
   ],

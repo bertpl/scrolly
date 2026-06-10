@@ -548,9 +548,20 @@
       // `scrollHeight` covers any in-flow content the chunk hosts; absolute
       // children are out of flow and don't contribute, so walk them and
       // take the lowest bottom edge into account separately.
+      //
+      // Element anchoring, scale, and rotation are all implemented as CSS
+      // transforms, which layout-box properties (`offsetTop`/`offsetHeight`)
+      // ignore — measuring those would overestimate e.g. a centered
+      // anchored element by half its height. Bounding-client rects include
+      // transforms; they're in screen space, so each bottom is taken
+      // relative to the chunk's rect top and divided back to layout units
+      // by the chunk's own screen-to-layout factor (the canvas zoom).
       let bottom = chunk.scrollHeight;
+      const chunkRect = chunk.getBoundingClientRect();
+      const scale = chunk.offsetHeight > 0 ? chunkRect.height / chunk.offsetHeight : 0;
+      if (scale <= 0) return bottom;
       chunk.querySelectorAll(".slide-element").forEach((el) => {
-        const elBottom = el.offsetTop + el.offsetHeight;
+        const elBottom = (el.getBoundingClientRect().bottom - chunkRect.top) / scale;
         if (elBottom > bottom) bottom = elBottom;
       });
       return bottom;

@@ -54,7 +54,8 @@ comments to intent (*why* an animation looks the way it does).
 
 | Feature | Covered by |
 |---|---|
-| `scroll_range: "auto"` (content-driven height) | `reference`, `lessons`, `affected` |
+| `scroll_range: "auto"` (content-driven height) | `reference`, `lessons`, `affected`, `colophon` |
+| `scroll_range: "auto"` + centered-anchor element that fits (no phantom scroll range) | `colophon` |
 | `scroll_range: <int>` (fixed) | most slides |
 | `scroll_range: 0` (explicitly static, overflowing body stays pinned) | `postscript` |
 | `scroll_speed` ≠ 1.0 | `handover` (0.6), `capability` (0.7) |
