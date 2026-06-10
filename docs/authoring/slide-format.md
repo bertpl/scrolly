@@ -14,8 +14,8 @@ control how it scrolls.
 ## Scroll behavior
 
 - **`scroll_range`** — how far the slide scrolls, as a number, or
-  `"auto"` (default) for content-driven height. Animation keyframes are
-  expressed in these units.
+  `"auto"` (default) for content-driven height; `0` pins the slide
+  static. Animation keyframes are expressed in these units.
 - **`snap_positions`** — scroll offsets the view eases to, letting the
   slide rest on meaningful moments.
 - **`reverse`** — when true, flips the scroll direction so the thumb

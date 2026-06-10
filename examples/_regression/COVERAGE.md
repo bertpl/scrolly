@@ -56,6 +56,7 @@ comments to intent (*why* an animation looks the way it does).
 |---|---|
 | `scroll_range: "auto"` (content-driven height) | `reference`, `lessons`, `affected` |
 | `scroll_range: <int>` (fixed) | most slides |
+| `scroll_range: 0` (explicitly static, overflowing body stays pinned) | `postscript` |
 | `scroll_speed` ≠ 1.0 | `handover` (0.6), `capability` (0.7) |
 | `reverse: true` | `disclosure` |
 | author-supplied `snap_positions` | most slides |
@@ -71,7 +72,7 @@ comments to intent (*why* an animation looks the way it does).
 | group label auto-contrast — light bg → black | Setup, Infiltration |
 | group label auto-contrast — dark bg → white | Backdoor (`#8B2F2F`) |
 | group `label_color` override | Discovery (`#1B5E20` on light bg) |
-| off-grid / negative origin | deck origin `(-1, -2)`; `affected` `(4, -2)`, `lessons` `(1, 3)`, `reference` `(4, 3)` |
+| off-grid / negative origin | deck origin `(-1, -2)`; `affected` `(4, -2)`, `lessons` `(1, 3)`, `reference` `(4, 3)`, `postscript` `(5, 3)` |
 | long bezier to an off-grid slide | `disclosure`→`affected`, `disclosure`→`lessons`, `lessons`→`reference` |
 | non-adjacent curved beziers | `disclosure`→`affected`, `disclosure`→`reference` |
 | edge endpoints (`slide\|side`) | throughout the edge list (e.g. `cast\|right`, `disclosure\|bottom`) |

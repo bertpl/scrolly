@@ -16,8 +16,9 @@ grid `position` is set from the deck manifest. See
 A slide's `scroll_range` is how far the reader scrolls from top to
 bottom. It can be a fixed number, or `"auto"` (the default) for
 content-driven height — the slide is exactly as tall as its content
-needs. Animation keyframes are expressed in scroll-position units
-within this range.
+needs. An explicit `0` pins the slide static: it never scrolls, even
+when its content is taller than the viewport. Animation keyframes are
+expressed in scroll-position units within this range.
 
 ## Snap positions
 
