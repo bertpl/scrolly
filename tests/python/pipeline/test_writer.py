@@ -131,3 +131,26 @@ def test_inline_does_not_write_mermaid_even_when_present(tmp_path):
 
     # --- assert -----------------------
     assert not (out / "mermaid.min.js").exists()
+
+
+def test_custom_out_file_name(tmp_path):
+    # --- arrange ----------------------
+    out = tmp_path / "dist"
+
+    # --- act --------------------------
+    write_output(out, "<html></html>", out_file="deck.html")
+
+    # --- assert -----------------------
+    assert (out / "deck.html").read_text() == "<html></html>"
+    assert not (out / "index.html").exists()
+
+
+@pytest.mark.parametrize(
+    "out_file",
+    ["sub/deck.html", "..\\deck.html", "deck.htm", "deck", ".html"],
+)
+def test_invalid_out_file_rejected(tmp_path, out_file):
+    # --- arrange / act / assert -------
+    with pytest.raises(OutputError) as exc_info:
+        write_output(tmp_path / "dist", "<html></html>", out_file=out_file)
+    assert exc_info.value.code == "E703"

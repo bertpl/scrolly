@@ -27,16 +27,17 @@ def build_deck(
     simplified_zoom_control: bool = False,
     compress: bool = True,
     offline: bool = False,
+    out_file: str = "index.html",
 ) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`.
 
     Args:
         deck_path: Path to the ``.deck.json`` source.
-        out_dir: Destination directory for ``index.html`` (and bundled
+        out_dir: Destination directory for the output HTML (and bundled
             assets when ``inline=False``).
         force: Allow overwriting a non-empty ``out_dir``.
-        inline: Inline CSS/JS/mermaid into ``index.html`` (default) vs.
-            emit separate files.
+        inline: Inline CSS/JS/mermaid into the output HTML (default)
+            vs. emit separate files.
         simplified_zoom_control: Use the legacy single-icon zoom-out
             control instead of the default deck mini-map.
         compress: Emit the combined-payload gzip+base64 bundle when the
@@ -44,6 +45,7 @@ def build_deck(
         offline: Skip the mermaid CDN download and use the
             wheel-bundled mermaid instead. Honored together with the
             ``SCROLLY_OFFLINE`` environment variable.
+        out_file: Name of the output HTML file inside ``out_dir``.
 
     Returns:
         The fully-resolved ``Deck``.
@@ -94,7 +96,7 @@ def build_deck(
         mermaid=mermaid,
     )
 
-    write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline)
+    write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline, out_file=out_file)
     if not inline:
         copy_assets(chunks, out_dir)
 

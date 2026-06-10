@@ -414,3 +414,19 @@ def test_meta_payloads_markdown_only_deck(tmp_path):
 
     payloads = _extract_meta_payloads(out)
     assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+
+
+def test_build_deck_with_custom_out_file(tmp_path):
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("Only", "# Only\n\nhello"))
+
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text(
+        '{ title: "tiny", slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }'
+    )
+
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, out_file="deck.html")
+
+    assert (out / "deck.html").exists()
+    assert not (out / "index.html").exists()
