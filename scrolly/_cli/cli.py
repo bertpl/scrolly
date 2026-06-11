@@ -76,6 +76,12 @@ def cli() -> None:
         "byte-reproducibility. SCROLLY_OFFLINE=1 in the environment is equivalent."
     ),
 )
+@click.option(
+    "--no-minification",
+    is_flag=True,
+    hidden=True,
+    help="Debug only: ship the canvas JS and CSS as readable source, comments included.",
+)
 def build(
     deck_path: Path,
     out_dir: Path,
@@ -86,6 +92,7 @@ def build(
     simplified_zoom_control: bool,
     no_compress: bool,
     offline: bool,
+    no_minification: bool,
 ) -> None:
     """Build a deck into a self-contained HTML presentation."""
     try:
@@ -98,6 +105,7 @@ def build(
             compress=not no_compress,
             offline=offline,
             out_file=out_file,
+            minify=not no_minification,
         )
     except ScrollyError as e:
         error_exit(str(e))

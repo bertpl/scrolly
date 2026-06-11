@@ -28,6 +28,7 @@ def build_deck(
     compress: bool = True,
     offline: bool = False,
     out_file: str = "index.html",
+    minify: bool = True,
 ) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`.
 
@@ -46,6 +47,10 @@ def build_deck(
             wheel-bundled mermaid instead. Honored together with the
             ``SCROLLY_OFFLINE`` environment variable.
         out_file: Name of the output HTML file inside ``out_dir``.
+        minify: Ship the canvas JS and CSS minified (comments
+            stripped). On by default in every mode, including
+            ``compress=False``; disabled only via the hidden
+            ``--no-minification`` debug flag.
 
     Returns:
         The fully-resolved ``Deck``.
@@ -94,9 +99,10 @@ def build_deck(
         compressed_payload_json=compressed_payload_json,
         bundle_stats=bundle_stats,
         mermaid=mermaid,
+        minify=minify,
     )
 
-    write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline, out_file=out_file)
+    write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline, out_file=out_file, minify=minify)
     if not inline:
         copy_assets(chunks, out_dir)
 

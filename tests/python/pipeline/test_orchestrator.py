@@ -43,9 +43,9 @@ def test_example_deck_builds(deck_file, tmp_path):
     assert not (out / "canvas.js").exists()
 
     html = index.read_text()
-    # CSS and JS are inlined.
+    # CSS and JS are inlined (CSS minified, so no space before the brace).
     assert "<style>" in html
-    assert ".canvas {" in html
+    assert ".canvas{" in html
 
     for slide in deck.slides:
         assert f'data-id="{slide.id}"' in html
@@ -252,6 +252,46 @@ def test_build_force_overwrites_non_empty_out_dir(tmp_path):
 
     build_deck(deck_file, out, force=True)
     assert (out / "index.html").exists()
+
+
+# ==================================================================================================
+#  JS/CSS minification (end-to-end)
+# ==================================================================================================
+def test_build_ships_minified_assets_by_default(tmp_path):
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("x", "# x"))
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
+
+    minified_out = tmp_path / "dist-minified"
+    build_deck(deck_file, minified_out)
+    readable_out = tmp_path / "dist-readable"
+    build_deck(deck_file, readable_out, minify=False)
+
+    minified_html = (minified_out / "index.html").read_text()
+    readable_html = (readable_out / "index.html").read_text()
+    # The runtime's section banners ship only in the readable build.
+    assert "// ----" not in minified_html
+    assert "// ----" in readable_html
+    assert "ScrollManager" in minified_html
+    assert len(minified_html) < len(readable_html)
+
+
+def test_build_no_inline_writes_minified_asset_files(tmp_path):
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("x", "# x"))
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
+
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, inline=False)
+
+    js = (out / "canvas.js").read_text()
+    assert "// ----" not in js
+    assert "ScrollManager" in js
+    css = (out / "canvas.css").read_text()
+    assert "/*" not in css
+    assert ".canvas{" in css
 
 
 # ==================================================================================================

@@ -37,6 +37,7 @@ def assemble(
     compressed_payload_json: str | None = None,
     bundle_stats: BundleStats | None = None,
     mermaid: MermaidAsset | None = None,
+    minify: bool = True,
 ) -> str:
     """Render the deck and its chunks into a single HTML string.
 
@@ -44,6 +45,9 @@ def assemble(
         deck: The fully-resolved deck.
         chunks: Rendered per-slide HTML chunks, keyed by slide id.
         inline: Inline CSS/JS into the page (vs. emitting separate files).
+        minify: Inline the canvas JS and CSS minified (comments
+            stripped) rather than as readable source. Only meaningful
+            when ``inline=True``.
         simplified_zoom_control: Use the legacy single-icon zoom-out
             control instead of the default deck mini-map.
         compressed_payload_json: JSON payload from the bundler's
@@ -70,8 +74,8 @@ def assemble(
 
     inline_vars = {}
     if inline:
-        inline_vars["bundled_css"] = bundled_css()
-        inline_vars["bundled_js"] = bundled_js()
+        inline_vars["bundled_css"] = bundled_css(minify=minify)
+        inline_vars["bundled_js"] = bundled_js(minify=minify)
         if mermaid is not None:
             inline_vars["mermaid_js_content"] = mermaid.content.decode("utf-8")
 

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Built decks ship the canvas runtime JS and CSS minified — source comments no longer appear in the output HTML, which also shrinks it by ~60 KB.
+
 ### Deprecated
 
 ### Removed

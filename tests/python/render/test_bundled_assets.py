@@ -1,8 +1,12 @@
-"""Tests for the mermaid resolution chain in `scrolly.render.bundled_assets`."""
+"""Tests for `scrolly.render.bundled_assets`: mermaid resolution chain and JS minification."""
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 import urllib.error
+from importlib.resources import files
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -223,3 +227,76 @@ def _mock_cdn_success(monkeypatch: pytest.MonkeyPatch) -> None:
         return _FakeResponse(fake_content)
 
     monkeypatch.setattr(bundled_assets.urllib.request, "urlopen", _open)
+
+
+# ---- JS/CSS minification ----------------------------
+
+
+def test_bundled_js_minified_by_default() -> None:
+    # --- act --------------------------
+    minified = bundled_assets.bundled_js()
+    source = bundled_assets.bundled_js(minify=False)
+
+    # --- assert -----------------------
+    assert len(minified) < len(source)
+    assert "/*" not in minified
+    assert "// ----" not in minified
+    # Load-bearing identifiers survive (rjsmin never renames).
+    assert "ScrollManager" in minified
+    assert "decompressBundle" in minified
+
+
+def test_bundled_js_unminified_is_source_verbatim() -> None:
+    # --- arrange ----------------------
+    raw = files("scrolly.render").joinpath("assets", "canvas.js").read_text(encoding="utf-8")
+
+    # --- act / assert -----------------
+    assert bundled_assets.bundled_js(minify=False) == raw
+
+
+def test_bundled_css_minified_by_default() -> None:
+    # --- act --------------------------
+    minified = bundled_assets.bundled_css()
+    source = bundled_assets.bundled_css(minify=False)
+
+    # --- assert -----------------------
+    assert len(minified) < len(source)
+    assert "/*" not in minified
+    # Load-bearing selectors survive (rcssmin never rewrites them).
+    assert ".canvas" in minified
+    assert ".slide-element" in minified
+
+
+def test_bundled_css_unminified_is_source_verbatim() -> None:
+    # --- arrange ----------------------
+    raw = files("scrolly.render").joinpath("assets", "canvas.css").read_text(encoding="utf-8")
+
+    # --- act / assert -----------------
+    assert bundled_assets.bundled_css(minify=False) == raw
+
+
+def test_iter_assets_minifies_js_and_css() -> None:
+    # --- act --------------------------
+    minified = dict(bundled_assets.iter_assets())
+    verbatim = dict(bundled_assets.iter_assets(minify=False))
+
+    # --- assert -----------------------
+    for name in ("canvas.js", "canvas.css"):
+        assert len(minified[name]) < len(verbatim[name])
+    assert b"// ----" not in minified["canvas.js"]
+    assert b"// ----" in verbatim["canvas.js"]
+    assert b"/*" not in minified["canvas.css"]
+    assert b"/*" in verbatim["canvas.css"]
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not available")
+def test_minified_js_is_valid_syntax(tmp_path: Path) -> None:
+    # --- arrange ----------------------
+    minified_file = tmp_path / "canvas.min.js"
+    minified_file.write_text(bundled_assets.bundled_js())
+
+    # --- act --------------------------
+    result = subprocess.run(["node", "--check", str(minified_file)], capture_output=True, text=True)
+
+    # --- assert -----------------------
+    assert result.returncode == 0, result.stderr

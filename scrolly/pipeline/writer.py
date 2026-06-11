@@ -39,6 +39,7 @@ def write_output(
     mermaid: MermaidAsset | None = None,
     inline: bool = True,
     out_file: str = "index.html",
+    minify: bool = True,
 ) -> None:
     """Write `html` as `out_dir/<out_file>` and optionally copy bundled assets.
 
@@ -53,6 +54,8 @@ def write_output(
         inline: When ``True``, only the HTML file is written (CSS, JS,
             and mermaid are embedded in the HTML).
         out_file: Name of the HTML file inside ``out_dir``.
+        minify: Write the standalone canvas JS and CSS minified (only
+            meaningful when ``inline=False``).
 
     Raises:
         OutputError: ``out_dir`` exists but is not a directory, is
@@ -73,7 +76,7 @@ def write_output(
 
     (out_dir / out_file).write_text(html)
     if not inline:
-        for name, content in iter_assets():
+        for name, content in iter_assets(minify=minify):
             (out_dir / name).write_bytes(content)
         if mermaid is not None:
             (out_dir / mermaid.name).write_bytes(mermaid.content)

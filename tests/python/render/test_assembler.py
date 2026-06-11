@@ -62,7 +62,8 @@ def test_assembler_inlines_css_and_js_by_default():
     deck, chunks = _single("x", "")
     html = assemble(deck, chunks)
     assert "<style>" in html
-    assert ".canvas {" in html
+    # CSS ships minified, so no space before the brace.
+    assert ".canvas{" in html
     assert "<script>" in html
     assert 'href="canvas.css"' not in html
     assert 'src="canvas.js"' not in html
