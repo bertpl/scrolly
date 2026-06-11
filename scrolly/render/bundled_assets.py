@@ -98,6 +98,22 @@ def bundled_js(*, minify: bool = True) -> str:
     return rjsmin.jsmin(js) if minify else js
 
 
+def bundled_loader_js(*, minify: bool = True) -> str:
+    """Return the bootstrap loader JS content as a string, minified by default.
+
+    The loader is the only plain-text JavaScript in a compressed build
+    (see ``scrolly.render.bootstrap``); it is not part of
+    :func:`iter_assets` because plain and ``--no-inline`` builds never
+    ship it.
+
+    Args:
+        minify: Strip comments and collapse whitespace via rjsmin.
+    """
+    base = files("scrolly.render").joinpath("assets")
+    js = base.joinpath("loader.js").read_text(encoding="utf-8")
+    return rjsmin.jsmin(js) if minify else js
+
+
 def _minify(name: str, content: str) -> str:
     """Minify an asset by file type; non-JS/CSS content passes through verbatim."""
     if name.endswith(".js"):

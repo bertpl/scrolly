@@ -7,11 +7,12 @@ from pathlib import Path
 
 from scrolly.deck import Deck, Slide
 from scrolly.errors import SlideSourceError
-from scrolly.pipeline._bundler import BundleStats, PayloadBundler
+from scrolly.pipeline._bundler import PayloadBundler, gate_passes
 from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.loader import load_deck
 from scrolly.pipeline.writer import write_output
 from scrolly.render.assembler import assemble
+from scrolly.render.bootstrap import build_compressed_page
 from scrolly.render.bundled_assets import MermaidAsset, mermaid_asset
 from scrolly.slide.html import SlideHTML
 from scrolly.slide.ir import SlideIR
@@ -41,8 +42,10 @@ def build_deck(
             vs. emit separate files.
         simplified_zoom_control: Use the legacy single-icon zoom-out
             control instead of the default deck mini-map.
-        compress: Emit the combined-payload gzip+base64 bundle when the
-            ≥5% savings gate passes.
+        compress: Ship the compressed page (a small bootstrap loader
+            plus one gzip+base64 blob holding the whole document and
+            its asset payloads) when the ≥5% savings gate passes vs.
+            the plain page.
         offline: Skip the mermaid CDN download and use the
             wheel-bundled mermaid instead. Honored together with the
             ``SCROLLY_OFFLINE`` environment variable.
@@ -59,30 +62,14 @@ def build_deck(
 
     # Bundler is the canonical "compressible payload tracker" whenever
     # we're emitting an inlined build. It's instantiated regardless of the
-    # `compress` flag so its stats (counts, baseline bytes, dedup info)
-    # are always available for the help screen. Whether we actually emit
-    # the bundle `<script>` block is a separate decision: only when
-    # `compress=True` and the gate passes.
+    # `compress` flag so its stats (counts, dedup info) are always
+    # available for the help screen. Whether the compressed page actually
+    # ships is a separate decision: only when `compress=True` and the
+    # holistic ≥5% gate passes vs. the plain page.
     bundler: PayloadBundler | None = PayloadBundler() if inline else None
 
     chunks = _render_slides(deck.slides, slide_irs, bundler=bundler)
     chunks = rewrite_asset_refs(chunks, inline=inline, bundler=bundler)
-
-    compressed_payload_json: str | None = None
-    bundle_stats: BundleStats | None = None
-    if bundler is not None:
-        if compress:
-            result = bundler.build()
-            if result is not None:
-                compressed_payload_json, bundle_stats = result
-        if compressed_payload_json is None:
-            # Either compression disabled, or the gate failed. Snapshot stats
-            # (with `compressed=False`) and substitute the inline fallback so
-            # chunk HTML matches a `--no-compress` build byte-for-byte.
-            bundle_stats = bundler.stats()
-            fallback = bundler.inline_fallback()
-            if fallback:
-                chunks = _substitute_fallback(chunks, fallback)
 
     # Resolve mermaid once when any chunk needs it — threaded into both
     # assemble (for inlined content + help-screen version) and write_output
@@ -91,22 +78,91 @@ def build_deck(
     if any(chunk.has_mermaid for chunk in chunks.values()):
         mermaid = mermaid_asset(offline=offline)
 
-    html = assemble(
-        deck,
-        chunks,
-        inline=inline,
-        simplified_zoom_control=simplified_zoom_control,
-        compressed_payload_json=compressed_payload_json,
-        bundle_stats=bundle_stats,
-        mermaid=mermaid,
-        minify=minify,
-    )
+    if bundler is None:
+        html = assemble(
+            deck,
+            chunks,
+            inline=False,
+            simplified_zoom_control=simplified_zoom_control,
+            mermaid=mermaid,
+            minify=minify,
+        )
+    else:
+        html = _assemble_inlined(
+            deck,
+            chunks,
+            bundler=bundler,
+            compress=compress,
+            simplified_zoom_control=simplified_zoom_control,
+            mermaid=mermaid,
+            minify=minify,
+        )
 
     write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline, out_file=out_file, minify=minify)
     if not inline:
         copy_assets(chunks, out_dir)
 
     return deck
+
+
+def _assemble_inlined(
+    deck: Deck,
+    chunks: dict[str, SlideHTML],
+    *,
+    bundler: PayloadBundler,
+    compress: bool,
+    simplified_zoom_control: bool,
+    mermaid: MermaidAsset | None,
+    minify: bool,
+) -> str:
+    """Assemble an inlined build: the compressed page, or the plain page.
+
+    The plain page (bundler targets substituted back to inline forms) is
+    always assembled — it is the shipped output for ``compress=False``
+    and the gate baseline otherwise. When compression is requested, the
+    inner document (targets as markers + payload manifest block) is
+    wrapped into the bootstrap page and shipped iff it beats the plain
+    page by the holistic ≥5% gate; a gate failure ships the plain page,
+    byte-equivalent to a ``--no-compress`` build.
+    """
+    fallback = bundler.inline_fallback()
+    plain_chunks = _substitute_fallback(chunks, fallback) if fallback else chunks
+    plain_html = assemble(
+        deck,
+        plain_chunks,
+        inline=True,
+        simplified_zoom_control=simplified_zoom_control,
+        bundle_stats=bundler.stats(),
+        mermaid=mermaid,
+        minify=minify,
+    )
+    if not compress:
+        return plain_html
+
+    manifest_json, asset_stream = bundler.manifest_and_stream()
+    inner_html = assemble(
+        deck,
+        chunks,
+        inline=True,
+        simplified_zoom_control=simplified_zoom_control,
+        payload_manifest_json=manifest_json,
+        bundle_stats=bundler.stats(),
+        mermaid=mermaid,
+        minify=minify,
+        deferred_compression_stats=True,
+    )
+    plain_size = len(plain_html.encode("utf-8"))
+    compressed_html = build_compressed_page(
+        inner_html,
+        asset_stream,
+        title=deck.title or "scrolly",
+        slide_count=len(deck.slides),
+        plain_size=plain_size,
+        minify=minify,
+    )
+    if gate_passes(len(compressed_html.encode("utf-8")), plain_size):
+        return compressed_html
+    return plain_html
 
 
 def _render_slides(

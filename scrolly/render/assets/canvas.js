@@ -1629,35 +1629,31 @@
     };
   }
 
-  // ---- decompressBundle (pure — no DOM access) ------------------------------
+  // ---- mapBundleAssignments (pure — no DOM access) --------------------------
   //
-  // Parses the embedded compressed-payload JSON, base64-decodes the blob,
-  // runs DecompressionStream("gzip"), walks payloads[]/targets[] and returns
-  // a flat array of Assignment records. Pure; testable under Vitest with
-  // synthetic input. The DOM applicator lives in the DOM section below.
-  async function decompressBundle(scriptText) {
-    const data = JSON.parse(scriptText);
-    const gz = Uint8Array.from(atob(data.blob), c => c.charCodeAt(0));
-    const buf = new Uint8Array(
-      await new Response(
-        new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))
-      ).arrayBuffer()
-    );
+  // Parses the embedded payload-manifest JSON, slices the already-inflated
+  // payload byte stream per the manifest's payload lengths (the bootstrap
+  // loader did the base64 + gzip work and handed the bytes over on window),
+  // walks payloads[]/targets[] and returns a flat array of Assignment
+  // records. Pure; testable under Vitest with synthetic input. The DOM
+  // applicator lives in the DOM section below.
+  function mapBundleAssignments(manifestText, bytes) {
+    const data = JSON.parse(manifestText);
 
     const payloadBytes = [];
     let off = 0;
     for (const p of data.payloads) {
-      payloadBytes.push(buf.subarray(off, off + p.length));
+      payloadBytes.push(bytes.subarray(off, off + p.length));
       off += p.length;
     }
 
     const td = new TextDecoder();
     return data.targets.map((t) => {
       const p = data.payloads[t.payload];
-      const bytes = payloadBytes[t.payload];
+      const b = payloadBytes[t.payload];
       return p.mode === "text"
-        ? { target_id: t.id, attr: t.attr, mode: "text", text: td.decode(bytes) }
-        : { target_id: t.id, attr: t.attr, mode: "blob", bytes, mime: p.mime };
+        ? { target_id: t.id, attr: t.attr, mode: "text", text: td.decode(b) }
+        : { target_id: t.id, attr: t.attr, mode: "blob", bytes: b, mime: p.mime };
     });
   }
 
@@ -1713,7 +1709,7 @@
     exports.GroupLayout = GroupLayout;
     exports.ViewState = ViewState;
     exports.resolveTarget = resolveTarget;
-    exports.decompressBundle = decompressBundle;
+    exports.mapBundleAssignments = mapBundleAssignments;
     exports.buildAutomationHook = buildAutomationHook;
     exports.resolveVersionLabel = resolveVersionLabel;
   }
@@ -2155,11 +2151,14 @@
     });
   }
 
-  // ---- Populate DOM targets from compressed bundle --------------------------
+  // ---- Populate DOM targets from the payload manifest ------------------------
   //
-  // decompressBundle is the pure parse step (defined near other pure helpers,
-  // before the DOM-code guard, so Vitest can import and test it directly).
-  // populateTarget and populateFromBundle live here in the DOM section.
+  // mapBundleAssignments is the pure parse step (defined near other pure
+  // helpers, before the DOM-code guard, so Vitest can import and test it
+  // directly). populateTarget and populateFromBundle live here in the DOM
+  // section. The payload bytes themselves were inflated by the bootstrap
+  // loader and handed over on `window.__scrollyPayloadBytes` — the window
+  // object survives the loader's document.write replacement.
 
   // Thin DOM applicator. Apply one Assignment to its target element.
   function populateTarget(a) {
@@ -2175,21 +2174,20 @@
     el.removeAttribute("data-scrolly-target");
   }
 
-  // Outer: read the embedded bundle, decompress, populate every target.
-  // Fire-and-forget; off-screen slides don't need populated content until
-  // they're scrolled into view.
-  async function populateFromBundle() {
-    const script = document.getElementById("scrolly-compressed-payload");
+  // Outer: read the embedded manifest, populate every target from the
+  // loader-provided bytes.
+  function populateFromBundle() {
+    const script = document.getElementById("scrolly-payload-manifest");
     if (!script) return;
-    if (!("DecompressionStream" in window)) {
-      console.warn("scrolly: DecompressionStream unavailable; compressed payloads will not load.");
+    const bytes = window.__scrollyPayloadBytes;
+    if (!bytes) {
+      console.error("scrolly: payload manifest present but no payload bytes from the bootstrap loader");
       return;
     }
     try {
-      const assignments = await decompressBundle(script.textContent);
-      for (const a of assignments) populateTarget(a);
+      for (const a of mapBundleAssignments(script.textContent, bytes)) populateTarget(a);
     } catch (err) {
-      console.error("scrolly: failed to populate from compressed bundle", err);
+      console.error("scrolly: failed to populate from payload manifest", err);
     }
   }
 

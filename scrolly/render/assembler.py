@@ -34,10 +34,11 @@ def assemble(
     *,
     inline: bool = True,
     simplified_zoom_control: bool = False,
-    compressed_payload_json: str | None = None,
+    payload_manifest_json: str | None = None,
     bundle_stats: BundleStats | None = None,
     mermaid: MermaidAsset | None = None,
     minify: bool = True,
+    deferred_compression_stats: bool = False,
 ) -> str:
     """Render the deck and its chunks into a single HTML string.
 
@@ -50,17 +51,24 @@ def assemble(
             when ``inline=True``.
         simplified_zoom_control: Use the legacy single-icon zoom-out
             control instead of the default deck mini-map.
-        compressed_payload_json: JSON payload from the bundler's
-            ``build()`` (manifest + base64 blob), to be injected as a
-            single ``<script>`` block. ``None`` when the gate failed or
-            no compressible payloads were registered.
-        bundle_stats: Stats from the bundler's ``build()``, used to
-            populate the help-screen statistics. ``None`` when no bundle
-            was emitted.
+        payload_manifest_json: Payload manifest from the bundler's
+            ``manifest_and_stream()`` (payload schema + target
+            bindings, no bytes), injected as a single ``<script>``
+            block for canvas.js's target populator. ``None`` for plain
+            builds, whose targets carry inline forms instead.
+        bundle_stats: Bundler stats snapshot, used to populate the
+            help-screen statistics. ``None`` when no bundler ran
+            (``inline=False`` builds).
         mermaid: Resolved mermaid asset (content + version + source
             tier), or ``None`` when the deck has no mermaid elements.
             Inlined into the page when ``inline=True`` and present;
             its version always lands in the help-screen meta.
+        deferred_compression_stats: ``True`` when assembling the inner
+            document of a compressed build: the help-screen file-size
+            and space-saved figures depend on the compressed page this
+            document ends up inside, so both are emitted as
+            placeholders for ``scrolly.render.bootstrap`` to resolve,
+            and the payload stats report ``compressed: true``.
 
     Returns:
         The rendered HTML page as a single string.
@@ -70,7 +78,13 @@ def assemble(
     scoped_css_blocks = _collect_scoped_css(deck, chunks)
     has_mermaid = mermaid is not None
     minimap: MinimapGeometry | None = None if simplified_zoom_control else compute_minimap_geometry(deck)
-    meta = _build_meta(deck, chunks, bundle_stats=bundle_stats, mermaid=mermaid)
+    meta = _build_meta(
+        deck,
+        chunks,
+        bundle_stats=bundle_stats,
+        mermaid=mermaid,
+        deferred_compression_stats=deferred_compression_stats,
+    )
 
     inline_vars = {}
     if inline:
@@ -89,9 +103,13 @@ def assemble(
         has_mermaid=has_mermaid,
         inline=inline,
         minimap=minimap,
-        compressed_payload_json=compressed_payload_json,
+        payload_manifest_json=payload_manifest_json,
         **inline_vars,
     )
+
+    if deferred_compression_stats:
+        # Both size placeholders stay in place for bootstrap resolution.
+        return html
 
     meta["stats"]["file_size"] = len(html.encode("utf-8"))
     return html.replace('"__FILE_SIZE_PLACEHOLDER__"', str(meta["stats"]["file_size"]))
@@ -103,6 +121,7 @@ def _build_meta(
     *,
     bundle_stats: BundleStats | None = None,
     mermaid: MermaidAsset | None = None,
+    deferred_compression_stats: bool = False,
 ) -> dict[str, Any]:
     """Build the metadata dict injected into the HTML for the help screen.
 
@@ -113,6 +132,8 @@ def _build_meta(
         mermaid: Resolved mermaid asset, whose version is surfaced in
             the help-screen statistics. ``None`` for decks without
             mermaid elements.
+        deferred_compression_stats: Emit compressed-build placeholders
+            (see :func:`assemble`).
 
     Returns:
         Help-screen metadata dict.
@@ -124,14 +145,18 @@ def _build_meta(
         "stats": {
             "slides": len(deck.slides),
             "edges": len(deck.edges),
-            "payloads": _payload_stats(bundle_stats),
+            "payloads": _payload_stats(bundle_stats, deferred_compression_stats=deferred_compression_stats),
             "mermaid_version": mermaid.version if mermaid is not None else None,
             "file_size": "__FILE_SIZE_PLACEHOLDER__",
         },
     }
 
 
-def _payload_stats(bundle_stats: BundleStats | None) -> dict[str, Any]:
+def _payload_stats(
+    bundle_stats: BundleStats | None,
+    *,
+    deferred_compression_stats: bool = False,
+) -> dict[str, Any]:
     """Convert ``BundleStats`` into the help-screen-friendly schema.
 
     Returns a dict with four keys:
@@ -140,13 +165,16 @@ def _payload_stats(bundle_stats: BundleStats | None) -> dict[str, Any]:
       e.g. ``{".svg": 5, ".html": 1, ".png": 1}``.
     - ``unique``: per-extension counts of unique payloads (post-dedup).
       Identical to ``total`` when no dedup happened.
-    - ``compressed``: ``True`` only when a bundle was emitted into the
-      page; ``False`` when bundling was skipped or the gate failed.
-    - ``bytes_saved``: ``0`` when ``compressed`` is ``False``.
+    - ``compressed``: ``True`` only in the inner document of a
+      compressed build (``deferred_compression_stats``).
+    - ``bytes_saved``: ``0`` for plain builds; in the deferred case a
+      placeholder string resolved by ``scrolly.render.bootstrap``.
 
     Args:
         bundle_stats: Bundler snapshot, or ``None`` when no bundler ran
             (``inline=False`` builds).
+        deferred_compression_stats: Emit compressed-build placeholders
+            (see :func:`assemble`).
 
     Returns:
         Help-screen payload stats dict.
@@ -168,6 +196,13 @@ def _payload_stats(bundle_stats: BundleStats | None) -> dict[str, Any]:
         ext = ext_for(mime) or mime
         unique[ext] = unique.get(ext, 0) + count
 
+    if deferred_compression_stats:
+        return {
+            "total": total,
+            "unique": unique,
+            "compressed": True,
+            "bytes_saved": "__BYTES_SAVED_PLACEHOLDER__",
+        }
     return {
         "total": total,
         "unique": unique,
