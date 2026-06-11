@@ -232,7 +232,7 @@ def _save(image: Image.Image, fmt: str, **options: object) -> bytes:
 def _webp_lossless(image: Image.Image) -> tuple[bytes, str] | None:
     """Lossless WebP candidate (carries alpha bit-exact)."""
     try:
-        data = _save(image, "WEBP", lossless=True, quality=100, method=4, exact=False)
+        data = _save(image, "WEBP", lossless=True, quality=100, method=5, exact=False)
     except Exception:
         return None
     return data, _WEBP_MIME
@@ -245,7 +245,7 @@ def _webp_lossy(image: Image.Image, quality: int) -> tuple[bytes, str] | None:
             image,
             "WEBP",
             quality=quality,
-            method=4,
+            method=5,
             alpha_quality=100,
             use_sharp_yuv=True,
         )
@@ -295,7 +295,7 @@ def _webp_near_lossless(raw: bytes, quality: int) -> tuple[bytes, str] | None:
                     str(level),
                     "-sharp_yuv",
                     "-m",
-                    "4",
+                    "5",
                     "-alpha_q",
                     "100",
                     "-mt",
