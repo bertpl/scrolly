@@ -399,3 +399,117 @@ def test_stats_never_marks_compressed() -> None:
     assert stats.blob_targets_by_mime == {"image/svg+xml": 2}
     # Baseline still reflects every add() call (no dedup).
     assert stats.baseline_bytes == len(text) + 2 * len(svg)
+
+
+# ==================================================================================================
+#  manifest_and_stream() — stream ordering
+# ==================================================================================================
+def _add_blob(b: PayloadBundler, payload: bytes, mime: str) -> str:
+    """Register a blob payload with a derived baseline; return the target id."""
+    return b.add(payload=payload, mode="blob", attr="src", mime=mime, baseline_len=len(base64.b64encode(payload)))
+
+
+def _recovered_payloads(manifest: dict, stream: bytes) -> list[bytes]:
+    """Slice the stream back into per-payload bytes via the manifest lengths."""
+    out: list[bytes] = []
+    offset = 0
+    for entry in manifest["payloads"]:
+        out.append(stream[offset : offset + entry["length"]])
+        offset += entry["length"]
+    assert offset == len(stream)
+    return out
+
+
+def test_stream_orders_text_then_svg_then_bitmaps() -> None:
+    # --- arrange ----------------------------
+    # Registered in the reverse of the intended stream order.
+    b = PayloadBundler()
+    png = b"\x89PNG fake bitmap payload"
+    svg = b"<svg>vector payload</svg>"
+    text = b"<p>iframe html payload</p>"
+    _add_blob(b, png, "image/png")
+    _add_blob(b, svg, "image/svg+xml")
+    b.add(payload=text, mode="text", attr="srcdoc", baseline_len=len(text))
+
+    # --- act --------------------------------
+    manifest_json, stream = b.manifest_and_stream()
+    manifest = json.loads(manifest_json)
+
+    # --- assert ------------------------------
+    assert [p["mode"] for p in manifest["payloads"]] == ["text", "blob", "blob"]
+    assert [p.get("mime") for p in manifest["payloads"]] == [None, "image/svg+xml", "image/png"]
+    assert _recovered_payloads(manifest, stream) == [text, svg, png]
+
+
+def test_stream_orders_bitmaps_by_mime_then_registration() -> None:
+    # --- arrange ----------------------------
+    b = PayloadBundler()
+    webp_first = b"RIFF small"
+    png_large = b"\x89PNG " + b"x" * 50
+    png_small = b"\x89PNG tiny"
+    _add_blob(b, webp_first, "image/webp")
+    _add_blob(b, png_large, "image/png")
+    _add_blob(b, png_small, "image/png")
+
+    # --- act --------------------------------
+    manifest_json, stream = b.manifest_and_stream()
+    manifest = json.loads(manifest_json)
+
+    # --- assert ------------------------------
+    # png before webp (mime alphabetical); within png, registration order
+    # is preserved — large-before-small as registered, never re-sorted by
+    # size (registration order is the similarity proxy).
+    assert _recovered_payloads(manifest, stream) == [png_large, png_small, webp_first]
+
+
+def test_stream_order_within_mime_preserves_registration_order() -> None:
+    # --- arrange ----------------------------
+    # Same group and mime, different sizes — registration order must
+    # decide, stably (filmstrip frames register in their natural
+    # similarity order; reordering them hurts compression).
+    b = PayloadBundler()
+    first = b"<svg>aaaa frame one</svg>"
+    second = b"<svg>b2</svg>"
+    _add_blob(b, first, "image/svg+xml")
+    _add_blob(b, second, "image/svg+xml")
+
+    # --- act --------------------------------
+    manifest_json, stream = b.manifest_and_stream()
+    manifest = json.loads(manifest_json)
+
+    # --- assert ------------------------------
+    assert _recovered_payloads(manifest, stream) == [first, second]
+
+
+def test_stream_reorder_remaps_target_indices() -> None:
+    # --- arrange ----------------------------
+    # Bitmap registered first lands last in the stream; every target must
+    # still resolve to its own payload bytes through the manifest.
+    b = PayloadBundler()
+    png = b"\x89PNG fake bitmap payload"
+    text = b"<p>iframe html payload</p>"
+    png_target = _add_blob(b, png, "image/png")
+    text_target = b.add(payload=text, mode="text", attr="srcdoc", baseline_len=len(text))
+    expected = {png_target: png, text_target: text}
+
+    # --- act --------------------------------
+    manifest_json, stream = b.manifest_and_stream()
+    manifest = json.loads(manifest_json)
+    recovered = _recovered_payloads(manifest, stream)
+    resolved = {t["id"]: recovered[t["payload"]] for t in manifest["targets"]}
+
+    # --- assert ------------------------------
+    assert resolved == expected
+
+
+def test_stream_order_is_deterministic_across_builds() -> None:
+    # --- arrange ----------------------------
+    def _build() -> tuple[str, bytes]:
+        b = PayloadBundler()
+        _add_blob(b, b"\x89PNG payload one", "image/png")
+        b.add(payload=b"<p>html</p>", mode="text", attr="srcdoc", baseline_len=11)
+        _add_blob(b, b"<svg>v</svg>", "image/svg+xml")
+        return b.manifest_and_stream()
+
+    # --- act / assert -----------------------
+    assert _build() == _build()

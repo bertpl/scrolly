@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The compressed payload stream now orders content for better compression (iframe HTML first, then SVG, bitmaps last), slightly shrinking image- and iframe-heavy decks.
+
 ### Deprecated
 
 ### Removed
