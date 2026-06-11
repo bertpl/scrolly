@@ -545,7 +545,7 @@ def test_meta_payloads_inline_false_has_empty_counts(tmp_path):
     build_deck(deck_file, out, inline=False)
 
     payloads = _extract_meta_payloads(out)
-    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0, "reencoding": None}
 
 
 def test_meta_payloads_markdown_only_deck(tmp_path):

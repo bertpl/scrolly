@@ -15,6 +15,55 @@ from scrolly.pipeline import build_deck, load_deck
 from scrolly.pipeline.lint import lint_deck
 
 
+class ReencodeQuality(click.ParamType):
+    """Click type for ``--reencode-bitmaps``: an integer quality, or ``off``.
+
+    ``off`` parses to ``None`` (the full kill switch); any other value must
+    be an integer in ``[0, 100]``, passed through to each codec's native
+    quality scale.
+    """
+
+    name = "quality|off"
+
+    def convert(self, value: object, param: click.Parameter | None, ctx: click.Context | None) -> int | None:
+        """Parse to ``None`` (``off``) or a validated ``0..100`` integer."""
+        if value is None or isinstance(value, int):
+            return value
+        if value == "off":
+            return None
+        try:
+            quality = int(value)
+        except ValueError:
+            self.fail(f"{value!r} is not 'off' or an integer 0-100", param, ctx)
+        if not 0 <= quality <= 100:
+            self.fail(f"quality {quality} is out of range 0-100", param, ctx)
+        return quality
+
+
+def _resolve_reencode_quality(quality: int | None, *, no_inline: bool) -> int | None:
+    """Resolve the effective re-encode quality, enforcing the inline requirement.
+
+    Re-encoding runs only inside the inlining path. An *explicit*
+    ``--reencode-bitmaps <quality>`` combined with ``--no-inline`` is a
+    usage error; the *default* quality under ``--no-inline`` instead
+    silently disables re-encoding, so turning the default on never
+    invalidates a pre-existing ``--no-inline`` invocation.
+
+    Raises:
+        click.UsageError: When an explicit quality meets ``--no-inline``.
+    """
+    if not no_inline:
+        return quality
+    source = click.get_current_context().get_parameter_source("reencode_quality")
+    explicit = source is click.core.ParameterSource.COMMANDLINE
+    if explicit and quality is not None:
+        raise click.UsageError(
+            "--reencode-bitmaps requires inlining; it cannot be combined with "
+            "--no-inline. Pass '--reencode-bitmaps off' or drop --no-inline."
+        )
+    return None
+
+
 def _emit_ai_help(ctx: click.Context, param: click.Parameter, value: bool) -> None:
     """Eager ``--help-for-ai-tools`` callback: print the full CLI reference and exit."""
     if not value or ctx.resilient_parsing:
@@ -77,6 +126,17 @@ def cli() -> None:
     ),
 )
 @click.option(
+    "--reencode-bitmaps",
+    "reencode_quality",
+    type=ReencodeQuality(),
+    default=95,
+    show_default=True,
+    metavar="QUALITY|off",
+    help="Re-encode raster images (jpeg/png/gif/webp/avif) to the smallest of "
+    "WebP/AVIF candidates at the given quality, shipping the original when it "
+    "wins. Never enlarges a deck; SVG is never touched. Use 'off' to disable.",
+)
+@click.option(
     "--no-minification",
     is_flag=True,
     hidden=True,
@@ -92,9 +152,11 @@ def build(
     simplified_zoom_control: bool,
     no_compress: bool,
     offline: bool,
+    reencode_quality: int | None,
     no_minification: bool,
 ) -> None:
     """Build a deck into a self-contained HTML presentation."""
+    reencode_quality = _resolve_reencode_quality(reencode_quality, no_inline=no_inline)
     try:
         deck = build_deck(
             deck_path,
@@ -106,6 +168,7 @@ def build(
             offline=offline,
             out_file=out_file,
             minify=not no_minification,
+            reencode_quality=reencode_quality,
         )
     except ScrollyError as e:
         error_exit(str(e))

@@ -16,6 +16,7 @@ from scrolly import __version__
 from scrolly._shared.mime import ext_for
 from scrolly.deck import Deck
 from scrolly.pipeline._bundler import BundleStats
+from scrolly.pipeline._reencode import ReencodeStats
 from scrolly.render.bundled_assets import MermaidAsset, bundled_css, bundled_js
 from scrolly.render.nav_data import build_nav_data
 from scrolly.render.zoom_control import MinimapGeometry, compute_minimap_geometry
@@ -39,6 +40,7 @@ def assemble(
     mermaid: MermaidAsset | None = None,
     minify: bool = True,
     deferred_compression_stats: bool = False,
+    reencode_stats: ReencodeStats | None = None,
 ) -> str:
     """Render the deck and its chunks into a single HTML string.
 
@@ -69,6 +71,9 @@ def assemble(
             document ends up inside, so both are emitted as
             placeholders for ``scrolly.render.bootstrap`` to resolve,
             and the payload stats report ``compressed: true``.
+        reencode_stats: Bitmap re-encoding snapshot for the help-screen
+            payload stats. ``None`` when no bundler ran (non-inline
+            builds), matching ``bundle_stats``.
 
     Returns:
         The rendered HTML page as a single string.
@@ -84,6 +89,7 @@ def assemble(
         bundle_stats=bundle_stats,
         mermaid=mermaid,
         deferred_compression_stats=deferred_compression_stats,
+        reencode_stats=reencode_stats,
     )
 
     inline_vars = {}
@@ -122,6 +128,7 @@ def _build_meta(
     bundle_stats: BundleStats | None = None,
     mermaid: MermaidAsset | None = None,
     deferred_compression_stats: bool = False,
+    reencode_stats: ReencodeStats | None = None,
 ) -> dict[str, Any]:
     """Build the metadata dict injected into the HTML for the help screen.
 
@@ -134,6 +141,8 @@ def _build_meta(
             mermaid elements.
         deferred_compression_stats: Emit compressed-build placeholders
             (see :func:`assemble`).
+        reencode_stats: Bitmap re-encoding snapshot for the payload-stats
+            section. ``None`` when no bundler ran.
 
     Returns:
         Help-screen metadata dict.
@@ -145,7 +154,11 @@ def _build_meta(
         "stats": {
             "slides": len(deck.slides),
             "edges": len(deck.edges),
-            "payloads": _payload_stats(bundle_stats, deferred_compression_stats=deferred_compression_stats),
+            "payloads": _payload_stats(
+                bundle_stats,
+                deferred_compression_stats=deferred_compression_stats,
+                reencode_stats=reencode_stats,
+            ),
             "mermaid_version": mermaid.version if mermaid is not None else None,
             "file_size": "__FILE_SIZE_PLACEHOLDER__",
         },
@@ -156,10 +169,11 @@ def _payload_stats(
     bundle_stats: BundleStats | None,
     *,
     deferred_compression_stats: bool = False,
+    reencode_stats: ReencodeStats | None = None,
 ) -> dict[str, Any]:
     """Convert ``BundleStats`` into the help-screen-friendly schema.
 
-    Returns a dict with four keys:
+    Returns a dict with five keys:
 
     - ``total``: per-extension counts of every payload binding (pre-dedup),
       e.g. ``{".svg": 5, ".html": 1, ".png": 1}``.
@@ -169,18 +183,24 @@ def _payload_stats(
       compressed build (``deferred_compression_stats``).
     - ``bytes_saved``: ``0`` for plain builds; in the deferred case a
       placeholder string resolved by ``scrolly.render.bootstrap``.
+    - ``reencoding``: the bitmap re-encoding block (``quality``,
+      ``considered``, ``reencoded``, ``bytes_saved``), or ``None`` when no
+      bundler ran. The JS shows the line only when ``considered`` > 0.
 
     Args:
         bundle_stats: Bundler snapshot, or ``None`` when no bundler ran
             (``inline=False`` builds).
         deferred_compression_stats: Emit compressed-build placeholders
             (see :func:`assemble`).
+        reencode_stats: Bitmap re-encoding snapshot, ``None`` alongside a
+            ``None`` ``bundle_stats``.
 
     Returns:
         Help-screen payload stats dict.
     """
+    reencoding = reencode_stats.as_dict() if reencode_stats is not None else None
     if bundle_stats is None:
-        return {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+        return {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0, "reencoding": reencoding}
 
     total: dict[str, int] = {}
     if bundle_stats.text_targets > 0:
@@ -202,12 +222,14 @@ def _payload_stats(
             "unique": unique,
             "compressed": True,
             "bytes_saved": "__BYTES_SAVED_PLACEHOLDER__",
+            "reencoding": reencoding,
         }
     return {
         "total": total,
         "unique": unique,
         "compressed": bundle_stats.compressed,
         "bytes_saved": bundle_stats.bytes_saved,
+        "reencoding": reencoding,
     }
 
 

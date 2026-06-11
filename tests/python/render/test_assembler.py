@@ -433,7 +433,7 @@ def test_meta_stats_payloads_empty_when_no_bundler(inline):
 
     # --- assert ------------------------------
     payloads = meta["stats"]["payloads"]
-    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0, "reencoding": None}
 
 
 def test_help_button_in_navigation(inline):
