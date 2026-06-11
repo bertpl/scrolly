@@ -11,6 +11,7 @@ from scrolly.pipeline._bundler import (
     MIN_SAVING,
     BundleStats,
     PayloadBundler,
+    StageStats,
     gate_passes,
 )
 
@@ -272,21 +273,28 @@ def test_bundle_stats_counts_split_by_mode_and_mime() -> None:
     stats = b.stats()
 
     # --- assert ------------------------------
-    assert stats.text_payloads == 1
-    assert stats.text_targets == 2  # two srcdoc refs sharing one payload
-    assert stats.blob_payloads_by_mime == {"image/svg+xml": 1}
-    assert stats.blob_targets_by_mime == {"image/svg+xml": 1}
-    assert stats.total_payloads == 2
-    assert stats.total_targets == 3
+    # Pre-dedup stages count per target (two srcdoc refs share one
+    # payload); the dedup stage counts unique payloads.
+    assert stats.input.text_count == 2
+    assert stats.input.counts_by_mime == {"image/svg+xml": 1}
+    assert stats.input.total_bytes == 2 * len(text) + len(svg)
+    assert stats.reencoded == stats.input  # no re-encoding info passed
+    assert stats.deduplicated.text_count == 1
+    assert stats.deduplicated.counts_by_mime == {"image/svg+xml": 1}
+    assert stats.deduplicated.total_bytes == len(text) + len(svg)
+
+
+def _empty_stage() -> StageStats:
+    """An all-zero stage for hand-built ``BundleStats`` fixtures."""
+    return StageStats(text_count=0, counts_by_mime={}, total_bytes=0)
 
 
 def test_bundle_stats_bytes_saved_property() -> None:
     # --- arrange ----------------------------
     stats = BundleStats(
-        text_targets=1,
-        text_payloads=1,
-        blob_targets_by_mime={},
-        blob_payloads_by_mime={},
+        input=_empty_stage(),
+        reencoded=_empty_stage(),
+        deduplicated=_empty_stage(),
         baseline_bytes=1000,
         compressed_bytes=600,
         compressed=True,
@@ -299,10 +307,9 @@ def test_bundle_stats_bytes_saved_property() -> None:
 def test_bundle_stats_bytes_saved_zero_when_not_compressed() -> None:
     # --- arrange ----------------------------
     stats = BundleStats(
-        text_targets=1,
-        text_payloads=1,
-        blob_targets_by_mime={},
-        blob_payloads_by_mime={},
+        input=_empty_stage(),
+        reencoded=_empty_stage(),
+        deduplicated=_empty_stage(),
         baseline_bytes=1000,
         compressed_bytes=0,
         compressed=False,
@@ -326,8 +333,8 @@ def test_bundle_stats_baseline_sums_across_adds_including_duplicates() -> None:
 
     # --- assert ------------------------------
     assert stats.baseline_bytes == 3 * len(text)
-    assert stats.total_payloads == 1
-    assert stats.total_targets == 3
+    assert stats.deduplicated.text_count == 1
+    assert stats.input.text_count == 3
 
 
 def test_bundle_stats_blob_breakdown_includes_every_mime() -> None:
@@ -345,12 +352,12 @@ def test_bundle_stats_blob_breakdown_includes_every_mime() -> None:
     stats = b.stats()
 
     # --- assert ------------------------------
-    assert stats.blob_payloads_by_mime == {
+    assert stats.deduplicated.counts_by_mime == {
         "image/svg+xml": 1,
         "image/png": 1,
         "image/avif": 1,
     }
-    assert stats.blob_targets_by_mime == {
+    assert stats.input.counts_by_mime == {
         "image/svg+xml": 2,
         "image/png": 1,
         "image/avif": 1,
@@ -368,12 +375,8 @@ def test_stats_on_empty_bundler() -> None:
     assert stats.compressed is False
     assert stats.compressed_bytes == 0
     assert stats.bytes_saved == 0
-    assert stats.text_targets == 0
-    assert stats.text_payloads == 0
-    assert stats.blob_targets_by_mime == {}
-    assert stats.blob_payloads_by_mime == {}
-    assert stats.total_targets == 0
-    assert stats.total_payloads == 0
+    for stage in (stats.input, stats.reencoded, stats.deduplicated):
+        assert stage == StageStats(text_count=0, counts_by_mime={}, total_bytes=0)
 
 
 def test_stats_never_marks_compressed() -> None:
@@ -393,10 +396,10 @@ def test_stats_never_marks_compressed() -> None:
     # substituted later by the bootstrap builder when compression ships.
     assert stats.compressed is False
     assert stats.compressed_bytes == 0
-    assert stats.text_payloads == 1
-    assert stats.text_targets == 1
-    assert stats.blob_payloads_by_mime == {"image/svg+xml": 1}
-    assert stats.blob_targets_by_mime == {"image/svg+xml": 2}
+    assert stats.deduplicated.text_count == 1
+    assert stats.input.text_count == 1
+    assert stats.deduplicated.counts_by_mime == {"image/svg+xml": 1}
+    assert stats.input.counts_by_mime == {"image/svg+xml": 2}
     # Baseline still reflects every add() call (no dedup).
     assert stats.baseline_bytes == len(text) + 2 * len(svg)
 
@@ -513,3 +516,37 @@ def test_stream_order_is_deterministic_across_builds() -> None:
 
     # --- act / assert -----------------------
     assert _build() == _build()
+
+
+def test_bundle_stats_input_stage_uses_source_mime_and_len() -> None:
+    # --- arrange ----------------------------
+    # A PNG re-encoded to a smaller WebP: input must show the original
+    # mime/bytes, reencoded and deduplicated the shipped ones.
+    b = PayloadBundler()
+    shipped = b"RIFF small webp" * 4
+    b.add(
+        payload=shipped,
+        mode="blob",
+        attr="src",
+        mime="image/webp",
+        baseline_len=len(shipped),
+        source_mime="image/png",
+        source_len=500,
+    )
+    b.add(  # second target of the same payload (dedup'd)
+        payload=shipped,
+        mode="blob",
+        attr="src",
+        mime="image/webp",
+        baseline_len=len(shipped),
+        source_mime="image/png",
+        source_len=500,
+    )
+
+    # --- act --------------------------------
+    stats = b.stats()
+
+    # --- assert ------------------------------
+    assert stats.input == StageStats(text_count=0, counts_by_mime={"image/png": 2}, total_bytes=1000)
+    assert stats.reencoded == StageStats(text_count=0, counts_by_mime={"image/webp": 2}, total_bytes=2 * len(shipped))
+    assert stats.deduplicated == StageStats(text_count=0, counts_by_mime={"image/webp": 1}, total_bytes=len(shipped))

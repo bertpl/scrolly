@@ -1144,6 +1144,38 @@ body.pan-transitioning .canvas {
   padding-left: 2em;
 }
 
+/* Payload-stage matrix nested inside the statistics table: stage rows down,
+   format counts + total size across. Overrides the generic modal-table cell
+   rules (40% first column, monospace-only first cells) for the grid. */
+.help-modal-body table.help-payloads {
+  width: auto;
+  margin: 0;
+}
+
+.help-modal-body .help-payloads td {
+  width: auto;
+  padding: 0.1em 0.45em;
+  font-size: 0.85em;
+  text-align: right;
+  white-space: nowrap;
+  color: #b8b8b8;
+}
+
+.help-modal-body .help-payloads td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.help-modal-body .help-payloads tr.help-payloads-head td {
+  color: #fff;
+}
+
+/* The matrix row hangs at a shallower indent than the scalar rows so the
+   Size column clears the modal edge. */
+.help-modal-body tr.help-indent td[colspan] {
+  padding-left: 1em;
+}
+
 .help-modal-ok {
   align-self: center;
   margin-top: calc(var(--modal-unit) * 0.015);

@@ -2059,44 +2059,54 @@
       if (!metaEl) return;
       const meta = JSON.parse(metaEl.textContent);
       const s = meta.stats;
-      const p = s.payloads || { total: {}, unique: {}, compressed: false, bytes_saved: 0, reencoding: null };
+      const p = s.payloads || { stages: [], compressed: false, bytes_saved: 0 };
 
       const extLabels = {
         ".svg": "SVG", ".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG",
         ".gif": "GIF", ".webp": "WebP", ".avif": "AVIF", ".html": "HTML",
       };
 
-      function formatReencoding(re) {
-        if (re.quality === null) return "off";
-        const saving = re.bytes_saved > 0 ? ", −" + formatBytes(re.bytes_saved) : "";
-        return re.reencoded + " of " + re.considered + " bitmaps (q=" + re.quality + saving + ")";
+      function stageLabel(stage) {
+        if (stage.id === "input") return "Input";
+        if (stage.id === "deduplicated") return "Deduplicated";
+        // The reencoded stage appears only for decks with eligible bitmaps;
+        // when re-encoding was off its counts simply repeat the input row.
+        return "Re-encoded " + (stage.quality === null ? "(off)" : "(q=" + stage.quality + ")");
       }
 
-      function formatCounts(counts) {
-        const parts = Object.entries(counts || {})
-          .map(([ext, count]) => ({ label: extLabels[ext] || ext, count }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-        return parts.length > 0
-          ? parts.map((part) => part.count + " " + part.label).join(", ")
-          : "none";
+      // The payload matrix: one row per pipeline stage, one column per format
+      // present anywhere (all-zero columns hidden; HTML first, then
+      // alphabetical), plus the total payload size after that stage. Reading
+      // down, re-encoding flips and dedup drops show as count/size changes.
+      function payloadMatrix(stages) {
+        const exts = [];
+        for (const stage of stages) {
+          for (const [ext, count] of Object.entries(stage.counts)) {
+            if (count > 0 && !exts.includes(ext)) exts.push(ext);
+          }
+        }
+        if (exts.length === 0) return "";
+        exts.sort((a, b) => (a === ".html" ? -1 : b === ".html" ? 1 : a.localeCompare(b)));
+        let html =
+          '<table class="help-payloads"><tr class="help-payloads-head"><td></td>' +
+          exts.map((ext) => "<td>" + (extLabels[ext] || ext) + "</td>").join("") +
+          "<td>Size</td></tr>";
+        for (const stage of stages) {
+          html +=
+            "<tr><td>" + stageLabel(stage) + "</td>" +
+            exts.map((ext) => "<td>" + (stage.counts[ext] || "–") + "</td>").join("") +
+            "<td>" + formatBytes(stage.bytes) + "</td></tr>";
+        }
+        return html + "</table>";
       }
 
-      const totalLine = formatCounts(p.total);
-      const uniqueLine = formatCounts(p.unique);
-      // Each stage carries its own saving: the compressed-stream saving rides
-      // on the Compressed line, the re-encode saving on the Re-encoded line.
-      // The two are not additive (different baselines), so there's no combined total.
+      const matrix = payloadMatrix(p.stages || []);
+      // The compressed-stream saving rides on the Compressed line; the
+      // per-stage savings are implicit in the matrix's Size column. The two
+      // are not additive (different baselines), so there's no combined total.
       const compressedLine = p.compressed
         ? "yes" + (p.bytes_saved > 0 ? " (−" + formatBytes(p.bytes_saved) + ")" : "")
         : "no";
-      // The Re-encoded line is shown only for decks with at least one eligible
-      // bitmap (reencoding.considered > 0) — a markdown/SVG-only deck gets no
-      // "0 of 0" noise. With a quality it reads "N of M bitmaps (q=…, −…)";
-      // when off it just reads "off".
-      const re = p.reencoding;
-      const reencodedRow = re && re.considered > 0
-        ? '<tr class="help-indent"><td>Re-encoded</td><td>' + formatReencoding(re) + '</td></tr>'
-        : "";
       const versionParam = new URLSearchParams(window.location.search).get("scrolly-version");
 
       body.innerHTML =
@@ -2124,10 +2134,8 @@
         '<table>' +
         '<tr><td>Slides</td><td>' + s.slides + '</td></tr>' +
         '<tr><td>Edges</td><td>' + s.edges + '</td></tr>' +
-        '<tr><td>Inlined payloads</td><td></td></tr>' +
-        '<tr class="help-indent"><td>Total</td><td>' + totalLine + '</td></tr>' +
-        '<tr class="help-indent"><td>Unique</td><td>' + uniqueLine + '</td></tr>' +
-        reencodedRow +
+        '<tr><td>Inlined payloads</td><td>' + (matrix ? "" : "none") + '</td></tr>' +
+        (matrix ? '<tr class="help-indent"><td colspan="2">' + matrix + '</td></tr>' : "") +
         '<tr class="help-indent"><td>Compressed</td><td>' + compressedLine + '</td></tr>' +
         (s.mermaid_version ? '<tr><td>Mermaid.js</td><td>' + s.mermaid_version + '</td></tr>' : '') +
         '<tr><td>File size</td><td>' + formatBytes(s.file_size) + '</td></tr>' +

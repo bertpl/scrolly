@@ -140,10 +140,11 @@ def _inline_refs(
     css = chunk.scoped_css
 
     for path in chunk.assets:
-        mime = _mime_type(path, slide_id)
-        raw = path.read_bytes()
+        source_mime = _mime_type(path, slide_id)
+        source_raw = path.read_bytes()
+        raw, mime = source_raw, source_mime
         if reencoder is not None:
-            raw, mime = reencoder.process(raw, mime)
+            raw, mime = reencoder.process(source_raw, source_mime)
         encoded = base64.b64encode(raw).decode("ascii")
         data_uri = f"data:{mime};base64,{encoded}"
         ref = f"{ASSET_REF_PREFIX}{path.name}"
@@ -153,7 +154,16 @@ def _inline_refs(
         css = css.replace(ref, data_uri)
 
         if bundler is not None:
-            html = _bundle_img_refs(html, ref, bundler, raw=raw, mime=mime, baseline_len=len(encoded))
+            html = _bundle_img_refs(
+                html,
+                ref,
+                bundler,
+                raw=raw,
+                mime=mime,
+                baseline_len=len(encoded),
+                source_mime=source_mime,
+                source_len=len(source_raw),
+            )
 
         # Any HTML reference that wasn't an ``<img src="…">`` (or any reference at
         # all when the bundler isn't in use) falls through to a plain ``data:`` URI.
@@ -170,6 +180,8 @@ def _bundle_img_refs(
     raw: bytes,
     mime: str,
     baseline_len: int,
+    source_mime: str,
+    source_len: int,
 ) -> str:
     """Replace ``<img src="<ref>">`` tags with ``data-scrolly-target`` markers.
 
@@ -181,10 +193,12 @@ def _bundle_img_refs(
         html: The HTML to scan.
         ref: The ``__asset__/<n>`` token to match.
         bundler: The payload bundler to register with.
-        raw: Raw asset bytes.
-        mime: Asset mime type (for the Blob constructor on the JS side).
+        raw: Asset bytes to ship (possibly re-encoded).
+        mime: Shipped mime type (for the Blob constructor on the JS side).
         baseline_len: Length of the plain ``base64`` form (the inline
             baseline this binding would have produced).
+        source_mime: The asset file's original mime, pre-re-encoding.
+        source_len: The asset file's original byte size.
 
     Returns:
         HTML with each matching ``<img>`` tag's ``src="<ref>"`` replaced
@@ -200,6 +214,8 @@ def _bundle_img_refs(
             attr="src",
             mime=mime,
             baseline_len=baseline_len,
+            source_mime=source_mime,
+            source_len=source_len,
         )
         return f'{match.group(1)} data-scrolly-target="{target_id}"{match.group(2)}'
 

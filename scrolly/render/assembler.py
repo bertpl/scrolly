@@ -15,7 +15,7 @@ from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescap
 from scrolly import __version__
 from scrolly._shared.mime import ext_for
 from scrolly.deck import Deck
-from scrolly.pipeline._bundler import BundleStats
+from scrolly.pipeline._bundler import BundleStats, StageStats
 from scrolly.pipeline._reencode import ReencodeStats
 from scrolly.render.bundled_assets import MermaidAsset, bundled_css, bundled_js
 from scrolly.render.nav_data import build_nav_data
@@ -173,19 +173,21 @@ def _payload_stats(
 ) -> dict[str, Any]:
     """Convert ``BundleStats`` into the help-screen-friendly schema.
 
-    Returns a dict with five keys:
+    Returns a dict with three keys:
 
-    - ``total``: per-extension counts of every payload binding (pre-dedup),
-      e.g. ``{".svg": 5, ".html": 1, ".png": 1}``.
-    - ``unique``: per-extension counts of unique payloads (post-dedup).
-      Identical to ``total`` when no dedup happened.
+    - ``stages``: pipeline-stage entries in processing order, each
+      ``{"id", "counts", "bytes"}`` with per-extension counts and the
+      summed raw byte size after that stage. ``input`` (pre-dedup,
+      original formats) and ``deduplicated`` (unique payloads, shipped
+      formats) are always present when a bundler ran; ``reencoded``
+      (pre-dedup, shipped formats, plus a ``quality`` key — ``null``
+      when re-encoding was off) appears only when the deck had at least
+      one eligible bitmap. Empty list when no bundler ran
+      (``inline=False`` builds).
     - ``compressed``: ``True`` only in the inner document of a
       compressed build (``deferred_compression_stats``).
     - ``bytes_saved``: ``0`` for plain builds; in the deferred case a
       placeholder string resolved by ``scrolly.render.bootstrap``.
-    - ``reencoding``: the bitmap re-encoding block (``quality``,
-      ``considered``, ``reencoded``, ``bytes_saved``), or ``None`` when no
-      bundler ran. The JS shows the line only when ``considered`` > 0.
 
     Args:
         bundle_stats: Bundler snapshot, or ``None`` when no bundler ran
@@ -198,39 +200,38 @@ def _payload_stats(
     Returns:
         Help-screen payload stats dict.
     """
-    reencoding = reencode_stats.as_dict() if reencode_stats is not None else None
-    if bundle_stats is None:
-        return {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0, "reencoding": reencoding}
+    stages: list[dict[str, Any]] = []
+    if bundle_stats is not None:
+        stages.append({"id": "input", **_stage_entry(bundle_stats.input)})
+        if reencode_stats is not None and reencode_stats.considered > 0:
+            stages.append(
+                {"id": "reencoded", "quality": reencode_stats.quality, **_stage_entry(bundle_stats.reencoded)}
+            )
+        stages.append({"id": "deduplicated", **_stage_entry(bundle_stats.deduplicated)})
 
-    total: dict[str, int] = {}
-    if bundle_stats.text_targets > 0:
-        total[_TEXT_EXT] = bundle_stats.text_targets
-    for mime, count in bundle_stats.blob_targets_by_mime.items():
-        ext = ext_for(mime) or mime
-        total[ext] = total.get(ext, 0) + count
-
-    unique: dict[str, int] = {}
-    if bundle_stats.text_payloads > 0:
-        unique[_TEXT_EXT] = bundle_stats.text_payloads
-    for mime, count in bundle_stats.blob_payloads_by_mime.items():
-        ext = ext_for(mime) or mime
-        unique[ext] = unique.get(ext, 0) + count
-
-    if deferred_compression_stats:
-        return {
-            "total": total,
-            "unique": unique,
-            "compressed": True,
-            "bytes_saved": "__BYTES_SAVED_PLACEHOLDER__",
-            "reencoding": reencoding,
-        }
+    if bundle_stats is not None and deferred_compression_stats:
+        return {"stages": stages, "compressed": True, "bytes_saved": "__BYTES_SAVED_PLACEHOLDER__"}
     return {
-        "total": total,
-        "unique": unique,
-        "compressed": bundle_stats.compressed,
-        "bytes_saved": bundle_stats.bytes_saved,
-        "reencoding": reencoding,
+        "stages": stages,
+        "compressed": bundle_stats.compressed if bundle_stats is not None else False,
+        "bytes_saved": bundle_stats.bytes_saved if bundle_stats is not None else 0,
     }
+
+
+def _stage_entry(stage: StageStats) -> dict[str, Any]:
+    """Convert a ``StageStats`` into the stage entry's ``counts``/``bytes`` part.
+
+    Counts are keyed by extension label: text payloads under
+    ``_TEXT_EXT``, blob mimes via :func:`ext_for` (falling back to the
+    raw mime for an unmapped one).
+    """
+    counts: dict[str, int] = {}
+    if stage.text_count > 0:
+        counts[_TEXT_EXT] = stage.text_count
+    for mime, count in stage.counts_by_mime.items():
+        ext = ext_for(mime) or mime
+        counts[ext] = counts.get(ext, 0) + count
+    return {"counts": counts, "bytes": stage.total_bytes}
 
 
 def _collect_scoped_css(deck: Deck, chunks: dict[str, SlideHTML]) -> list[str]:

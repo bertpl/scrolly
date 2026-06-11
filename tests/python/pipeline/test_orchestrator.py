@@ -519,8 +519,9 @@ def test_meta_payloads_with_compression(tmp_path):
     build_deck(deck_file, out)  # compress=True (default)
 
     payloads = _extract_meta_payloads(out)
-    assert payloads["total"] == {".html": 1}
-    assert payloads["unique"] == {".html": 1}
+    # No eligible bitmaps in an iframe-only deck → no reencoded stage.
+    assert [stage["id"] for stage in payloads["stages"]] == ["input", "deduplicated"]
+    assert all(stage["counts"] == {".html": 1} for stage in payloads["stages"])
     assert payloads["compressed"] is True
     assert payloads["bytes_saved"] > 0
 
@@ -533,8 +534,8 @@ def test_meta_payloads_no_compress_still_counts_iframes(tmp_path):
     build_deck(deck_file, out, compress=False)
 
     payloads = _extract_meta_payloads(out)
-    assert payloads["total"] == {".html": 1}
-    assert payloads["unique"] == {".html": 1}
+    assert [stage["id"] for stage in payloads["stages"]] == ["input", "deduplicated"]
+    assert all(stage["counts"] == {".html": 1} for stage in payloads["stages"])
     assert payloads["compressed"] is False
     assert payloads["bytes_saved"] == 0
 
@@ -545,7 +546,7 @@ def test_meta_payloads_inline_false_has_empty_counts(tmp_path):
     build_deck(deck_file, out, inline=False)
 
     payloads = _extract_meta_payloads(out)
-    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0, "reencoding": None}
+    assert payloads == {"stages": [], "compressed": False, "bytes_saved": 0}
 
 
 def test_meta_payloads_markdown_only_deck(tmp_path):
@@ -558,10 +559,67 @@ def test_meta_payloads_markdown_only_deck(tmp_path):
     build_deck(deck_file, out)
 
     payloads = _extract_meta_payloads(out)
-    assert payloads["total"] == {}
-    assert payloads["unique"] == {}
+    assert [stage["id"] for stage in payloads["stages"]] == ["input", "deduplicated"]
+    assert all(stage["counts"] == {} and stage["bytes"] == 0 for stage in payloads["stages"])
     assert payloads["compressed"] is True
     assert payloads["bytes_saved"] > 0
+
+
+def _deck_with_bitmap(tmp_path: Path) -> Path:
+    """Write a one-slide deck whose only element is a re-encodable gradient PNG."""
+    import io
+
+    from PIL import Image
+
+    image = Image.new("RGB", (64, 64))
+    pixels = image.load()
+    for y in range(64):
+        for x in range(64):
+            pixels[x, y] = (x * 4 % 256, y * 4 % 256, (x * y) % 256)
+    buffer = io.BytesIO()
+    image.save(buffer, "PNG")
+    (tmp_path / "bg.png").write_bytes(buffer.getvalue())
+
+    slide_src = tmp_path / "only.slide.json"
+    slide_src.write_text(
+        '{ title: "T", scroll_range: 100, elements: [{ image: "bg.png", position: [10, 10], width: 80 }] }'
+    )
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
+    return deck_file
+
+
+def test_meta_payloads_reencoded_stage_for_bitmap_deck(tmp_path):
+    # End-to-end: a gradient PNG flips format during the build, and the
+    # stage rows tell the story — input shows the original mime, the
+    # later stages the shipped one.
+    deck_file = _deck_with_bitmap(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    payloads = _extract_meta_payloads(out)
+    stages = {stage["id"]: stage for stage in payloads["stages"]}
+    assert [stage["id"] for stage in payloads["stages"]] == ["input", "reencoded", "deduplicated"]
+    assert stages["input"]["counts"] == {".png": 1}
+    assert stages["reencoded"]["quality"] == 95
+    assert ".png" not in stages["reencoded"]["counts"]
+    assert stages["reencoded"]["counts"] == stages["deduplicated"]["counts"]
+    assert stages["reencoded"]["bytes"] < stages["input"]["bytes"]
+
+
+def test_meta_payloads_reencoded_stage_reads_off_when_disabled(tmp_path):
+    # With re-encoding off, the stage still appears for a bitmap deck
+    # (quality null) and simply repeats the input row.
+    deck_file = _deck_with_bitmap(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out, reencode_quality=None)
+
+    payloads = _extract_meta_payloads(out)
+    stages = {stage["id"]: stage for stage in payloads["stages"]}
+    assert [stage["id"] for stage in payloads["stages"]] == ["input", "reencoded", "deduplicated"]
+    assert stages["reencoded"]["quality"] is None
+    assert stages["reencoded"]["counts"] == stages["input"]["counts"]
+    assert stages["reencoded"]["bytes"] == stages["input"]["bytes"]
 
 
 def test_build_deck_with_custom_out_file(tmp_path):
