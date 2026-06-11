@@ -5,22 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.3.3 (2026-06-11)
 
 ### Added
 
 - Built decks re-encode raster images to the smallest of several WebP/AVIF candidates (the original always competes, so a deck never grows), shrinking image-heavy decks; on by default at quality 95, tunable or disabled via `scrolly build --reencode-bitmaps <quality|off>`.
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
 ## 0.3.2 (2026-06-11)
 
 ### Changed
