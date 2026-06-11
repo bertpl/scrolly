@@ -1040,7 +1040,12 @@ body.pan-transitioning .canvas {
 .help-modal-content {
   --modal-unit: min(75vw, 75vh);
   position: relative;
-  width: calc(var(--modal-unit) * 0.6);
+  /* Content-adaptive width: the old fixed width is the floor (decks whose
+     stats fit keep the classic proportions), and a wide payload matrix can
+     grow the modal up to the cap. */
+  width: fit-content;
+  min-width: calc(var(--modal-unit) * 0.6);
+  max-width: min(92vw, calc(var(--modal-unit) * 0.95));
   max-height: calc(var(--modal-unit) * 0.75);
   background: rgba(15, 15, 15, 0.95);
   color: #e0e0e0;
@@ -1144,36 +1149,17 @@ body.pan-transitioning .canvas {
   padding-left: 2em;
 }
 
-/* Payload-stage matrix nested inside the statistics table: stage rows down,
-   format counts + total size across. Overrides the generic modal-table cell
-   rules (40% first column, monospace-only first cells) for the grid. */
-.help-modal-body table.help-payloads {
-  width: auto;
-  margin: 0;
-}
-
-.help-modal-body .help-payloads td {
-  width: auto;
-  padding: 0.1em 0.45em;
-  font-size: 0.85em;
+/* Payload-stage matrix cells inside the statistics table: numeric columns
+   right-aligned and kept on one line; the header cells (format names + Size,
+   sharing the "Inlined payloads" row) read as labels. */
+.help-modal-body td.help-num {
   text-align: right;
   white-space: nowrap;
   color: #b8b8b8;
 }
 
-.help-modal-body .help-payloads td:first-child {
-  padding-left: 0;
-  text-align: left;
-}
-
-.help-modal-body .help-payloads tr.help-payloads-head td {
+.help-modal-body td.help-colhead {
   color: #fff;
-}
-
-/* The matrix row hangs at a shallower indent than the scalar rows so the
-   Size column clears the modal edge. */
-.help-modal-body tr.help-indent td[colspan] {
-  padding-left: 1em;
 }
 
 .help-modal-ok {

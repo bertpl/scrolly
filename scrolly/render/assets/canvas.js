@@ -2074,33 +2074,45 @@
         return "Re-encoded " + (stage.quality === null ? "(off)" : "(q=" + stage.quality + ")");
       }
 
-      // The payload matrix: one row per pipeline stage, one column per format
-      // present anywhere (all-zero columns hidden; HTML first, then
-      // alphabetical), plus the total payload size after that stage. Reading
+      // The payload matrix shares the Statistics table: the "Inlined
+      // payloads" row carries the column titles (one per format present
+      // anywhere, all-zero columns hidden, HTML first then alphabetical,
+      // plus Size), and the stage rows sit indented under it. Scalar rows
+      // span the matrix columns, so the label column stays shared. Reading
       // down, re-encoding flips and dedup drops show as count/size changes.
-      function payloadMatrix(stages) {
-        const exts = [];
-        for (const stage of stages) {
-          for (const [ext, count] of Object.entries(stage.counts)) {
-            if (count > 0 && !exts.includes(ext)) exts.push(ext);
-          }
+      const stages = p.stages || [];
+      const exts = [];
+      for (const stage of stages) {
+        for (const [ext, count] of Object.entries(stage.counts)) {
+          if (count > 0 && !exts.includes(ext)) exts.push(ext);
         }
-        if (exts.length === 0) return "";
-        exts.sort((a, b) => (a === ".html" ? -1 : b === ".html" ? 1 : a.localeCompare(b)));
-        let html =
-          '<table class="help-payloads"><tr class="help-payloads-head"><td></td>' +
-          exts.map((ext) => "<td>" + (extLabels[ext] || ext) + "</td>").join("") +
-          "<td>Size</td></tr>";
-        for (const stage of stages) {
-          html +=
-            "<tr><td>" + stageLabel(stage) + "</td>" +
-            exts.map((ext) => "<td>" + (stage.counts[ext] || "–") + "</td>").join("") +
-            "<td>" + formatBytes(stage.bytes) + "</td></tr>";
-        }
-        return html + "</table>";
+      }
+      exts.sort((a, b) => (a === ".html" ? -1 : b === ".html" ? 1 : a.localeCompare(b)));
+      const span = exts.length + 1; // format columns + Size; 1 when no payloads
+
+      function scalarRow(label, value, indent) {
+        return (
+          "<tr" + (indent ? ' class="help-indent"' : "") + "><td>" + label +
+          '</td><td colspan="' + span + '">' + value + "</td></tr>"
+        );
       }
 
-      const matrix = payloadMatrix(p.stages || []);
+      let payloadRows;
+      if (exts.length === 0) {
+        payloadRows = scalarRow("Inlined payloads", "none", false);
+      } else {
+        payloadRows =
+          "<tr><td>Inlined payloads</td>" +
+          exts.map((ext) => '<td class="help-num help-colhead">' + (extLabels[ext] || ext) + "</td>").join("") +
+          '<td class="help-num help-colhead">Size</td></tr>';
+        for (const stage of stages) {
+          payloadRows +=
+            '<tr class="help-indent"><td>' + stageLabel(stage) + "</td>" +
+            exts.map((ext) => '<td class="help-num">' + (stage.counts[ext] || "–") + "</td>").join("") +
+            '<td class="help-num">' + formatBytes(stage.bytes) + "</td></tr>";
+        }
+      }
+
       // The compressed-stream saving rides on the Compressed line; the
       // per-stage savings are implicit in the matrix's Size column. The two
       // are not additive (different baselines), so there's no combined total.
@@ -2132,13 +2144,12 @@
 
         '<h2>Statistics</h2>' +
         '<table>' +
-        '<tr><td>Slides</td><td>' + s.slides + '</td></tr>' +
-        '<tr><td>Edges</td><td>' + s.edges + '</td></tr>' +
-        '<tr><td>Inlined payloads</td><td>' + (matrix ? "" : "none") + '</td></tr>' +
-        (matrix ? '<tr class="help-indent"><td colspan="2">' + matrix + '</td></tr>' : "") +
-        '<tr class="help-indent"><td>Compressed</td><td>' + compressedLine + '</td></tr>' +
-        (s.mermaid_version ? '<tr><td>Mermaid.js</td><td>' + s.mermaid_version + '</td></tr>' : '') +
-        '<tr><td>File size</td><td>' + formatBytes(s.file_size) + '</td></tr>' +
+        scalarRow('Slides', s.slides, false) +
+        scalarRow('Edges', s.edges, false) +
+        payloadRows +
+        scalarRow('Compressed', compressedLine, true) +
+        (s.mermaid_version ? scalarRow('Mermaid.js', s.mermaid_version, false) : '') +
+        scalarRow('File size', formatBytes(s.file_size), false) +
         '</table>';
     }
 
