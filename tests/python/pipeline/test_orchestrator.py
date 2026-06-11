@@ -5,7 +5,7 @@ import pytest
 from scrolly.errors import ScrollyError
 from scrolly.pipeline.loader import load_deck
 from scrolly.pipeline.orchestrator import build_deck
-from tests.python.conftest import PROJECT_ROOT
+from tests.python.conftest import PROJECT_ROOT, inflate_compressed_page, inflate_compressed_stream
 
 EXAMPLES_DIR = PROJECT_ROOT / "examples"
 
@@ -42,7 +42,9 @@ def test_example_deck_builds(deck_file, tmp_path):
     assert not (out / "canvas.css").exists()
     assert not (out / "canvas.js").exists()
 
-    html = index.read_text()
+    # Default builds ship compressed: a bootstrap page wrapping the
+    # document blob. Content assertions run against the inflated document.
+    html = inflate_compressed_page(index.read_text())
     # CSS and JS are inlined (CSS minified, so no space before the brace).
     assert "<style>" in html
     assert ".canvas{" in html
@@ -75,7 +77,7 @@ def test_builds_a_minimal_in_memory_deck(tmp_path):
     deck = build_deck(deck_file, out)
 
     assert deck.title == "tiny"
-    html = (out / "index.html").read_text()
+    html = inflate_compressed_page((out / "index.html").read_text())
     assert "<h1>Only</h1>" in html
     assert "<title>tiny</title>" in html
     assert 'data-id="only"' in html
@@ -97,7 +99,7 @@ def test_builds_multi_slide_deck(tmp_path):
     deck = build_deck(deck_file, out)
 
     assert len(deck.slides) == 2
-    html = (out / "index.html").read_text()
+    html = inflate_compressed_page((out / "index.html").read_text())
     assert "<h1>A</h1>" in html
     assert "<h1>B</h1>" in html
     assert 'data-id="a"' in html
@@ -134,7 +136,7 @@ def test_builds_negative_coordinate_deck(tmp_path):
         "c": (0, 0),
     }
 
-    html = (out / "index.html").read_text()
+    html = inflate_compressed_page((out / "index.html").read_text())
     # The slide container carries the raw (negative) cell coordinates.
     assert "--cell-x: -1; --cell-y: -1;" in html
 
@@ -189,7 +191,7 @@ def test_regression_deck_reference_slide_is_content_driven(tmp_path):
 
     assert any(s.id == "reference" for s in deck.slides)
 
-    html = (out / "index.html").read_text()
+    html = inflate_compressed_page((out / "index.html").read_text())
     # A line of body content from the reference slide should land in the rendered HTML.
     assert "Every factual claim" in html
     # And the nav-data entry for reference carries a null scroll_range.
@@ -264,9 +266,9 @@ def test_build_ships_minified_assets_by_default(tmp_path):
     deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
 
     minified_out = tmp_path / "dist-minified"
-    build_deck(deck_file, minified_out)
+    build_deck(deck_file, minified_out, compress=False)
     readable_out = tmp_path / "dist-readable"
-    build_deck(deck_file, readable_out, minify=False)
+    build_deck(deck_file, readable_out, compress=False, minify=False)
 
     minified_html = (minified_out / "index.html").read_text()
     readable_html = (readable_out / "index.html").read_text()
@@ -275,6 +277,25 @@ def test_build_ships_minified_assets_by_default(tmp_path):
     assert "// ----" in readable_html
     assert "ScrollManager" in minified_html
     assert len(minified_html) < len(readable_html)
+
+
+def test_build_compressed_inner_document_is_minified(tmp_path):
+    slide = tmp_path / "only.slide.json"
+    slide.write_text(_markdown_slide("x", "# x"))
+    deck_file = tmp_path / "deck.deck.json"
+    deck_file.write_text('{ slides: [{ id: "only", position: [0, 0], source: "only.slide.json" }], edges: [] }')
+
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    bootstrap = (out / "index.html").read_text()
+    inner = inflate_compressed_page(bootstrap)
+    assert inner != bootstrap, "default build should ship compressed"
+    # Both the plain-text loader and the inflated runtime are comment-free.
+    assert "// ----" not in bootstrap
+    assert "/*" not in bootstrap
+    assert "// ----" not in inner
+    assert "ScrollManager" in inner
 
 
 def test_build_no_inline_writes_minified_asset_files(tmp_path):
@@ -313,21 +334,37 @@ def _deck_with_iframe(tmp_path: Path) -> Path:
     return deck_file
 
 
-def test_compressed_bundle_emits_single_script_tag(tmp_path):
+def test_compressed_build_ships_bootstrap_page(tmp_path):
     deck_file = _deck_with_iframe(tmp_path)
     out = tmp_path / "dist"
     build_deck(deck_file, out)
 
-    html = (out / "index.html").read_text()
-    assert html.count('id="scrolly-compressed-payload"') == 1
+    bootstrap = (out / "index.html").read_text()
+    # The shipped page is the bootstrap: one document blob, the loader,
+    # og meta tags, a noscript notice, and a black holding screen.
+    assert bootstrap.count('id="scrolly-document"') == 1
+    assert 'property="og:title"' in bootstrap
+    assert 'property="og:description"' in bootstrap
+    assert "<noscript>" in bootstrap
+    assert "background: #000" in bootstrap
+    assert "DecompressionStream" in bootstrap
+    # No document content leaks into the plain bootstrap.
+    assert "slide-container" not in bootstrap
+
+
+def test_compressed_inner_document_carries_manifest_and_markers(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    inner = inflate_compressed_page((out / "index.html").read_text())
+    assert inner.count('id="scrolly-payload-manifest"') == 1
     # The compressed iframe carries a target marker, no inline srcdoc.
-    assert "data-scrolly-target=" in html
-    assert "srcdoc=" not in html
+    assert "data-scrolly-target=" in inner
+    assert "srcdoc=" not in inner
 
 
-def test_compressed_bundle_roundtrips_byte_for_byte(tmp_path):
-    import base64
-    import gzip
+def test_compressed_stream_roundtrips_payload_bytes(tmp_path):
     import json as _json
     import re
 
@@ -335,53 +372,77 @@ def test_compressed_bundle_roundtrips_byte_for_byte(tmp_path):
     out = tmp_path / "dist"
     build_deck(deck_file, out)
 
-    html = (out / "index.html").read_text()
+    inner, payload_bytes = inflate_compressed_stream((out / "index.html").read_text())
     match = re.search(
-        r'<script type="application/json" id="scrolly-compressed-payload">(.*?)</script>',
-        html,
+        r'<script type="application/json" id="scrolly-payload-manifest">(.*?)</script>',
+        inner,
         flags=re.DOTALL,
     )
     assert match is not None
-    bundle = _json.loads(match.group(1))
+    manifest = _json.loads(match.group(1))
 
-    raw = gzip.decompress(base64.b64decode(bundle["blob"]))
     offset = 0
-    for entry in bundle["payloads"]:
-        chunk = raw[offset : offset + entry["length"]]
+    for entry in manifest["payloads"]:
+        chunk = payload_bytes[offset : offset + entry["length"]]
         offset += entry["length"]
         if entry["mode"] == "text":
             # Text payload should decode to the source iframe HTML.
             assert chunk.decode("utf-8").startswith("<!doctype html>")
-    assert offset == len(raw)
+    assert offset == len(payload_bytes), "manifest lengths must cover the asset stream"
 
 
-_BUNDLE_TAG = '<script type="application/json" id="scrolly-compressed-payload">'
+def test_compressed_file_size_stat_matches_output(tmp_path):
+    import json as _json
+    import re
+
+    deck_file = _deck_with_iframe(tmp_path)
+    out = tmp_path / "dist"
+    build_deck(deck_file, out)
+
+    actual_size = (out / "index.html").stat().st_size
+    inner = inflate_compressed_page((out / "index.html").read_text())
+    match = re.search(
+        r'<script type="application/json" id="scrolly-meta">(.*?)</script>',
+        inner,
+        flags=re.DOTALL,
+    )
+    assert match is not None
+    stats = _json.loads(match.group(1))["stats"]
+    # file_size is measured one substitution pass before the final bytes,
+    # so it may drift by the recompression delta — a handful of bytes.
+    assert abs(stats["file_size"] - actual_size) < 100
+    assert isinstance(stats["payloads"]["bytes_saved"], int)
+    assert stats["payloads"]["bytes_saved"] > 0
 
 
-def test_no_compress_skips_bundle_script(tmp_path):
+_DOCUMENT_BLOB_TAG = '<script type="application/octet-stream" id="scrolly-document"'
+
+
+def test_no_compress_ships_plain_page(tmp_path):
     deck_file = _deck_with_iframe(tmp_path)
     out = tmp_path / "dist"
     build_deck(deck_file, out, compress=False)
 
     html = (out / "index.html").read_text()
-    assert _BUNDLE_TAG not in html
+    assert _DOCUMENT_BLOB_TAG not in html
     assert "<iframe srcdoc=" in html
     assert "<iframe data-scrolly-target" not in html
 
 
-def test_inline_false_skips_bundle_script(tmp_path):
+def test_inline_false_ships_plain_page(tmp_path):
     deck_file = _deck_with_iframe(tmp_path)
     out = tmp_path / "dist"
     build_deck(deck_file, out, inline=False)
 
     html = (out / "index.html").read_text()
-    assert _BUNDLE_TAG not in html
+    assert _DOCUMENT_BLOB_TAG not in html
     assert "<iframe data-scrolly-target" not in html
 
 
-def test_markdown_only_deck_emits_no_bundle_script(tmp_path):
-    # A markdown-only deck has no compressible payloads, so the bundler
-    # has nothing to register and the script tag is not emitted.
+def test_markdown_only_deck_still_ships_compressed(tmp_path):
+    # No asset payloads to bundle — but whole-document compression wins
+    # on the runtime CSS/JS alone, so even a markdown-only deck ships
+    # as a bootstrap page (with an empty payload stream).
     slide = tmp_path / "only.slide.json"
     slide.write_text(_markdown_slide("A", "# A\n\nsome body text"))
     deck_file = tmp_path / "deck.deck.json"
@@ -391,7 +452,50 @@ def test_markdown_only_deck_emits_no_bundle_script(tmp_path):
     build_deck(deck_file, out)
 
     html = (out / "index.html").read_text()
-    assert _BUNDLE_TAG not in html
+    assert _DOCUMENT_BLOB_TAG in html
+    inner, payload_bytes = inflate_compressed_stream(html)
+    assert payload_bytes == b""
+    assert "<h1>A</h1>" in inner
+
+
+def test_compressed_page_beats_plain_page(tmp_path):
+    deck_file = _deck_with_iframe(tmp_path)
+    compressed_out = tmp_path / "dist-compressed"
+    build_deck(deck_file, compressed_out)
+    plain_out = tmp_path / "dist-plain"
+    build_deck(deck_file, plain_out, compress=False)
+
+    compressed_size = (compressed_out / "index.html").stat().st_size
+    plain_size = (plain_out / "index.html").stat().st_size
+    # The gate guarantees at least the 5% margin when compression ships.
+    assert compressed_size <= plain_size * 0.95
+
+
+def test_compressed_and_plain_inner_documents_match(tmp_path):
+    # Behavioral parity: the inflated inner document differs from the
+    # plain build only in payload delivery (manifest + markers vs.
+    # inline forms) and the help-screen size figures.
+    import re
+
+    deck_file = _deck_with_iframe(tmp_path)
+    compressed_out = tmp_path / "dist-compressed"
+    build_deck(deck_file, compressed_out)
+    plain_out = tmp_path / "dist-plain"
+    build_deck(deck_file, plain_out, compress=False)
+
+    inner = inflate_compressed_page((compressed_out / "index.html").read_text())
+    plain = (plain_out / "index.html").read_text()
+
+    def normalize(html: str) -> str:
+        html = re.sub(
+            r'<script type="application/json" id="scrolly-payload-manifest">.*?</script>', "", html, flags=re.DOTALL
+        )
+        html = re.sub(r'<script type="application/json" id="scrolly-meta">.*?</script>', "", html, flags=re.DOTALL)
+        html = re.sub(r'data-scrolly-target="\d+"', "__PAYLOAD__", html)
+        html = re.sub(r'srcdoc="[^"]*"', "__PAYLOAD__", html)
+        return re.sub(r"\n\s*\n", "\n", html)
+
+    assert normalize(inner) == normalize(plain)
 
 
 def _extract_meta_payloads(out: Path) -> dict:
@@ -399,7 +503,7 @@ def _extract_meta_payloads(out: Path) -> dict:
     import json as _json
     import re
 
-    html = (out / "index.html").read_text()
+    html = inflate_compressed_page((out / "index.html").read_text())
     match = re.search(
         r'<script type="application/json" id="scrolly-meta">(.*?)</script>',
         html,
@@ -445,6 +549,7 @@ def test_meta_payloads_inline_false_has_empty_counts(tmp_path):
 
 
 def test_meta_payloads_markdown_only_deck(tmp_path):
+    # No payload counts, but whole-document compression still ships.
     slide = tmp_path / "only.slide.json"
     slide.write_text(_markdown_slide("A", "# A\n\nbody"))
     deck_file = tmp_path / "deck.deck.json"
@@ -453,7 +558,10 @@ def test_meta_payloads_markdown_only_deck(tmp_path):
     build_deck(deck_file, out)
 
     payloads = _extract_meta_payloads(out)
-    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0}
+    assert payloads["total"] == {}
+    assert payloads["unique"] == {}
+    assert payloads["compressed"] is True
+    assert payloads["bytes_saved"] > 0
 
 
 def test_build_deck_with_custom_out_file(tmp_path):

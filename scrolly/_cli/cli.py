@@ -66,7 +66,7 @@ def cli() -> None:
 @click.option(
     "--no-compress",
     is_flag=True,
-    help="Disable gzip compression of inlined assets.",
+    help="Disable gzip compression of the output document and its inlined assets.",
 )
 @click.option(
     "--offline",

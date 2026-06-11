@@ -3,9 +3,9 @@ what the Python emitters produce.
 
 ``canvas.js`` consumes three Python-emitted structures whose source it
 never sees — the embedded ``#scrolly-deck`` JSON (``build_nav_data``), the
-``#scrolly-meta`` block (``_build_meta``), and the compressed
-payload-bundle manifest (``PayloadBundler.build``). The Vitest suite
-builds *synthetic* inputs "the way Python would", so nothing else asserts
+``#scrolly-meta`` block (``_build_meta``), and the payload manifest
+(``PayloadBundler.manifest_and_stream``). The Vitest suite builds
+*synthetic* inputs "the way Python would", so nothing else asserts
 the two sides agree. These tests pin the emitted key-sets against the
 contract the JS reader depends on, so a Python-side rename / add / drop
 trips CI here.
@@ -58,8 +58,8 @@ _META_TOP = {"version", "author", "pypi_url", "stats"}
 _META_STATS = {"slides", "edges", "payloads", "mermaid_version", "file_size"}
 _META_PAYLOADS = {"total", "unique", "compressed", "bytes_saved"}
 
-# payload-bundle manifest — read by `decompressBundle()` in canvas.js.
-_MANIFEST_TOP = {"payloads", "targets", "blob"}
+# payload manifest — read by `mapBundleAssignments()` in canvas.js.
+_MANIFEST_TOP = {"payloads", "targets"}
 _MANIFEST_PAYLOAD_REQUIRED = {"mode", "length"}
 _MANIFEST_PAYLOAD_OPTIONAL = {"mime"}  # blob payloads only
 _MANIFEST_TARGET = {"id", "attr", "payload"}
@@ -150,7 +150,7 @@ def test_meta_keys() -> None:
 
 
 # ==================================================================================================
-#  payload-bundle manifest — PayloadBundler.build
+#  payload manifest — PayloadBundler.manifest_and_stream
 # ==================================================================================================
 def test_manifest_keys() -> None:
     # --- arrange ----------------------
@@ -161,11 +161,9 @@ def test_manifest_keys() -> None:
     bundler.add(payload=blob, mode="blob", attr="src", mime="image/png", baseline_len=len(blob))
 
     # --- act --------------------------
-    result = bundler.build()
+    manifest = json.loads(bundler.manifest_and_stream()[0])
 
     # --- assert -----------------------
-    assert result is not None, "highly-compressible fixture should pass the bundle gate"
-    manifest = json.loads(result[0])
     assert set(manifest) == _MANIFEST_TOP
     for payload in manifest["payloads"]:
         _assert_keys(

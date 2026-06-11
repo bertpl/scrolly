@@ -9,6 +9,7 @@ from click.testing import CliRunner
 from scrolly import __version__
 from scrolly._cli.ai_help import build_ai_help
 from scrolly._cli.cli import cli
+from tests.python.conftest import inflate_compressed_page
 
 
 def _write_minimal_deck(tmp_path: Path) -> Path:
@@ -45,6 +46,6 @@ def test_no_minification_flag_restores_readable_assets(tmp_path: Path) -> None:
 
     # --- assert -----------------------
     assert result.exit_code == 0, result.output
-    html = (out / "index.html").read_text()
+    html = inflate_compressed_page((out / "index.html").read_text())
     assert "// ----" in html  # JS section banners
     assert ".canvas {" in html  # unminified CSS keeps the space before the brace

@@ -109,8 +109,8 @@
 
   <script type="application/json" id="scrolly-deck">{{ nav_data_json | safe }}</script>
   <script type="application/json" id="scrolly-meta">{{ meta_json | safe }}</script>
-  {%- if compressed_payload_json %}
-  <script type="application/json" id="scrolly-compressed-payload">{{ compressed_payload_json | safe }}</script>
+  {%- if payload_manifest_json %}
+  <script type="application/json" id="scrolly-payload-manifest">{{ payload_manifest_json | safe }}</script>
   {%- endif %}
   {%- if has_mermaid %}
   {%- if inline %}

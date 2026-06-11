@@ -307,7 +307,6 @@ def test_raster_asset_also_registered_with_bundler(tmp_path: Path) -> None:
 
 def test_duplicate_img_dedups_to_one_payload(tmp_path: Path) -> None:
     # --- arrange ----------------------------
-    # Payload large enough that a single bundled copy clears the 5% gate.
     svg_content = (
         b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
         + b'<rect x="0" y="0" width="100" height="100" fill="red"/>' * 30
@@ -327,11 +326,9 @@ def test_duplicate_img_dedups_to_one_payload(tmp_path: Path) -> None:
 
     # --- act --------------------------------
     result = rewrite_asset_refs(chunks, bundler=bundler)
-    built = bundler.build()
-    assert built is not None
     import json as _json
 
-    manifest = _json.loads(built[0])
+    manifest = _json.loads(bundler.manifest_and_stream()[0])
 
     # --- assert ------------------------------
     # Two distinct targets (one per <img>), but a single payload entry

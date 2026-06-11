@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ og_description }}">
+  <style>html, body { margin: 0; height: 100%; background: #000; }</style>
+</head>
+<body>
+  <noscript><p style="color: #fff; font-family: sans-serif; padding: 2rem;">This presentation requires JavaScript.</p></noscript>
+  <script type="application/octet-stream" id="scrolly-document" data-doc-length="{{ doc_length }}">{{ blob | safe }}</script>
+  <script>{{ loader_js | safe }}</script>
+</body>
+</html>

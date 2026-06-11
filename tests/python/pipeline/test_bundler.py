@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import gzip
 import json
 
 import pytest
@@ -12,7 +11,7 @@ from scrolly.pipeline._bundler import (
     MIN_SAVING,
     BundleStats,
     PayloadBundler,
-    _gate_passes,
+    gate_passes,
 )
 
 
@@ -51,7 +50,7 @@ def test_gate_passes_boundary(
     baseline_len: int,
     expected: bool,
 ) -> None:
-    assert _gate_passes(compressed_len, baseline_len) is expected
+    assert gate_passes(compressed_len, baseline_len) is expected
 
 
 # ==================================================================================================
@@ -85,9 +84,7 @@ def test_add_dedups_identical_payload_mode_mime() -> None:
     # --- assert ------------------------------
     # Three distinct targets, all pointing at the same single payload.
     assert (id0, id1, id2) == ("0", "1", "2")
-    result = b.build()
-    assert result is not None
-    manifest = json.loads(result[0])
+    manifest = json.loads(b.manifest_and_stream()[0])
     assert len(manifest["payloads"]) == 1
     assert len(manifest["targets"]) == 3
     assert all(t["payload"] == 0 for t in manifest["targets"])
@@ -103,9 +100,7 @@ def test_add_does_not_dedup_across_mode() -> None:
     b.add(payload=payload, mode="blob", attr="src", mime="image/svg+xml", baseline_len=len(payload))
 
     # --- assert ------------------------------
-    result = b.build()
-    assert result is not None
-    manifest = json.loads(result[0])
+    manifest = json.loads(b.manifest_and_stream()[0])
     assert len(manifest["payloads"]) == 2
 
 
@@ -119,9 +114,7 @@ def test_add_does_not_dedup_across_mime() -> None:
     b.add(payload=payload, mode="blob", attr="src", mime="image/png", baseline_len=len(payload))
 
     # --- assert ------------------------------
-    result = b.build()
-    assert result is not None
-    manifest = json.loads(result[0])
+    manifest = json.loads(b.manifest_and_stream()[0])
     assert len(manifest["payloads"]) == 2
 
 
@@ -140,46 +133,18 @@ def test_add_text_rejects_mime() -> None:
 
 
 # ==================================================================================================
-#  build() — output shape and round-trip
+#  manifest_and_stream() — output shape and round-trip
 # ==================================================================================================
-def test_build_returns_none_when_empty() -> None:
+def test_manifest_and_stream_empty_bundler() -> None:
     # --- arrange / act ----------------------
-    result = PayloadBundler().build()
+    manifest_json, stream = PayloadBundler().manifest_and_stream()
 
     # --- assert ------------------------------
-    assert result is None
+    assert json.loads(manifest_json) == {"payloads": [], "targets": []}
+    assert stream == b""
 
 
-def test_build_returns_none_when_gate_fails() -> None:
-    # --- arrange ----------------------------
-    # Tiny single payload — gzip header overhead exceeds any saving.
-    b = PayloadBundler()
-    b.add(payload=b"x", mode="text", attr="srcdoc", baseline_len=1)
-
-    # --- act --------------------------------
-    result = b.build()
-
-    # --- assert ------------------------------
-    assert result is None
-
-
-def test_build_returns_bundle_when_gate_passes() -> None:
-    # --- arrange ----------------------------
-    b = PayloadBundler()
-    text = "hello compressible world " * 50
-    b.add(payload=text.encode("utf-8"), mode="text", attr="srcdoc", baseline_len=len(text))
-
-    # --- act --------------------------------
-    result = b.build()
-
-    # --- assert ------------------------------
-    assert result is not None
-    payload_json, stats = result
-    assert isinstance(payload_json, str)
-    assert isinstance(stats, BundleStats)
-
-
-def test_build_manifest_has_expected_shape() -> None:
+def test_manifest_has_expected_shape() -> None:
     # --- arrange ----------------------------
     b = PayloadBundler()
     text = b"<p>some compressible html</p>" * 20
@@ -194,12 +159,11 @@ def test_build_manifest_has_expected_shape() -> None:
     )
 
     # --- act --------------------------------
-    result = b.build()
+    manifest_json, _ = b.manifest_and_stream()
 
     # --- assert ------------------------------
-    assert result is not None
-    manifest = json.loads(result[0])
-    assert set(manifest) == {"payloads", "targets", "blob"}
+    manifest = json.loads(manifest_json)
+    assert set(manifest) == {"payloads", "targets"}
     # Text payload entry: {mode, length}; no mime.
     assert manifest["payloads"][0] == {"mode": "text", "length": len(text)}
     # Blob payload entry: {mode, mime, length}.
@@ -213,7 +177,7 @@ def test_build_manifest_has_expected_shape() -> None:
     assert manifest["targets"][1] == {"id": "1", "attr": "src", "payload": 1}
 
 
-def test_build_roundtrips_payloads() -> None:
+def test_stream_concatenates_payloads_per_manifest_lengths() -> None:
     # --- arrange ----------------------------
     # A mix of text and binary, with one dedup.
     b = PayloadBundler()
@@ -226,22 +190,18 @@ def test_build_roundtrips_payloads() -> None:
     b.add(payload=text_a, mode="text", attr="srcdoc", baseline_len=len(text_a))  # dedup'd
 
     # --- act --------------------------------
-    result = b.build()
-    assert result is not None
-    payload_json, _ = result
-    manifest = json.loads(payload_json)
+    manifest_json, stream = b.manifest_and_stream()
+    manifest = json.loads(manifest_json)
 
-    # Decode the blob, decompress, slice per manifest lengths.
-    raw = gzip.decompress(base64.b64decode(manifest["blob"]))
     offset = 0
     recovered: list[bytes] = []
     for entry in manifest["payloads"]:
         length = entry["length"]
-        recovered.append(raw[offset : offset + length])
+        recovered.append(stream[offset : offset + length])
         offset += length
 
     # --- assert ------------------------------
-    assert offset == len(raw), "manifest lengths must cover the whole stream"
+    assert offset == len(stream), "manifest lengths must cover the whole stream"
     assert len(manifest["payloads"]) == 3, "duplicate payload should dedup to one entry"
     assert len(manifest["targets"]) == 4, "each add registers one target"
     assert recovered[0] == text_a
@@ -309,12 +269,9 @@ def test_bundle_stats_counts_split_by_mode_and_mime() -> None:
     b.add(payload=text, mode="text", attr="srcdoc", baseline_len=len(text))  # dedup
 
     # --- act --------------------------------
-    result = b.build()
-    assert result is not None
-    _, stats = result
+    stats = b.stats()
 
     # --- assert ------------------------------
-    assert stats.compressed is True
     assert stats.text_payloads == 1
     assert stats.text_targets == 2  # two srcdoc refs sharing one payload
     assert stats.blob_payloads_by_mime == {"image/svg+xml": 1}
@@ -365,9 +322,7 @@ def test_bundle_stats_baseline_sums_across_adds_including_duplicates() -> None:
     b.add(payload=text, mode="text", attr="srcdoc", baseline_len=len(text))
 
     # --- act --------------------------------
-    result = b.build()
-    assert result is not None
-    _, stats = result
+    stats = b.stats()
 
     # --- assert ------------------------------
     assert stats.baseline_bytes == 3 * len(text)
@@ -421,7 +376,7 @@ def test_stats_on_empty_bundler() -> None:
     assert stats.total_payloads == 0
 
 
-def test_stats_reflects_adds_without_building() -> None:
+def test_stats_never_marks_compressed() -> None:
     # --- arrange ----------------------------
     b = PayloadBundler()
     text = b"<p>some iframe html</p>" * 5
@@ -434,7 +389,8 @@ def test_stats_reflects_adds_without_building() -> None:
     stats = b.stats()
 
     # --- assert ------------------------------
-    # stats() never marks compressed; it's a read-only snapshot.
+    # stats() is a read-only snapshot; the shipped-page figures are
+    # substituted later by the bootstrap builder when compression ships.
     assert stats.compressed is False
     assert stats.compressed_bytes == 0
     assert stats.text_payloads == 1

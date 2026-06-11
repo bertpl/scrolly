@@ -243,7 +243,7 @@ def test_bundled_js_minified_by_default() -> None:
     assert "// ----" not in minified
     # Load-bearing identifiers survive (rjsmin never renames).
     assert "ScrollManager" in minified
-    assert "decompressBundle" in minified
+    assert "mapBundleAssignments" in minified
 
 
 def test_bundled_js_unminified_is_source_verbatim() -> None:

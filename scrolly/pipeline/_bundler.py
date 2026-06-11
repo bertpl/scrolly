@@ -1,29 +1,28 @@
-"""PayloadBundler — pools compressible inline payloads into one gzipped bundle.
+"""PayloadBundler — pools compressible inline payloads for the compressed stream.
 
 Collects iframe srcdoc HTML and image-asset bytes into a deduplicated
-list, gzip-compresses the concatenated stream once, and emits a single
-JSON payload combining the manifest and the base64-encoded blob. The
-result is consumed by the orchestrator and injected into the page as a
-single ``<script type="application/json">`` block.
+list and exposes them as a manifest (payload schema + target bindings,
+as a JSON ``<script>`` block in the inner document) plus one raw byte
+stream. The stream rides the single whole-document gzip blob built by
+``scrolly.render.bootstrap``; the client-side loader hands the inflated
+bytes to canvas.js, which walks the manifest to populate the targets.
 
 The bundler is instantiated whenever the build is producing an inlined
 output (``inline=True``), regardless of whether compression was
 requested — its :meth:`PayloadBundler.stats` snapshot drives the
-help-screen statistics in every mode. Whether the bundle is actually
-emitted into the page is a separate decision made by the orchestrator
-based on the ``compress`` flag and the holistic 5% gate.
+help-screen statistics in every mode. Whether the compressed page is
+actually shipped is a separate decision made by the orchestrator based
+on the ``compress`` flag and the holistic 5% gate.
 """
 
 from __future__ import annotations
 
 import base64
-import gzip
 import json
 from dataclasses import dataclass
 from html import escape as html_escape
 from typing import Literal
 
-GZIP_LEVEL = 9
 MIN_SAVING = 0.05
 
 
@@ -34,11 +33,8 @@ MIN_SAVING = 0.05
 class BundleStats:
     """Snapshot of what the bundler holds, with per-mime breakdowns.
 
-    Always available via :meth:`PayloadBundler.stats` (independent of
-    whether the bundle was emitted) and as the second element of
-    :meth:`PayloadBundler.build`'s return tuple (when the gate passes).
-
-    Counts are split into:
+    Always available via :meth:`PayloadBundler.stats`, independent of
+    whether the compressed page ships. Counts are split into:
 
     - **target** counts (per ``add()`` call — pre-dedup, equals the number
       of DOM markers in the chunks);
@@ -49,9 +45,11 @@ class BundleStats:
     counted separately as scalars. Blob-mode payloads are broken down
     per mime so the help screen can label them as SVG / PNG / etc.
 
-    ``compressed`` is ``True`` only when the bundle was actually emitted
-    (gate passed and the caller opted in to compression). When ``False``,
-    ``compressed_bytes`` is ``0`` and so is ``bytes_saved``.
+    ``compressed``, ``compressed_bytes``, and ``bytes_saved`` describe
+    the *shipped page*, not the bundler's own state: :meth:`stats`
+    snapshots always carry ``compressed=False`` / ``0``, and the
+    assembler's deferred-stats mode substitutes the real figures when
+    the compressed page ships (see ``scrolly.render.bootstrap``).
     """
 
     text_targets: int
@@ -99,20 +97,19 @@ class _Target:
 # ==================================================================================================
 #  Gate
 # ==================================================================================================
-def _gate_passes(compressed_len: int, baseline_len: int) -> bool:
-    """Check whether the bundle clears the 5% holistic savings gate.
+def gate_passes(compressed_len: int, baseline_len: int) -> bool:
+    """Check whether the compressed page clears the 5% holistic savings gate.
 
     Args:
-        compressed_len: Length of the final JSON payload that would be
-            emitted into the page (manifest + blob).
-        baseline_len: Summed length of the inline forms that would
-            otherwise be emitted (sum of ``baseline_len`` arguments
-            passed to :meth:`PayloadBundler.add`).
+        compressed_len: Byte size of the compressed bootstrap page that
+            would be shipped.
+        baseline_len: Byte size of the equivalent plain (uncompressed)
+            page.
 
     Returns:
-        ``True`` when emitting the bundle would save at least 5% vs.
-        plain inlining. The 95% boundary is inclusive — exactly 5%
-        savings passes.
+        ``True`` when shipping the compressed page would save at least
+        5% vs. the plain page. The 95% boundary is inclusive — exactly
+        5% savings passes.
     """
     if baseline_len <= 0:
         return False
@@ -227,44 +224,28 @@ class PayloadBundler:
         """
         return self._make_stats(compressed_bytes=0, compressed=False)
 
-    def build(self) -> tuple[str, BundleStats] | None:
-        """Build the combined JSON payload and evaluate the gate.
+    def manifest_and_stream(self) -> tuple[str, bytes]:
+        """Build the payload manifest JSON and the raw byte stream.
 
         Concatenates all unique payloads (in registration order) into
-        one binary stream, gzip-compresses it once, base64-encodes the
-        result, and packages it with the manifest into a single JSON
-        object of the schema ``{"payloads": […], "targets": […],
-        "blob": "…"}``. The gate then compares the emitted JSON's
-        length to the summed inline baseline.
+        one binary stream and describes it in a manifest of the schema
+        ``{"payloads": […], "targets": […]}``. The manifest is embedded
+        in the inner document as a JSON ``<script>`` block; the stream
+        is appended to the document bytes in the single gzip blob (see
+        ``scrolly.render.bootstrap``), so canvas.js can slice it back
+        per the manifest's payload lengths.
 
         Returns:
-            Tuple of ``(compressed_payload_json, BundleStats)`` when
-            the gate passes (``stats.compressed`` is ``True``), or
-            ``None`` when it doesn't (no payloads registered, or
-            insufficient savings). When ``None``, the caller should
-            fall back to inline forms via :meth:`inline_fallback`.
+            Tuple of ``(manifest_json, stream_bytes)`` — both empty-ish
+            but well-formed when no payloads were registered.
         """
-        if not self._payloads:
-            return None
-
-        stream = b"".join(p.payload for p in self._payloads)
-        compressed = gzip.compress(stream, GZIP_LEVEL, mtime=0)
-        blob_b64 = base64.b64encode(compressed).decode("ascii")
-
         manifest_obj = {
             "payloads": [_payload_entry(p) for p in self._payloads],
             "targets": [{"id": t.target_id, "attr": t.attr, "payload": t.payload_index} for t in self._targets],
-            "blob": blob_b64,
         }
-        compressed_json = json.dumps(manifest_obj, separators=(",", ":"))
-
-        if not _gate_passes(len(compressed_json), self._baseline_total):
-            return None
-
-        return compressed_json, self._make_stats(
-            compressed_bytes=len(compressed_json),
-            compressed=True,
-        )
+        manifest_json = json.dumps(manifest_obj, separators=(",", ":"))
+        stream = b"".join(p.payload for p in self._payloads)
+        return manifest_json, stream
 
     # --------------------------------------------------------------------------
     #  Internal — stats construction

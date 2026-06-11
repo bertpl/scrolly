@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Built decks now compress the whole document (slides, styles, runtime, mermaid, and assets) into a single stream behind a small loader, typically shrinking the output by 25% — and far more for decks with mermaid diagrams; `--no-compress` still produces a plain readable page.
 - Built decks ship the canvas runtime JS and CSS minified — source comments no longer appear in the output HTML, which also shrinks it by ~60 KB.
 
 ### Deprecated

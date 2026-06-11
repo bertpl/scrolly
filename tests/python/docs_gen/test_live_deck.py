@@ -7,6 +7,7 @@ from pathlib import Path
 import live_deck
 
 from scrolly.pipeline import build_deck
+from tests.python.conftest import inflate_compressed_page
 
 
 # --- hero html build --------------------------------
@@ -16,7 +17,7 @@ def test_build_hero_html_returns_populated_document():
 
     # --- assert -----------------------
     assert html.lstrip().startswith("<!")
-    assert "Stacked Diffs" in html
+    assert "Stacked Diffs" in inflate_compressed_page(html)
 
 
 # --- self-contained invariant -----------------------
