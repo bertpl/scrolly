@@ -1,5 +1,11 @@
 """Bundled static assets shipped with the output (canvas.css, canvas.js, mermaid.min.js).
 
+Canvas JS and CSS are minified (rjsmin/rcssmin: comments and
+inter-token whitespace stripped, semantics untouched) before they
+ship, so built decks don't carry source comments; the tracked
+``assets/canvas.js`` and ``assets/canvas.css`` stay the readable
+files of record.
+
 Mermaid uses a two-tier resolution chain: try jsdelivr first
 (``mermaid@11`` major-version pin) for freshness, fall back to the
 wheel-bundled copy when the network is unreachable or when the user
@@ -15,6 +21,9 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from importlib.resources import files
+
+import rcssmin
+import rjsmin
 
 _BUNDLED_ASSET_NAMES: tuple[str, ...] = ("canvas.css", "canvas.js")
 
@@ -46,22 +55,56 @@ class MermaidAsset:
     source: str  # "cdn" | "bundled"
 
 
-def iter_assets() -> list[tuple[str, bytes]]:
-    """Return each bundled static asset as (filename, content_bytes)."""
+def iter_assets(*, minify: bool = True) -> list[tuple[str, bytes]]:
+    """Return each bundled static asset as (filename, content_bytes).
+
+    Args:
+        minify: Minify the JS and CSS assets (see :func:`bundled_js` /
+            :func:`bundled_css`).
+    """
     base = files("scrolly.render").joinpath("assets")
-    return [(name, base.joinpath(name).read_bytes()) for name in _BUNDLED_ASSET_NAMES]
+    assets: list[tuple[str, bytes]] = []
+    for name in _BUNDLED_ASSET_NAMES:
+        content = base.joinpath(name).read_bytes()
+        if minify:
+            content = _minify(name, content.decode("utf-8")).encode("utf-8")
+        assets.append((name, content))
+    return assets
 
 
-def bundled_css() -> str:
-    """Return the canvas CSS content as a string."""
+def bundled_css(*, minify: bool = True) -> str:
+    """Return the canvas CSS content as a string, minified by default.
+
+    Args:
+        minify: Strip comments and collapse whitespace via rcssmin.
+            ``False`` returns the readable source verbatim (the
+            ``--no-minification`` debug path).
+    """
     base = files("scrolly.render").joinpath("assets")
-    return base.joinpath("canvas.css").read_text(encoding="utf-8")
+    css = base.joinpath("canvas.css").read_text(encoding="utf-8")
+    return rcssmin.cssmin(css) if minify else css
 
 
-def bundled_js() -> str:
-    """Return the canvas JS content as a string."""
+def bundled_js(*, minify: bool = True) -> str:
+    """Return the canvas JS content as a string, minified by default.
+
+    Args:
+        minify: Strip comments and collapse whitespace via rjsmin.
+            ``False`` returns the readable source verbatim (the
+            ``--no-minification`` debug path).
+    """
     base = files("scrolly.render").joinpath("assets")
-    return base.joinpath("canvas.js").read_text(encoding="utf-8")
+    js = base.joinpath("canvas.js").read_text(encoding="utf-8")
+    return rjsmin.jsmin(js) if minify else js
+
+
+def _minify(name: str, content: str) -> str:
+    """Minify an asset by file type; non-JS/CSS content passes through verbatim."""
+    if name.endswith(".js"):
+        return rjsmin.jsmin(content)
+    if name.endswith(".css"):
+        return rcssmin.cssmin(content)
+    return content
 
 
 def mermaid_asset(*, offline: bool = False) -> MermaidAsset:
