@@ -8,6 +8,7 @@ from pathlib import Path
 from scrolly.deck import Deck, Slide
 from scrolly.errors import SlideSourceError
 from scrolly.pipeline._bundler import PayloadBundler, gate_passes
+from scrolly.pipeline._reencode import BitmapReencoder, ReencodeStats
 from scrolly.pipeline.assets import copy_assets, rewrite_asset_refs
 from scrolly.pipeline.loader import load_deck
 from scrolly.pipeline.writer import write_output
@@ -30,6 +31,7 @@ def build_deck(
     offline: bool = False,
     out_file: str = "index.html",
     minify: bool = True,
+    reencode_quality: int | None = 95,
 ) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`.
 
@@ -54,6 +56,10 @@ def build_deck(
             stripped). On by default in every mode, including
             ``compress=False``; disabled only via the hidden
             ``--no-minification`` debug flag.
+        reencode_quality: Bitmap re-encoding quality (``None`` disables
+            it). Honored only on inline builds — the re-encoder runs
+            inside ``_inline_refs``, so a non-inline build never
+            re-encodes regardless of this value.
 
     Returns:
         The fully-resolved ``Deck``.
@@ -68,8 +74,14 @@ def build_deck(
     # holistic ≥5% gate passes vs. the plain page.
     bundler: PayloadBundler | None = PayloadBundler() if inline else None
 
+    # The re-encoder shares the bundler's "inline builds only" lifetime: it
+    # exists whenever assets are inlined, even when re-encoding is off, so it
+    # can still count eligible bitmaps for the help-screen display rule.
+    reencoder: BitmapReencoder | None = BitmapReencoder(reencode_quality) if inline else None
+
     chunks = _render_slides(deck.slides, slide_irs, bundler=bundler)
-    chunks = rewrite_asset_refs(chunks, inline=inline, bundler=bundler)
+    chunks = rewrite_asset_refs(chunks, inline=inline, bundler=bundler, reencoder=reencoder)
+    reencode_stats: ReencodeStats | None = reencoder.stats() if reencoder is not None else None
 
     # Resolve mermaid once when any chunk needs it — threaded into both
     # assemble (for inlined content + help-screen version) and write_output
@@ -96,6 +108,7 @@ def build_deck(
             simplified_zoom_control=simplified_zoom_control,
             mermaid=mermaid,
             minify=minify,
+            reencode_stats=reencode_stats,
         )
 
     write_output(out_dir, html, force=force, mermaid=mermaid, inline=inline, out_file=out_file, minify=minify)
@@ -114,6 +127,7 @@ def _assemble_inlined(
     simplified_zoom_control: bool,
     mermaid: MermaidAsset | None,
     minify: bool,
+    reencode_stats: ReencodeStats | None,
 ) -> str:
     """Assemble an inlined build: the compressed page, or the plain page.
 
@@ -135,6 +149,7 @@ def _assemble_inlined(
         bundle_stats=bundler.stats(),
         mermaid=mermaid,
         minify=minify,
+        reencode_stats=reencode_stats,
     )
     if not compress:
         return plain_html
@@ -150,6 +165,7 @@ def _assemble_inlined(
         mermaid=mermaid,
         minify=minify,
         deferred_compression_stats=True,
+        reencode_stats=reencode_stats,
     )
     plain_size = len(plain_html.encode("utf-8"))
     compressed_html = build_compressed_page(

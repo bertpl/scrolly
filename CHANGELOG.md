@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Built decks re-encode raster images to the smallest of several WebP/AVIF candidates (the original always competes, so a deck never grows), shrinking image-heavy decks; on by default at quality 95, tunable or disabled via `scrolly build --reencode-bitmaps <quality|off>`.
+
 ### Changed
 
 ### Deprecated

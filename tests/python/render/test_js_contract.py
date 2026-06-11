@@ -56,7 +56,7 @@ _NAV_GROUP_OPTIONAL = {"color"}  # emitted only when the group sets a color
 # #scrolly-meta — read by the help-modal `populate()` in canvas.js.
 _META_TOP = {"version", "author", "pypi_url", "stats"}
 _META_STATS = {"slides", "edges", "payloads", "mermaid_version", "file_size"}
-_META_PAYLOADS = {"total", "unique", "compressed", "bytes_saved"}
+_META_PAYLOADS = {"total", "unique", "compressed", "bytes_saved", "reencoding"}
 
 # payload manifest — read by `mapBundleAssignments()` in canvas.js.
 _MANIFEST_TOP = {"payloads", "targets"}

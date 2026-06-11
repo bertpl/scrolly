@@ -126,6 +126,39 @@ def test_unsupported_extension_raises(tmp_path: Path) -> None:
         rewrite_asset_refs({"s1": chunk})
 
 
+def test_reencoder_flips_inlined_image_format(tmp_path: Path) -> None:
+    # --- arrange ----------------------
+    # A gradient PNG that the tournament beats with WebP/AVIF; the flipped
+    # mime must reach the inlined data URI.
+    import io
+
+    from PIL import Image
+
+    from scrolly.pipeline._reencode import BitmapReencoder
+
+    image = Image.new("RGB", (48, 48))
+    pixels = image.load()
+    for y in range(48):
+        for x in range(48):
+            pixels[x, y] = (x * 5 % 256, y * 5 % 256, (x + y) % 256)
+    buffer = io.BytesIO()
+    image.save(buffer, "PNG")
+    src = tmp_path / "bg.png"
+    src.write_bytes(buffer.getvalue())
+    chunk = _chunk(html='<img src="__asset__/bg.png">', assets=(src,))
+    reencoder = BitmapReencoder(95)
+
+    # --- act --------------------------
+    result = rewrite_asset_refs({"s1": chunk}, reencoder=reencoder)
+
+    # --- assert -----------------------
+    html = result["s1"].html
+    assert ("data:image/webp;base64," in html) or ("data:image/avif;base64," in html)
+    assert "data:image/png;base64," not in html
+    stats = reencoder.stats()
+    assert stats.considered == 1 and stats.reencoded == 1
+
+
 # --------------------------------------------------------------------------
 #  copy_assets
 # --------------------------------------------------------------------------

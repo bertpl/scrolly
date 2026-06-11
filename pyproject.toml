@@ -31,6 +31,9 @@ dependencies = [
     "rich>=13.0.0",
     "rjsmin>=1.2",
     "rcssmin>=1.2",
+    # Bitmap re-encoding. >=11.3 ships native AVIF (libavif) in the binary
+    # wheels, so no separate AVIF plugin is needed.
+    "pillow>=11.3",
 ]
 
 [dependency-groups]
@@ -49,7 +52,6 @@ dev = [
 # so it's separate from `dev` — casual contributors don't pay the cost.
 capture = [
     "playwright>=1.40",
-    "pillow>=10.0",
 ]
 
 [project.scripts]

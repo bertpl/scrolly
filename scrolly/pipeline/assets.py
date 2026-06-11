@@ -29,6 +29,7 @@ from scrolly.slide import SlideHTML
 
 if TYPE_CHECKING:
     from scrolly.pipeline._bundler import PayloadBundler
+    from scrolly.pipeline._reencode import BitmapReencoder
 
 ASSET_REF_PREFIX = "__asset__/"
 
@@ -38,6 +39,7 @@ def rewrite_asset_refs(
     *,
     inline: bool = True,
     bundler: PayloadBundler | None = None,
+    reencoder: BitmapReencoder | None = None,
 ) -> dict[str, SlideHTML]:
     """Validate asset sources and rewrite ``__asset__/`` refs in chunks.
 
@@ -58,6 +60,10 @@ def rewrite_asset_refs(
         chunks: Per-slide rendered HTML chunks, keyed by slide id.
         inline: Inline assets as data URIs (vs. separate files).
         bundler: Optional payload bundler for ``<img>`` references.
+        reencoder: Optional bitmap re-encoder. When provided (inline
+            builds only), each raster asset's bytes/mime pass through it
+            before inlining, so a format flip propagates to the data URI,
+            the bundler payload, and the help-screen mime labels.
 
     Returns:
         Rewritten chunks dict.
@@ -69,7 +75,7 @@ def rewrite_asset_refs(
             continue
         _validate_assets(slide_id, chunk.assets)
         if inline:
-            result[slide_id] = _inline_refs(slide_id, chunk, bundler=bundler)
+            result[slide_id] = _inline_refs(slide_id, chunk, bundler=bundler, reencoder=reencoder)
         else:
             result[slide_id] = _rewrite_refs(slide_id, chunk)
     return result
@@ -115,6 +121,7 @@ def _inline_refs(
     chunk: SlideHTML,
     *,
     bundler: PayloadBundler | None,
+    reencoder: BitmapReencoder | None,
 ) -> SlideHTML:
     """Inline asset references; register ``<img>``-referenced ones with the bundler.
 
@@ -123,6 +130,8 @@ def _inline_refs(
         chunk: The rendered slide chunk.
         bundler: Optional payload bundler. When provided, ``<img>``
             references go to the bundler as ``mode="blob"`` payloads.
+        reencoder: Optional bitmap re-encoder applied to each asset's
+            bytes/mime before inlining (a no-op for ineligible assets).
 
     Returns:
         Rewritten chunk with ``__asset__/`` references resolved.
@@ -133,6 +142,8 @@ def _inline_refs(
     for path in chunk.assets:
         mime = _mime_type(path, slide_id)
         raw = path.read_bytes()
+        if reencoder is not None:
+            raw, mime = reencoder.process(raw, mime)
         encoded = base64.b64encode(raw).decode("ascii")
         data_uri = f"data:{mime};base64,{encoded}"
         ref = f"{ASSET_REF_PREFIX}{path.name}"

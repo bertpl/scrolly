@@ -934,6 +934,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "json5" },
     { name = "markdown" },
+    { name = "pillow" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rcssmin" },
@@ -943,7 +944,6 @@ dependencies = [
 
 [package.dev-dependencies]
 capture = [
-    { name = "pillow" },
     { name = "playwright" },
 ]
 dev = [
@@ -960,6 +960,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1" },
     { name = "json5", specifier = ">=0.13.0" },
     { name = "markdown", specifier = ">=3.4" },
+    { name = "pillow", specifier = ">=11.3" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rcssmin", specifier = ">=1.2" },
@@ -968,10 +969,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-capture = [
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "playwright", specifier = ">=1.40" },
-]
+capture = [{ name = "playwright", specifier = ">=1.40" }]
 dev = [
     { name = "gitsvg", specifier = "==0.2.3" },
     { name = "pre-commit", specifier = ">=4.0" },
