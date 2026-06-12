@@ -1168,6 +1168,14 @@ body.pan-transitioning .canvas {
   color: #b8b8b8;
 }
 
+/* The Size column is the matrix's rightmost cell; give it extra right padding
+   so its value doesn't butt against the body scrollbar. Targets only the
+   matrix (its cells carry .help-num) — scalar rows and the section underlines
+   keep their current full span. */
+.help-modal-body td.help-num:last-child {
+  padding-right: 1.5em;
+}
+
 .help-modal-body td.help-colhead {
   color: #fff;
 }
