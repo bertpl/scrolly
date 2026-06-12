@@ -40,6 +40,7 @@ def build_ai_help(root_command: click.Command, version: str) -> str:
         _commands_section(root_command),
         _file_schemas_section(),
         _content_from_files_section(),
+        _templating_section(),
         _element_schemas_section(),
         _error_codes_section(),
     ]
@@ -88,6 +89,28 @@ def _content_from_files_section() -> str:
         "the inline field and its `*_file` form is an error (E012); a "
         "missing file is an error (E505). Use the file form to keep large "
         "content out of slide sources."
+    )
+
+
+def _templating_section() -> str:
+    """Render the templating rules summary (Jinja2 template elements)."""
+    return (
+        "## Templating\n\n"
+        "A `template` element renders Jinja2 text into a JSON5 array of child "
+        "elements and becomes a `container` holding them. Inline form "
+        "(`template:` — Jinja text in a JSON5 string) suits short in-place "
+        "generation like loops emitting a grid; the file form "
+        "(`template_file:` — a `*.elements.json.j2` file) suits anything "
+        "reused, and may declare its parameters in a JSON5 front-matter block "
+        "between `---` lines (`scrolly schema template <path>` prints the "
+        "contract). Variables come from the element's `with:` block plus "
+        "front-matter defaults — there are no ambient variables. Rendering is "
+        "strict: undefined variables are errors (E802); param mismatches are "
+        "caught before rendering (E804); rendered output must be a valid "
+        "JSON5 element array (E803) — inspect it with "
+        "`scrolly expand <deck> --slide <id>`. Wrap literal `{{` in template "
+        "files in `{% raw %}…{% endraw %}`. Plain `.slide.json` / "
+        "`.deck.json` files are never Jinja-processed."
     )
 
 

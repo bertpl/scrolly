@@ -1,0 +1,20 @@
+---
+{
+  description: "Colored badge card with a label and an optional caption.",
+  params: {
+    label:   { type: "string", required: true },
+    caption: { type: "string", default: "" },
+    accent:  { type: "string", default: "#5EB083" },
+  },
+}
+---
+[
+  { name: "bg", html: "<div style=\"width:100%;height:100%;box-sizing:border-box;background:{{ accent }};border-radius:10px\"></div>",
+    position: [0, 0], width: 100, height: 100 },
+  { name: "label", markdown: "**{{ label }}**", position: [50, 40], anchor: [50, 50],
+    width: 90, text_align: "center", color: "#ffffff" },
+  {% if caption %}
+  { name: "caption", markdown: "{{ caption }}", position: [50, 72], anchor: [50, 50],
+    width: 90, text_align: "center", color: "#ffffff" },
+  {% endif %}
+]

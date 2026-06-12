@@ -49,6 +49,7 @@
     { id: "postscript", position: [5, 3], source: "slides/postscript.slide.json" },
     { id: "colophon", position: [5, 4], source: "slides/colophon.slide.json" },
     { id: "grouped", position: [4, 4], source: "slides/grouped.slide.json" },
+    { id: "templated", position: [3, 4], source: "slides/templated.slide.json" },
   ],
   edges: [
     // Setup column
@@ -83,6 +84,8 @@
     ["postscript", "colophon"],
     // Colophon -> containers demo
     ["colophon|left", "grouped|right"],
+    // Containers -> templates demo
+    ["grouped|left", "templated|right"],
     // Discovery -> reference (additional shortcut from disclosure's right edge)
     ["disclosure|right", "reference|left"],
   ],

@@ -124,7 +124,7 @@ def test_schema_element_list_types_is_bare_and_sorted():
         assert line == line.strip()
         assert " " not in line
     assert lines == sorted(lines)
-    assert lines == ["container", "html", "iframe", "image", "image_sequence", "markdown", "mermaid"]
+    assert lines == ["container", "html", "iframe", "image", "image_sequence", "markdown", "mermaid", "template"]
 
 
 # --- render functions (shared schema-text seam) ----

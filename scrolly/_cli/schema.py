@@ -18,6 +18,7 @@ specific *resolved deck instance* — different surfaces, kept distinct.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import click
 
@@ -85,6 +86,27 @@ def schema_file(type_name: str | None, list_types: bool) -> None:
     if schema_text is None:
         error_exit(f"unknown file type '{type_name}' (known: {', '.join(names)})")
     click.echo(schema_text)
+
+
+@schema.command(name="template")
+@click.argument("template_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+def schema_template(template_path: Path) -> None:
+    """Parameter contract of a template file (front-matter `params`).
+
+    \b
+    scrolly schema template <path>.elements.json.j2 → JSON: { description, params }
+
+    Lists each declared param's type, default, required flag, and
+    description — what an instantiation's `with:` block must satisfy.
+    """
+    from scrolly.errors import ScrollyError
+    from scrolly.slide.ir._framework.templating import template_contract
+
+    try:
+        contract = template_contract(template_path)
+    except ScrollyError as e:
+        error_exit(str(e))
+    click.echo(json.dumps(contract, indent=2))
 
 
 @schema.command(name="element")

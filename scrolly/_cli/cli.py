@@ -229,6 +229,47 @@ def validate(deck_path: Path, strict: bool, as_json: bool, allow_paths: tuple[Pa
         click.echo(f"Valid: {len(deck.slides)} slides, {len(deck.edges)} edges")
 
 
+@cli.command()
+@click.argument("deck_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--slide", "slide_id", required=True, help="Slide id whose template instantiations to expand.")
+@click.option(
+    "--allow-path",
+    "allow_paths",
+    multiple=True,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Extra directory authored file references may resolve into; repeatable.",
+)
+def expand(deck_path: Path, slide_id: str, allow_paths: tuple[Path, ...]) -> None:
+    """Show the rendered text of a slide's template instantiations.
+
+    Renders each `template` / `template_file` element of the slide with
+    its actual `with:` values and prints the post-Jinja, pre-validation
+    text — the debugging surface for rendered-output errors (E803).
+    Expansion is example-based: it always goes through a concrete
+    instantiation, never a hypothetical variable set.
+    """
+    from scrolly._shared.paths import confine_paths
+    from scrolly.deck import parse_deck
+    from scrolly.slide.ir._framework.templating import render_slide_template_previews
+
+    try:
+        with confine_paths(deck_path.resolve().parent, allow_paths):
+            raw_deck = parse_deck(deck_path)
+            sources = {s.id: s.source for s in raw_deck.slides}
+            if slide_id not in sources:
+                error_exit(f"unknown slide id '{slide_id}' (known: {', '.join(sorted(sources))})")
+            previews = render_slide_template_previews(sources[slide_id])
+    except ScrollyError as e:
+        error_exit(str(e))
+
+    if not previews:
+        click.echo(f"slide '{slide_id}' has no template elements")
+        return
+    for origin, rendered in previews:
+        click.echo(f"--- {origin} ---")
+        click.echo(rendered.rstrip("\n"))
+
+
 def _error_to_dict(err: ScrollyError) -> dict:
     """Serialize a ``ScrollyError`` for JSON output."""
     if isinstance(err, ValidationError):

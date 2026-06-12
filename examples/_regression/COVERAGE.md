@@ -28,6 +28,7 @@ comments to intent (*why* an animation looks the way it does).
 | `html` (`html_file`) | `title` (bg), `handover` (date callout), `anomaly` (terminal), `disclosure` (banner + progress bar); `html_file` on `colophon` (card) |
 | `mermaid` (`mermaid_file`) | `ssh-hijack` |
 | `iframe` (`iframe_html_file`) | `pressure` (thread), `lessons` (takeaways panel) |
+| `template` (`template_file`) | `templated` — inline Jinja loop generating four rows; file template with front-matter params instantiated twice (optional caption, default accent) |
 | `container` (`container_file`) | `grouped` — explicit-box header animated as a unit; shared partial included twice via `container_file` with dot-prefixed names; default-box wrap; two-level nesting with scale-about-anchor |
 
 ## image_sequence compositing modes

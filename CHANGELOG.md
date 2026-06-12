@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New `container` element groups child elements in its own %-coordinate box and animates them as one unit; partials can be included from separate files via `container_file`.
+- New `template` element generates child elements from Jinja2 — inline loops for in-place repetition, or reusable `*.elements.json.j2` files with declared parameters; preview renders with `scrolly expand`, read contracts with `scrolly schema template`.
 
 ### Changed
 
