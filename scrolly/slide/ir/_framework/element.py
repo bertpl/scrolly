@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar, Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from scrolly.errors import SlideSourceError
 from scrolly.slide.element_ir import ElementIR, PrimitiveElement
@@ -512,6 +512,14 @@ class ContainerElement(SlideElement, PrimitiveElement, frozen=True):
             "`container`."
         ),
     )
+    template_origin: str | None = Field(
+        default=None,
+        description=(
+            "Provenance marker set by template expansion (the template file path, or "
+            '"<inline>") when this container came from a `template` element. Surfaced '
+            "by `scrolly introspect elements`; not meant to be authored."
+        ),
+    )
     position: AnimatedVec2 = Field(
         default=AnimatedVec2((0.0, 0.0)),
         description=(
@@ -555,6 +563,85 @@ class ContainerElement(SlideElement, PrimitiveElement, frozen=True):
         return self
 
 
+class TemplateElement(SlideElement, frozen=True):
+    """A Jinja2 template instantiation that expands to a container of elements.
+
+    The template's Jinja source — inline (``template``) or from a
+    ``*.elements.json.j2`` file (``template_file``) — renders to a JSON5
+    array of child elements, using the variables in ``with`` (validated
+    against the template file's front-matter ``params`` declaration).
+    At slide load the instantiation becomes a ``container`` holding the
+    rendered children, so substrate fields on this element (box,
+    animation) behave exactly like a container's, and a `name`
+    dot-prefixes the children's names.
+    """
+
+    SOURCE_KEY: ClassVar[str] = "template"
+    DESCRIPTION: ClassVar[str] = "Jinja2 template rendering to a container of child elements."
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    template: str | None = Field(
+        default=None,
+        description=(
+            "Inline Jinja2 template text rendering to a JSON5 array of elements. "
+            "Best for short in-place generation (a loop emitting a grid); move "
+            "anything reused or long to `template_file`. Author exactly one of "
+            "`template` / `template_file`."
+        ),
+    )
+    template_file: Path | None = Field(
+        default=None,
+        description=(
+            "Path to a `*.elements.json.j2` Jinja2 template rendering to a JSON5 "
+            "array of elements, relative to the file this element appears in. May "
+            "declare its parameters in a JSON5 front-matter block (between `---` "
+            "lines). Author exactly one of `template` / `template_file`."
+        ),
+    )
+    with_: dict = Field(
+        default_factory=dict,
+        alias="with",
+        description=(
+            "Variables passed to the template, validated against the template "
+            "file's front-matter `params` declaration (when present). Authored "
+            "as `with:`. Values may be any JSON value, including nested "
+            "arrays/objects."
+        ),
+    )
+    position: AnimatedVec2 = Field(
+        default=AnimatedVec2((0.0, 0.0)),
+        description=(
+            "Box position of the expanded container as [x%, y%] of the enclosing "
+            "coordinate space, or animated via keyframes. Default [0, 0]."
+        ),
+    )
+    width: AnimatedSizeDim = Field(
+        default=AnimatedSizeDim(100.0),
+        description=(
+            "Box width of the expanded container as % of the enclosing coordinate "
+            'space, or animated via keyframes. Default 100. "auto" is not allowed.'
+        ),
+    )
+    height: AnimatedSizeDim = Field(
+        default=AnimatedSizeDim(100.0),
+        description=(
+            "Box height of the expanded container as % of the enclosing coordinate "
+            'space, or animated via keyframes. Default 100. "auto" is not allowed.'
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_template(self) -> TemplateElement:
+        """Validate that exactly one template source form is authored."""
+        if (self.template is None) == (self.template_file is None):
+            raise SlideSourceError(
+                code="E311",
+                message="author exactly one of 'template' (inline) / 'template_file' (path)",
+            )
+        return self
+
+
 AnyElement = (
     ImageElement
     | ImageSequenceElement
@@ -563,6 +650,7 @@ AnyElement = (
     | MarkdownElement
     | MermaidElement
     | ContainerElement
+    | TemplateElement
 )
 """Union of every authorable element type, dispatched on the content key."""
 
@@ -580,6 +668,7 @@ _ELEMENT_TYPES: tuple[type[SlideElement], ...] = (
     MarkdownElement,
     MermaidElement,
     ContainerElement,
+    TemplateElement,
 )
 
 

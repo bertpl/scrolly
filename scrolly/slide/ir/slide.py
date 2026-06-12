@@ -16,7 +16,28 @@ from pydantic import BaseModel, Field, model_validator
 
 from scrolly.errors import SlideSourceError
 from scrolly.slide.ir._framework.element import AnyElement, ContainerElement
+from scrolly.slide.ir._framework.templating import expand_templates
 from scrolly.slide.ir._framework.utils import parse_json5_ir, resolve_asset_paths
+
+
+def validate_unique_names(elements: list) -> None:
+    """Enforce slide-wide uniqueness of effective (dot-prefixed) element names (E207).
+
+    Runs both at model validation and again after template expansion,
+    which can splice in new named children.
+    """
+    seen_names: set[str] = set()
+    for name in _effective_element_names(elements, prefix=""):
+        if name in seen_names:
+            raise SlideSourceError(
+                code="E207",
+                message=(
+                    f"duplicate element name: {name!r}. Names are checked after container "
+                    f"and template expansion — give instantiating elements distinct "
+                    f"`name`s to prefix their children (e.g. `header.title`)."
+                ),
+            )
+        seen_names.add(name)
 
 
 def _effective_element_names(elements: list, prefix: str) -> list[str]:
@@ -133,11 +154,18 @@ class SlideIR(BaseModel, frozen=True):
 
     @classmethod
     def from_file(cls, source_path: Path) -> Self:
-        """Parse a ``.slide.json`` source file."""
+        """Parse a ``.slide.json`` source file.
+
+        After model validation, ``template`` elements are expanded to
+        containers (re-checking name uniqueness, since expansion can
+        introduce children) and asset paths are resolved to absolute.
+        """
         ir = parse_json5_ir(source_path, cls, "slide")
-        resolved = resolve_asset_paths(ir.elements, source_path.parent)
-        if resolved != list(ir.elements):
-            ir = ir.model_copy(update={"elements": resolved})
+        elements = expand_templates(list(ir.elements), source_path.parent)
+        validate_unique_names(elements)
+        elements = resolve_asset_paths(elements, source_path.parent)
+        if elements != list(ir.elements):
+            ir = ir.model_copy(update={"elements": elements})
         return ir
 
     @model_validator(mode="after")
@@ -183,17 +211,6 @@ class SlideIR(BaseModel, frozen=True):
                 if pos < 0:
                     raise SlideSourceError(code="E206", message=f"snap_positions value {pos} must be >= 0")
 
-        seen_names: set[str] = set()
-        for name in _effective_element_names(self.elements, prefix=""):
-            if name in seen_names:
-                raise SlideSourceError(
-                    code="E207",
-                    message=(
-                        f"duplicate element name: {name!r}. Names are checked after container "
-                        f"expansion — give instantiating elements distinct `name`s to prefix "
-                        f"their children (e.g. `header.title`)."
-                    ),
-                )
-            seen_names.add(name)
+        validate_unique_names(self.elements)
 
         return self

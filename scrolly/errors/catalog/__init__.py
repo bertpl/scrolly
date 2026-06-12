@@ -26,6 +26,8 @@ the pipeline the failure was detected:
   IR type, conversion cycles, missing slide renderer).
 * **E7xx** — Output (writer-side failures: output path is not a
   directory, output directory non-empty without ``--force``).
+* **E8xx** — Templating (Jinja syntax, undefined variables, invalid
+  rendered output, parameter mismatches, render failures).
 
 Higher bands are reserved for future categories.
 """

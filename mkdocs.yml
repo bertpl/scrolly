@@ -85,6 +85,7 @@ nav:
       - Deck format: authoring/deck-format.md
       - Slide format: authoring/slide-format.md
       - Working with assets: authoring/assets.md
+      - Templates: authoring/templates.md
   - Viewing decks:
       - Navigation & shortcuts: viewing-decks/navigation.md
       - Help screen: viewing-decks/help-screen.md
