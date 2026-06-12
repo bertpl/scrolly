@@ -1040,7 +1040,12 @@ body.pan-transitioning .canvas {
 .help-modal-content {
   --modal-unit: min(75vw, 75vh);
   position: relative;
-  width: calc(var(--modal-unit) * 0.6);
+  /* Content-adaptive width: the old fixed width is the floor (decks whose
+     stats fit keep the classic proportions), and a wide payload matrix can
+     grow the modal up to the cap. */
+  width: fit-content;
+  min-width: calc(var(--modal-unit) * 0.6);
+  max-width: min(92vw, calc(var(--modal-unit) * 0.95));
   max-height: calc(var(--modal-unit) * 0.75);
   background: rgba(15, 15, 15, 0.95);
   color: #e0e0e0;
@@ -1118,7 +1123,10 @@ body.pan-transitioning .canvas {
 }
 
 .help-modal-body table {
-  width: 100%;
+  /* Content-width (not 100%) so the fixed first-column width below is honored
+     identically in both the Help and Statistics tables — under width:100% the
+     auto layout treats the cell width as a soft hint and the columns drift. */
+  width: auto;
   border-collapse: collapse;
   margin: 0.5em 0;
 }
@@ -1133,7 +1141,14 @@ body.pan-transitioning .canvas {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
   color: #fff;
-  width: 40%;
+  /* Fixed (not percentage) so the first column is the same width in the Help
+     and Statistics tables — the modal is content-sized, so a percentage would
+     resolve against each table's own differing width. border-box folds the
+     2em indent of the stage rows into this width, so the indent doesn't widen
+     the column past the Help table's. Width clears the longest label
+     ("Re-encoded (q=95)" with its indent). */
+  box-sizing: border-box;
+  width: 15em;
 }
 
 .help-modal-body td:last-child {
@@ -1142,6 +1157,27 @@ body.pan-transitioning .canvas {
 
 .help-modal-body tr.help-indent td:first-child {
   padding-left: 2em;
+}
+
+/* Payload-stage matrix cells inside the statistics table: numeric columns
+   right-aligned and kept on one line; the header cells (format names + Size,
+   sharing the "Inlined payloads" row) read as labels. */
+.help-modal-body td.help-num {
+  text-align: right;
+  white-space: nowrap;
+  color: #b8b8b8;
+}
+
+/* The Size column is the matrix's rightmost cell; give it extra right padding
+   so its value doesn't butt against the body scrollbar. Targets only the
+   matrix (its cells carry .help-num) — scalar rows and the section underlines
+   keep their current full span. */
+.help-modal-body td.help-num:last-child {
+  padding-right: 1.5em;
+}
+
+.help-modal-body td.help-colhead {
+  color: #fff;
 }
 
 .help-modal-ok {

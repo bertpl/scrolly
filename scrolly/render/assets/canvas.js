@@ -2059,44 +2059,66 @@
       if (!metaEl) return;
       const meta = JSON.parse(metaEl.textContent);
       const s = meta.stats;
-      const p = s.payloads || { total: {}, unique: {}, compressed: false, bytes_saved: 0, reencoding: null };
+      const p = s.payloads || { stages: [], compressed: false, bytes_saved: 0 };
 
       const extLabels = {
         ".svg": "SVG", ".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG",
         ".gif": "GIF", ".webp": "WebP", ".avif": "AVIF", ".html": "HTML",
       };
 
-      function formatReencoding(re) {
-        if (re.quality === null) return "off";
-        const saving = re.bytes_saved > 0 ? ", −" + formatBytes(re.bytes_saved) : "";
-        return re.reencoded + " of " + re.considered + " bitmaps (q=" + re.quality + saving + ")";
+      function stageLabel(stage) {
+        if (stage.id === "input") return "Input";
+        if (stage.id === "deduplicated") return "Deduplicated";
+        // The reencoded stage appears only for decks with eligible bitmaps;
+        // when re-encoding was off its counts simply repeat the input row.
+        return "Re-encoded " + (stage.quality === null ? "(off)" : "(q=" + stage.quality + ")");
       }
 
-      function formatCounts(counts) {
-        const parts = Object.entries(counts || {})
-          .map(([ext, count]) => ({ label: extLabels[ext] || ext, count }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-        return parts.length > 0
-          ? parts.map((part) => part.count + " " + part.label).join(", ")
-          : "none";
+      // The payload matrix shares the Statistics table: the "Inlined
+      // payloads" row carries the column titles (one per format present
+      // anywhere, all-zero columns hidden, HTML first then alphabetical,
+      // plus Size), and the stage rows sit indented under it. Scalar rows
+      // span the matrix columns, so the label column stays shared. Reading
+      // down, re-encoding flips and dedup drops show as count/size changes.
+      const stages = p.stages || [];
+      const exts = [];
+      for (const stage of stages) {
+        for (const [ext, count] of Object.entries(stage.counts)) {
+          if (count > 0 && !exts.includes(ext)) exts.push(ext);
+        }
+      }
+      exts.sort((a, b) => (a === ".html" ? -1 : b === ".html" ? 1 : a.localeCompare(b)));
+      const span = exts.length + 1; // format columns + Size; 1 when no payloads
+
+      function scalarRow(label, value, indent) {
+        return (
+          "<tr" + (indent ? ' class="help-indent"' : "") + "><td>" + label +
+          '</td><td colspan="' + span + '">' + value + "</td></tr>"
+        );
       }
 
-      const totalLine = formatCounts(p.total);
-      const uniqueLine = formatCounts(p.unique);
-      // Each stage carries its own saving: the compressed-stream saving rides
-      // on the Compressed line, the re-encode saving on the Re-encoded line.
-      // The two are not additive (different baselines), so there's no combined total.
+      let payloadRows;
+      if (exts.length === 0) {
+        payloadRows = scalarRow("Inlined payloads", "none", false);
+      } else {
+        payloadRows =
+          "<tr><td>Inlined payloads</td>" +
+          exts.map((ext) => '<td class="help-num help-colhead">' + (extLabels[ext] || ext) + "</td>").join("") +
+          '<td class="help-num help-colhead">Size</td></tr>';
+        for (const stage of stages) {
+          payloadRows +=
+            '<tr class="help-indent"><td>' + stageLabel(stage) + "</td>" +
+            exts.map((ext) => '<td class="help-num">' + (stage.counts[ext] || "–") + "</td>").join("") +
+            '<td class="help-num">' + formatBytes(stage.bytes) + "</td></tr>";
+        }
+      }
+
+      // The compressed-stream saving rides on the Compressed line; the
+      // per-stage savings are implicit in the matrix's Size column. The two
+      // are not additive (different baselines), so there's no combined total.
       const compressedLine = p.compressed
         ? "yes" + (p.bytes_saved > 0 ? " (−" + formatBytes(p.bytes_saved) + ")" : "")
         : "no";
-      // The Re-encoded line is shown only for decks with at least one eligible
-      // bitmap (reencoding.considered > 0) — a markdown/SVG-only deck gets no
-      // "0 of 0" noise. With a quality it reads "N of M bitmaps (q=…, −…)";
-      // when off it just reads "off".
-      const re = p.reencoding;
-      const reencodedRow = re && re.considered > 0
-        ? '<tr class="help-indent"><td>Re-encoded</td><td>' + formatReencoding(re) + '</td></tr>'
-        : "";
       const versionParam = new URLSearchParams(window.location.search).get("scrolly-version");
 
       body.innerHTML =
@@ -2122,15 +2144,15 @@
 
         '<h2>Statistics</h2>' +
         '<table>' +
-        '<tr><td>Slides</td><td>' + s.slides + '</td></tr>' +
-        '<tr><td>Edges</td><td>' + s.edges + '</td></tr>' +
-        '<tr><td>Inlined payloads</td><td></td></tr>' +
-        '<tr class="help-indent"><td>Total</td><td>' + totalLine + '</td></tr>' +
-        '<tr class="help-indent"><td>Unique</td><td>' + uniqueLine + '</td></tr>' +
-        reencodedRow +
-        '<tr class="help-indent"><td>Compressed</td><td>' + compressedLine + '</td></tr>' +
-        (s.mermaid_version ? '<tr><td>Mermaid.js</td><td>' + s.mermaid_version + '</td></tr>' : '') +
-        '<tr><td>File size</td><td>' + formatBytes(s.file_size) + '</td></tr>' +
+        scalarRow('Slides', s.slides, false) +
+        scalarRow('Edges', s.edges, false) +
+        payloadRows +
+        (s.mermaid_version ? scalarRow('Mermaid.js', s.mermaid_version, false) : '') +
+        // Doc compression sits outside the payloads block: it compresses the
+        // whole document (slides, JS, payloads jointly), so its MB-scale
+        // saving would read oddly next to the payloads' KB-scale Size column.
+        scalarRow('Doc compression', compressedLine, false) +
+        scalarRow('File size', formatBytes(s.file_size), false) +
         '</table>';
     }
 

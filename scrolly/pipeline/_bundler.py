@@ -30,20 +30,36 @@ MIN_SAVING = 0.05
 #  Value types
 # ==================================================================================================
 @dataclass(frozen=True)
+class StageStats:
+    """Counts and byte total for one pipeline stage of the payload set.
+
+    A stage row in the help-screen table: how many payloads of each kind
+    exist *after* that processing stage, and their summed raw byte size
+    at that point. Text-mode payloads (iframe srcdoc HTML) have no mime
+    and are counted separately; blob payloads are broken down per mime
+    so the help screen can label them as SVG / PNG / etc.
+    """
+
+    text_count: int
+    counts_by_mime: dict[str, int]
+    total_bytes: int
+
+
+@dataclass(frozen=True)
 class BundleStats:
-    """Snapshot of what the bundler holds, with per-mime breakdowns.
+    """Snapshot of what the bundler holds, as per-stage breakdowns.
 
     Always available via :meth:`PayloadBundler.stats`, independent of
-    whether the compressed page ships. Counts are split into:
+    whether the compressed page ships. The three stages mirror the
+    asset pipeline:
 
-    - **target** counts (per ``add()`` call — pre-dedup, equals the number
-      of DOM markers in the chunks);
-    - **payload** counts (unique entries after dedup — what ends up in
-      the bundle stream).
-
-    Text-mode payloads (iframe srcdoc HTML) have no mime; they're
-    counted separately as scalars. Blob-mode payloads are broken down
-    per mime so the help screen can label them as SVG / PNG / etc.
+    - ``input``: per ``add()`` call (pre-dedup), counted by *source*
+      mime with *source* byte sizes — the assets as the author shipped
+      them, before re-encoding;
+    - ``reencoded``: the same pre-dedup population, counted by shipped
+      mime with shipped byte sizes — re-encoding flips show up here;
+    - ``deduplicated``: unique payloads after dedup (what ends up in
+      the bundle stream), shipped mime and bytes.
 
     ``compressed``, ``compressed_bytes``, and ``bytes_saved`` describe
     the *shipped page*, not the bundler's own state: :meth:`stats`
@@ -52,23 +68,12 @@ class BundleStats:
     the compressed page ships (see ``scrolly.render.bootstrap``).
     """
 
-    text_targets: int
-    text_payloads: int
-    blob_targets_by_mime: dict[str, int]
-    blob_payloads_by_mime: dict[str, int]
+    input: StageStats
+    reencoded: StageStats
+    deduplicated: StageStats
     baseline_bytes: int
     compressed_bytes: int
     compressed: bool
-
-    @property
-    def total_targets(self) -> int:
-        """Total target bindings across text and blob modes (pre-dedup)."""
-        return self.text_targets + sum(self.blob_targets_by_mime.values())
-
-    @property
-    def total_payloads(self) -> int:
-        """Total unique payloads across text and blob modes (post-dedup)."""
-        return self.text_payloads + sum(self.blob_payloads_by_mime.values())
 
     @property
     def bytes_saved(self) -> int:
@@ -78,11 +83,19 @@ class BundleStats:
 
 @dataclass(frozen=True)
 class _Payload:
-    """A unique compressible payload registered with the bundler."""
+    """A unique compressible payload registered with the bundler.
+
+    ``source_mime`` / ``source_len`` describe the asset as the author
+    shipped it, before any re-encoding — they feed the ``input`` stage
+    of the help-screen stats. For text payloads ``source_mime`` is
+    ``None``, mirroring ``mime``.
+    """
 
     payload: bytes
     mode: str
     mime: str | None
+    source_mime: str | None
+    source_len: int
 
 
 @dataclass(frozen=True)
@@ -154,6 +167,8 @@ class PayloadBundler:
         attr: str,
         baseline_len: int,
         mime: str | None = None,
+        source_mime: str | None = None,
+        source_len: int | None = None,
     ) -> str:
         """Register a payload + target binding with the bundle.
 
@@ -174,6 +189,11 @@ class PayloadBundler:
                 ``add`` calls to evaluate the gate at build time.
             mime: Required when ``mode="blob"``; used as the ``Blob``
                 type. Must be ``None`` when ``mode="text"``.
+            source_mime: The asset's *original* mime before re-encoding,
+                for the input stage of the payload stats. Defaults to
+                ``mime`` (no re-encoding happened).
+            source_len: The asset's original byte size before
+                re-encoding. Defaults to ``len(payload)``.
 
         Returns:
             An opaque target id (a stringified incrementing integer)
@@ -195,7 +215,15 @@ class PayloadBundler:
         payload_idx = self._payload_dedup.get(key)
         if payload_idx is None:
             payload_idx = len(self._payloads)
-            self._payloads.append(_Payload(payload=payload, mode=mode, mime=mime))
+            self._payloads.append(
+                _Payload(
+                    payload=payload,
+                    mode=mode,
+                    mime=mime,
+                    source_mime=source_mime if source_mime is not None else mime,
+                    source_len=source_len if source_len is not None else len(payload),
+                )
+            )
             self._payload_dedup[key] = payload_idx
 
         target_id = str(self._next_target_id)
@@ -256,30 +284,18 @@ class PayloadBundler:
     #  Internal — stats construction
     # --------------------------------------------------------------------------
     def _make_stats(self, *, compressed_bytes: int, compressed: bool) -> BundleStats:
-        """Assemble a ``BundleStats`` from current internal state."""
-        text_targets = 0
-        text_payloads = 0
-        blob_targets_by_mime: dict[str, int] = {}
-        blob_payloads_by_mime: dict[str, int] = {}
+        """Assemble a ``BundleStats`` from current internal state.
 
-        for payload in self._payloads:
-            if payload.mode == "text":
-                text_payloads += 1
-            else:
-                blob_payloads_by_mime[payload.mime] = blob_payloads_by_mime.get(payload.mime, 0) + 1
-
-        for target in self._targets:
-            payload = self._payloads[target.payload_index]
-            if payload.mode == "text":
-                text_targets += 1
-            else:
-                blob_targets_by_mime[payload.mime] = blob_targets_by_mime.get(payload.mime, 0) + 1
-
+        ``input`` and ``reencoded`` walk the targets (pre-dedup; one
+        entry per DOM marker), differing only in whether the source or
+        the shipped mime/bytes are tallied. ``deduplicated`` walks the
+        unique payloads (what the stream ships).
+        """
+        target_payloads = [self._payloads[t.payload_index] for t in self._targets]
         return BundleStats(
-            text_targets=text_targets,
-            text_payloads=text_payloads,
-            blob_targets_by_mime=blob_targets_by_mime,
-            blob_payloads_by_mime=blob_payloads_by_mime,
+            input=_stage_stats(target_payloads, source=True),
+            reencoded=_stage_stats(target_payloads, source=False),
+            deduplicated=_stage_stats(self._payloads, source=False),
             baseline_bytes=self._baseline_total,
             compressed_bytes=compressed_bytes,
             compressed=compressed,
@@ -319,6 +335,31 @@ def _payload_entry(p: _Payload) -> dict:
     if p.mime is not None:
         return {"mode": p.mode, "mime": p.mime, "length": len(p.payload)}
     return {"mode": p.mode, "length": len(p.payload)}
+
+
+def _stage_stats(payloads: list[_Payload], *, source: bool) -> StageStats:
+    """Tally one stage over ``payloads``: counts per mime plus total bytes.
+
+    Args:
+        payloads: The stage's population — per-target entries for the
+            pre-dedup stages, unique payloads for the dedup stage.
+        source: Tally the original (``source_mime``/``source_len``)
+            view rather than the shipped (``mime``/payload-bytes) view.
+
+    Returns:
+        The stage's ``StageStats``.
+    """
+    text_count = 0
+    counts_by_mime: dict[str, int] = {}
+    total_bytes = 0
+    for p in payloads:
+        mime = p.source_mime if source else p.mime
+        total_bytes += p.source_len if source else len(p.payload)
+        if p.mode == "text":
+            text_count += 1
+        else:
+            counts_by_mime[mime] = counts_by_mime.get(mime, 0) + 1
+    return StageStats(text_count=text_count, counts_by_mime=counts_by_mime, total_bytes=total_bytes)
 
 
 def _stream_sort_key(p: _Payload, registration_index: int) -> tuple[int, str, int]:

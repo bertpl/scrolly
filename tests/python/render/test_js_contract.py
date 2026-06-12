@@ -56,7 +56,10 @@ _NAV_GROUP_OPTIONAL = {"color"}  # emitted only when the group sets a color
 # #scrolly-meta — read by the help-modal `populate()` in canvas.js.
 _META_TOP = {"version", "author", "pypi_url", "stats"}
 _META_STATS = {"slides", "edges", "payloads", "mermaid_version", "file_size"}
-_META_PAYLOADS = {"total", "unique", "compressed", "bytes_saved", "reencoding"}
+_META_PAYLOADS = {"stages", "compressed", "bytes_saved"}
+_META_STAGE_REQUIRED = {"id", "counts", "bytes"}
+_META_STAGE_OPTIONAL = {"quality"}  # reencoded stage only
+_META_STAGE_IDS = {"input", "reencoded", "deduplicated"}
 
 # payload manifest — read by `mapBundleAssignments()` in canvas.js.
 _MANIFEST_TOP = {"payloads", "targets"}
@@ -147,6 +150,42 @@ def test_meta_keys() -> None:
     assert set(meta) == _META_TOP
     _assert_keys(meta["stats"], required=_META_STATS, where="meta.stats")
     _assert_keys(meta["stats"]["payloads"], required=_META_PAYLOADS, where="meta.stats.payloads")
+
+
+def test_meta_payload_stage_keys() -> None:
+    # --- arrange ----------------------
+    # A bundler with a text + a re-encoded blob payload, plus reencode
+    # stats with one considered bitmap, so all three stages are emitted.
+    from scrolly.pipeline._reencode import ReencodeStats
+
+    bundler = PayloadBundler()
+    text = b"<p>" + b"a" * 100 + b"</p>"
+    blob = b"RIFFwebp" + b"\x00" * 100
+    bundler.add(payload=text, mode="text", attr="srcdoc", baseline_len=len(text))
+    bundler.add(
+        payload=blob,
+        mode="blob",
+        attr="src",
+        mime="image/webp",
+        baseline_len=len(blob),
+        source_mime="image/png",
+        source_len=400,
+    )
+    reencode = ReencodeStats(quality=95, considered=1, reencoded=1, bytes_saved=300)
+
+    # --- act --------------------------
+    meta = _build_meta(*_contract_deck(), bundle_stats=bundler.stats(), reencode_stats=reencode)
+    stages = meta["stats"]["payloads"]["stages"]
+
+    # --- assert -----------------------
+    assert [stage["id"] for stage in stages] == ["input", "reencoded", "deduplicated"]
+    for stage in stages:
+        _assert_keys(
+            stage, required=_META_STAGE_REQUIRED, optional=_META_STAGE_OPTIONAL, where=f"stage '{stage['id']}'"
+        )
+        assert stage["id"] in _META_STAGE_IDS
+    assert "quality" in stages[1], "reencoded stage must carry the quality key"
+    assert "quality" not in stages[0] and "quality" not in stages[2], "only the reencoded stage carries quality"
 
 
 # ==================================================================================================

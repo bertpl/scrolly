@@ -370,41 +370,46 @@ def test_meta_stats_file_size_is_integer(inline):
 
 def test_meta_stats_payloads_shape_from_bundle():
     # --- arrange ----------------------------
-    from scrolly.pipeline._bundler import BundleStats
+    from scrolly.pipeline._bundler import BundleStats, StageStats
+    from scrolly.pipeline._reencode import ReencodeStats
 
     deck, chunks = _single("x", "")
     bundle_stats = BundleStats(
-        text_targets=2,
-        text_payloads=1,
-        blob_targets_by_mime={"image/svg+xml": 3, "image/png": 1},
-        blob_payloads_by_mime={"image/svg+xml": 2, "image/png": 1},
+        input=StageStats(text_count=2, counts_by_mime={"image/svg+xml": 3, "image/png": 1}, total_bytes=9_000),
+        reencoded=StageStats(text_count=2, counts_by_mime={"image/svg+xml": 3, "image/webp": 1}, total_bytes=8_000),
+        deduplicated=StageStats(text_count=1, counts_by_mime={"image/svg+xml": 2, "image/webp": 1}, total_bytes=6_000),
         baseline_bytes=10_000,
         compressed_bytes=7_500,
         compressed=True,
     )
+    reencode_stats = ReencodeStats(quality=95, considered=1, reencoded=1, bytes_saved=1_000)
 
     # --- act --------------------------------
-    meta = _extract_meta(assemble(deck, chunks, bundle_stats=bundle_stats))
+    meta = _extract_meta(assemble(deck, chunks, bundle_stats=bundle_stats, reencode_stats=reencode_stats))
 
     # --- assert ------------------------------
     payloads = meta["stats"]["payloads"]
-    # Per-extension counts, mime → extension mapping applied.
-    assert payloads["total"] == {".html": 2, ".svg": 3, ".png": 1}
-    assert payloads["unique"] == {".html": 1, ".svg": 2, ".png": 1}
+    # Stage rows in pipeline order, mime → extension mapping applied;
+    # the png→webp flip is visible between input and reencoded.
+    assert payloads["stages"] == [
+        {"id": "input", "counts": {".html": 2, ".svg": 3, ".png": 1}, "bytes": 9_000},
+        {"id": "reencoded", "quality": 95, "counts": {".html": 2, ".svg": 3, ".webp": 1}, "bytes": 8_000},
+        {"id": "deduplicated", "counts": {".html": 1, ".svg": 2, ".webp": 1}, "bytes": 6_000},
+    ]
     assert payloads["compressed"] is True
     assert payloads["bytes_saved"] == 2_500
 
 
 def test_meta_stats_payloads_when_compressed_false():
     # --- arrange ----------------------------
-    from scrolly.pipeline._bundler import BundleStats
+    from scrolly.pipeline._bundler import BundleStats, StageStats
 
     deck, chunks = _single("x", "")
+    text_stage = StageStats(text_count=1, counts_by_mime={}, total_bytes=2_000)
     bundle_stats = BundleStats(
-        text_targets=1,
-        text_payloads=1,
-        blob_targets_by_mime={},
-        blob_payloads_by_mime={},
+        input=text_stage,
+        reencoded=text_stage,
+        deduplicated=text_stage,
         baseline_bytes=2_000,
         compressed_bytes=0,
         compressed=False,
@@ -415,10 +420,10 @@ def test_meta_stats_payloads_when_compressed_false():
 
     # --- assert ------------------------------
     payloads = meta["stats"]["payloads"]
-    # Total + unique still populated (deck has 1 iframe) even though the
-    # bundle wasn't emitted.
-    assert payloads["total"] == {".html": 1}
-    assert payloads["unique"] == {".html": 1}
+    # Stages still populated (deck has 1 iframe) even though the bundle
+    # wasn't emitted; no reencode stats → no reencoded stage.
+    assert [stage["id"] for stage in payloads["stages"]] == ["input", "deduplicated"]
+    assert all(stage["counts"] == {".html": 1} for stage in payloads["stages"])
     assert payloads["compressed"] is False
     # Space saved is zero when nothing was compressed.
     assert payloads["bytes_saved"] == 0
@@ -433,7 +438,7 @@ def test_meta_stats_payloads_empty_when_no_bundler(inline):
 
     # --- assert ------------------------------
     payloads = meta["stats"]["payloads"]
-    assert payloads == {"total": {}, "unique": {}, "compressed": False, "bytes_saved": 0, "reencoding": None}
+    assert payloads == {"stages": [], "compressed": False, "bytes_saved": 0}
 
 
 def test_help_button_in_navigation(inline):
