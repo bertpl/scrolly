@@ -48,6 +48,7 @@
     { id: "reference", position: [4, 3], source: "slides/reference.slide.json" },
     { id: "postscript", position: [5, 3], source: "slides/postscript.slide.json" },
     { id: "colophon", position: [5, 4], source: "slides/colophon.slide.json" },
+    { id: "grouped", position: [4, 4], source: "slides/grouped.slide.json" },
   ],
   edges: [
     // Setup column
@@ -80,6 +81,8 @@
     ["reference|right", "postscript|left"],
     // Postscript -> colophon (centered-anchor fit check)
     ["postscript", "colophon"],
+    // Colophon -> containers demo
+    ["colophon|left", "grouped|right"],
     // Discovery -> reference (additional shortcut from disclosure's right edge)
     ["disclosure|right", "reference|left"],
   ],

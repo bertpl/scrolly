@@ -137,6 +137,14 @@ def cli() -> None:
     "wins. Never enlarges a deck; SVG is never touched. Use 'off' to disable.",
 )
 @click.option(
+    "--allow-path",
+    "allow_paths",
+    multiple=True,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Extra directory authored file references may resolve into; repeatable. "
+    "By default every referenced file must live inside the deck directory.",
+)
+@click.option(
     "--no-minification",
     is_flag=True,
     hidden=True,
@@ -153,6 +161,7 @@ def build(
     no_compress: bool,
     offline: bool,
     reencode_quality: int | None,
+    allow_paths: tuple[Path, ...],
     no_minification: bool,
 ) -> None:
     """Build a deck into a self-contained HTML presentation."""
@@ -169,6 +178,7 @@ def build(
             out_file=out_file,
             minify=not no_minification,
             reencode_quality=reencode_quality,
+            allow_paths=allow_paths,
         )
     except ScrollyError as e:
         error_exit(str(e))
@@ -191,10 +201,18 @@ def build(
     is_flag=True,
     help='Emit machine-readable JSON instead of text: {"ok": bool, "errors": [...]}.',
 )
-def validate(deck_path: Path, strict: bool, as_json: bool) -> None:
+@click.option(
+    "--allow-path",
+    "allow_paths",
+    multiple=True,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Extra directory authored file references may resolve into; repeatable. "
+    "By default every referenced file must live inside the deck directory.",
+)
+def validate(deck_path: Path, strict: bool, as_json: bool, allow_paths: tuple[Path, ...]) -> None:
     """Validate a deck and all its slide sources without building."""
     try:
-        deck, _ = load_deck(deck_path)
+        deck, _ = load_deck(deck_path, allow_paths=allow_paths)
     except ScrollyError as e:
         if as_json:
             click.echo(json.dumps({"ok": False, "errors": [_error_to_dict(e)]}, indent=2))

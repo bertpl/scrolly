@@ -32,6 +32,7 @@ def build_deck(
     out_file: str = "index.html",
     minify: bool = True,
     reencode_quality: int | None = 95,
+    allow_paths: tuple = (),
 ) -> Deck:
     """Build a deck from `deck_path` into `out_dir`. Returns the fully-resolved `Deck`.
 
@@ -60,11 +61,13 @@ def build_deck(
             it). Honored only on inline builds — the re-encoder runs
             inside ``_inline_refs``, so a non-inline build never
             re-encodes regardless of this value.
+        allow_paths: Extra directory roots authored paths may resolve
+            into (path confinement is otherwise the deck root only).
 
     Returns:
         The fully-resolved ``Deck``.
     """
-    deck, slide_irs = load_deck(deck_path)
+    deck, slide_irs = load_deck(deck_path, allow_paths=allow_paths)
 
     # Bundler is the canonical "compressible payload tracker" whenever
     # we're emitting an inlined build. It's instantiated regardless of the
