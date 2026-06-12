@@ -1,36 +1,16 @@
+// Instantiation of the shared detail-slide factory — layout lives in
+// ../factories/detail.slide.json.j2; only the content varies per slide.
 {
-  title: "Building the stack — details",
-  elements: [
-    {
-      name: "banner",
-      html: "<div style=\"width:100%;height:100%;background:#5EB083\"></div>",
-      position: [0, 5], anchor: [0, 0],
-      width: 100, height: 15,
-    },
-    {
-      name: "title",
-      markdown: "## Building the stack",
-      position: [5, 10], anchor: [0, 50],
-      width: 80, height: "auto",
-      color: "#ffffff",
-    },
-    {
-      name: "subtitle",
-      markdown: "### Details (1/2)",
-      position: [5, 15], anchor: [0, 50],
-      width: 80, height: "auto",
-      color: "#ffffff",
-    },
-    {
-      name: "body",
-      markdown: "## Notes\n\
+  template_file: "../factories/detail.slide.json.j2",
+  with: {
+    heading: "Building the stack",
+    subtitle: "Details (1/2)",
+    accent: "#5EB083",
+    body: "## Notes\n\
 \n\
 * branches can be created using plain git\n\
 * `.git/machete` is the only state git-machete keeps and can be hand-edited\n\
 * alternatively, use `git machete discover` with appropriate flags to let git-machete auto-discover branch stack\n\
 * creating PRs through git machete ensures target branches are correctly set and PR descriptions hold \"machete blocks\" for easy navigation through the PR stack",
-      position: [10, 25], anchor: [0, 0],
-      width: 80, height: "auto",
-    },
-  ],
+  },
 }

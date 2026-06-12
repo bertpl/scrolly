@@ -1,34 +1,13 @@
+// Instantiation of the shared detail-slide factory — layout lives in
+// ../factories/detail.slide.json.j2; only the content varies per slide.
 {
-  title: "Rebase: new commits across the stack — details",
-  elements: [
-    {
-      name: "banner",
-      html: "<div style=\"width:100%;height:100%;background:#88C6A8\"></div>",
-      position: [0, 5], anchor: [0, 0],
-      width: 100, height: 15,
-    },
-    {
-      name: "title",
-      markdown: "## Rebase: new commits across the stack",
-      position: [5, 10], anchor: [0, 50],
-      width: 80, height: "auto",
-      color: "#ffffff",
-    },
-    {
-      name: "subtitle",
-      markdown: "### Details",
-      position: [5, 15], anchor: [0, 50],
-      width: 80, height: "auto",
-      color: "#ffffff",
-    },
-    {
-      name: "body",
-      markdown: "## Notes\n\
+  template_file: "../factories/detail.slide.json.j2",
+  with: {
+    heading: "Rebase: new commits across the stack",
+    accent: "#88C6A8",
+    body: "## Notes\n\
 \n\
 * this workflow does not only keep PRs nice and small, but also allows parallel implementation using git worktrees & parallel coding sessions\n\
 * `git machete traverse` deals with these rebases just as well",
-      position: [10, 25], anchor: [0, 0],
-      width: 80, height: "auto",
-    },
-  ],
+  },
 }

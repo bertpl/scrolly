@@ -1,0 +1,46 @@
+---
+{
+  description: "Bottom-up step reveal: one ghost-stack element per step, fading in on a fixed scroll cadence.",
+  params: {
+    steps:        { type: "array",   required: true,
+                    description: "Step strings (HTML allowed), ordered step-1 -> step-N (visual bottom -> top)." },
+    hold_end:     { type: "integer", required: true,
+                    description: "Scroll position up to which every revealed step stays at full opacity." },
+    fade_out_end: { type: "integer", required: true,
+                    description: "Scroll position by which all steps have faded out." },
+    position_y:   { type: "number",  default: 90,
+                    description: "Slide-coordinate y the stack's bottom-left anchor pins to." },
+  },
+}
+---
+[
+{#-
+  Each step element renders the FULL row stack in normal block flow with
+  `visibility: hidden` on every row except its own. The vertical pitch is
+  a function of the actual rendered content, so a row that wraps shifts
+  every ghost stack identically and the visible rows stay aligned.
+
+  Rows are flex containers with an explicit min-height so the row box is
+  geometric, not font-dependent (a <code> row would otherwise produce a
+  taller line-box than its sans-serif neighbors). line-height governs
+  wrap pitch (within one wrapped row); min-height governs inter-row pitch.
+
+  Timing: step-N starts fading in at 400 + 200*N and finishes 100 later;
+  all steps hold to hold_end and fade out by fade_out_end.
+-#}
+{% for step in steps %}
+{% set n = loop.index %}
+  { name: "step-{{ n }}",
+    html: "<div style=\"font-size:1.3em;line-height:1.0\">
+      {%- for row in steps | reverse -%}
+        <div style=\"display:flex;align-items:center;min-height:2.25em
+        {{- ';visibility:hidden' if loop.index0 != (steps | length) - n -}}
+        \">{{ row }}</div>
+      {%- endfor -%}
+      </div>",
+    position: [60, {{ position_y }}], anchor: [0, 100],
+    width: 40, height: "auto",
+    opacity: { keyframes: [[{{ 400 + n * 200 }}, 0], [{{ 500 + n * 200 }}, 1], [{{ hold_end }}, 1], [{{ fade_out_end }}, 0]] },
+  },
+{% endfor %}
+]

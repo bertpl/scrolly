@@ -1,29 +1,11 @@
+// Instantiation of the shared detail-slide factory — layout lives in
+// ../factories/detail.slide.json.j2; only the content varies per slide.
 {
-  title: "Sliding out a merged branch — details",
-  elements: [
-    {
-      name: "banner",
-      html: "<div style=\"width:100%;height:100%;background:#9DD2BA\"></div>",
-      position: [0, 5], anchor: [0, 0],
-      width: 100, height: 15,
-    },
-    {
-      name: "title",
-      markdown: "## Sliding out a merged branch",
-      position: [5, 10], anchor: [0, 50],
-      width: 80, height: "auto",
-      color: "#ffffff",
-    },
-    {
-      name: "subtitle",
-      markdown: "### Details",
-      position: [5, 15], anchor: [0, 50],
-      width: 80, height: "auto",
-      color: "#ffffff",
-    },
-    {
-      name: "body",
-      markdown: "## Notes\n\
+  template_file: "../factories/detail.slide.json.j2",
+  with: {
+    heading: "Sliding out a merged branch",
+    accent: "#9DD2BA",
+    body: "## Notes\n\
 \n\
 * merging top-most PR requires 2 changes\n\
     * remove merged branch from git-machete state\n\
@@ -31,8 +13,5 @@
 * `git machete slide-out` and `git machete traverse` take care of this efficiently\n\
 * when GitHub merges PR1 and deletes the source branch, PR2 will automatically get retargeted to main (usually voiding any granted approval)\n\
     * improved GitHub support for stacked PRs under development",
-      position: [10, 25], anchor: [0, 0],
-      width: 80, height: "auto",
-    },
-  ],
+  },
 }
