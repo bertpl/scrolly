@@ -2147,8 +2147,11 @@
         scalarRow('Slides', s.slides, false) +
         scalarRow('Edges', s.edges, false) +
         payloadRows +
-        scalarRow('Compressed', compressedLine, true) +
         (s.mermaid_version ? scalarRow('Mermaid.js', s.mermaid_version, false) : '') +
+        // Doc compression sits outside the payloads block: it compresses the
+        // whole document (slides, JS, payloads jointly), so its MB-scale
+        // saving would read oddly next to the payloads' KB-scale Size column.
+        scalarRow('Doc compression', compressedLine, false) +
         scalarRow('File size', formatBytes(s.file_size), false) +
         '</table>';
     }

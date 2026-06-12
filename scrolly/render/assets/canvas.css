@@ -1123,7 +1123,10 @@ body.pan-transitioning .canvas {
 }
 
 .help-modal-body table {
-  width: 100%;
+  /* Content-width (not 100%) so the fixed first-column width below is honored
+     identically in both the Help and Statistics tables — under width:100% the
+     auto layout treats the cell width as a soft hint and the columns drift. */
+  width: auto;
   border-collapse: collapse;
   margin: 0.5em 0;
 }
@@ -1138,7 +1141,14 @@ body.pan-transitioning .canvas {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
   color: #fff;
-  width: 40%;
+  /* Fixed (not percentage) so the first column is the same width in the Help
+     and Statistics tables — the modal is content-sized, so a percentage would
+     resolve against each table's own differing width. border-box folds the
+     2em indent of the stage rows into this width, so the indent doesn't widen
+     the column past the Help table's. Width clears the longest label
+     ("Re-encoded (q=95)" with its indent). */
+  box-sizing: border-box;
+  width: 15em;
 }
 
 .help-modal-body td:last-child {
