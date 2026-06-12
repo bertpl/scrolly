@@ -50,6 +50,8 @@
     { id: "colophon", position: [5, 4], source: "slides/colophon.slide.json" },
     { id: "grouped", position: [4, 4], source: "slides/grouped.slide.json" },
     { id: "templated", position: [3, 4], source: "slides/templated.slide.json" },
+    { id: "factory-1", position: [2, 4], source: "slides/factory-1.slide.json" },
+    { id: "factory-2", position: [2, 5], source: "slides/factory-2.slide.json" },
   ],
   edges: [
     // Setup column
@@ -86,6 +88,9 @@
     ["colophon|left", "grouped|right"],
     // Containers -> templates demo
     ["grouped|left", "templated|right"],
+    // Templates -> slide-factory demos
+    ["templated|left", "factory-1|right"],
+    ["factory-1", "factory-2"],
     // Discovery -> reference (additional shortcut from disclosure's right edge)
     ["disclosure|right", "reference|left"],
   ],

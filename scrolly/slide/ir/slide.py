@@ -16,8 +16,8 @@ from pydantic import BaseModel, Field, model_validator
 
 from scrolly.errors import SlideSourceError
 from scrolly.slide.ir._framework.element import AnyElement, ContainerElement
-from scrolly.slide.ir._framework.templating import expand_templates
-from scrolly.slide.ir._framework.utils import parse_json5_ir, resolve_asset_paths
+from scrolly.slide.ir._framework.templating import expand_slide_stub, expand_templates
+from scrolly.slide.ir._framework.utils import parse_json5_source, resolve_asset_paths, validate_json5_ir
 
 
 def validate_unique_names(elements: list) -> None:
@@ -154,16 +154,24 @@ class SlideIR(BaseModel, frozen=True):
 
     @classmethod
     def from_file(cls, source_path: Path) -> Self:
-        """Parse a ``.slide.json`` source file.
+        """Parse a ``.slide.json`` source file — a plain slide or a template-slide stub.
 
-        After model validation, ``template`` elements are expanded to
-        containers (re-checking name uniqueness, since expansion can
-        introduce children) and asset paths are resolved to absolute.
+        A stub (top-level ``template_file`` + ``with`` instead of
+        ``elements``) first renders its ``*.slide.json.j2`` factory to
+        the slide object; from there both forms share one pipeline. All
+        file references in a factory's output resolve against the
+        factory's directory (``content_dir``), matching the
+        paths-resolve-against-the-file-they-appear-in rule. After model
+        validation, ``template`` elements are expanded to containers
+        (re-checking name uniqueness, since expansion can introduce
+        children) and asset paths are resolved to absolute.
         """
-        ir = parse_json5_ir(source_path, cls, "slide")
-        elements = expand_templates(list(ir.elements), source_path.parent)
+        raw = parse_json5_source(source_path, "slide")
+        raw, content_dir = expand_slide_stub(raw, source_path)
+        ir = validate_json5_ir(raw, content_dir, source_path, cls, "slide")
+        elements = expand_templates(list(ir.elements), content_dir)
         validate_unique_names(elements)
-        elements = resolve_asset_paths(elements, source_path.parent)
+        elements = resolve_asset_paths(elements, content_dir)
         if elements != list(ir.elements):
             ir = ir.model_copy(update={"elements": elements})
         return ir

@@ -4,6 +4,11 @@ Each slide is a `.slide.json` file — JSON5 on the `.json` extension.
 It declares the slide's title, its elements, and the properties that
 control how it scrolls.
 
+A slide file comes in two forms, distinguished by its top-level keys:
+a **regular slide** carries `elements`; a **template-slide stub**
+carries `template_file` + `with` and renders a whole-slide factory
+template instead — see [Templates](templates.md).
+
 ## Core fields
 
 - **`title`** — the slide's title, required on every slide.

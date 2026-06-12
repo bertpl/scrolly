@@ -52,7 +52,7 @@ def test_dom_unfiltered_returns_every_slide() -> None:
 
     # --- assert -----------------------
     payload = json.loads(result.output)
-    assert len(payload["slides"]) == 21
+    assert len(payload["slides"]) == 23
 
 
 def test_dom_unknown_slide_exits_with_error() -> None:

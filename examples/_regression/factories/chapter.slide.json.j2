@@ -1,0 +1,31 @@
+---
+{
+  description: "Chapter divider: accent banner, heading, part marker, body.",
+  params: {
+    heading: { type: "string", required: true },
+    part:    { type: "string", required: true },
+    body:    { type: "string", required: true },
+    accent:  { type: "string", default: "#5EB083" },
+  },
+}
+---
+{
+  title: "{{ heading }} ({{ part }})",
+  scroll_range: 100,
+  snap_positions: [0, 100],
+  elements: [
+    { name: "banner",
+      container: [
+        { name: "bg", html: "<div style=\"width:100%;height:100%;background:{{ accent }}\"></div>",
+          position: [0, 0], width: 100, height: 100 },
+        { name: "heading", markdown: "## {{ heading }}", position: [3, 35], anchor: [0, 50],
+          width: 80, color: "#ffffff" },
+        { name: "part", markdown: "### {{ part }}", position: [3, 75], anchor: [0, 50],
+          width: 80, color: "#ffffff" },
+      ],
+      position: [0, 4], width: 100, height: 16,
+      opacity: { keyframes: [[0, 0], [30, 1]] },
+    },
+    { name: "body", markdown: "{{ body }}", position: [6, 28], width: 88 },
+  ],
+}

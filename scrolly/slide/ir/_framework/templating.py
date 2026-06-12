@@ -262,6 +262,93 @@ def _excerpt(rendered: str, exc: ValueError, context_lines: int = 3) -> str:
 
 
 # ==================================================================================================
+#  Slide factories (template-slide stubs)
+# ==================================================================================================
+_SLIDE_TEMPLATE_SUFFIX = ".slide.json.j2"
+_ELEMENTS_TEMPLATE_SUFFIX = ".elements.json.j2"
+
+
+def expand_slide_stub(raw: dict, source_path: Path) -> tuple[dict, Path]:
+    """Resolve a template-slide stub to its rendered slide object.
+
+    A stub is a ``.slide.json`` whose top level carries ``template_file``
+    (+ optional ``with``) instead of ``elements``. The referenced
+    ``*.slide.json.j2`` factory renders to a full slide JSON5 object.
+    Plain slides pass through unchanged.
+
+    Returns:
+        ``(slide_raw, content_dir)`` — the slide object and the
+        directory its file references resolve against (the factory's
+        directory for stubs, the slide's own for plain slides).
+    """
+    from scrolly._shared.paths import resolve_reference
+
+    if "template_file" not in raw:
+        return raw, source_path.parent
+
+    extra_keys = set(raw) - {"template_file", "with"}
+    if extra_keys:
+        raise SlideSourceError(
+            code="E208",
+            message=(
+                f"template-slide stub may carry only 'template_file' and 'with', "
+                f"got extra keys {sorted(extra_keys)}: {source_path}. The factory "
+                f"template provides all slide fields (title, elements, …)."
+            ),
+        )
+    given = raw.get("with", {})
+    if not isinstance(given, dict):
+        raise SlideSourceError(code="E208", message=f"stub 'with' must be an object: {source_path}")
+
+    authored = str(raw["template_file"])
+    _check_template_suffix(authored, _SLIDE_TEMPLATE_SUFFIX, f"slide stub {source_path}")
+    template_path = resolve_reference(authored, source_path.parent, what="template_file")
+    try:
+        text = template_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise SlideSourceError(code="E505", message=f"template_file not found: {template_path}") from None
+
+    origin = authored
+    meta, body = split_front_matter(text, origin)
+    declared = meta.get("params", {})
+    if not isinstance(declared, dict):
+        raise SlideSourceError(code="E801", message=f"front-matter `params` must be an object: {origin}")
+    context = resolve_params(declared, given, origin)
+    rendered = render_template_text(body, context, origin, template_path.parent)
+
+    try:
+        slide_raw = json5.loads(rendered)
+    except ValueError as exc:
+        raise SlideSourceError(
+            code="E803",
+            message=(
+                f"rendered output of {origin} is not valid JSON5: {exc}\n"
+                f"--- rendered output ---\n{_excerpt(rendered, exc)}\n"
+                f"--- (run `scrolly expand` to see the full rendered text) ---"
+            ),
+        ) from None
+    if not isinstance(slide_raw, dict):
+        raise SlideSourceError(
+            code="E803",
+            message=f"rendered output of {origin} must be a JSON5 slide object, got {type(slide_raw).__name__}",
+        )
+    return slide_raw, template_path.parent
+
+
+def _check_template_suffix(authored: str, expected: str, where: str) -> None:
+    """Enforce that a template reference's suffix matches its render target (E806)."""
+    if not authored.endswith(expected):
+        other = _SLIDE_TEMPLATE_SUFFIX if expected == _ELEMENTS_TEMPLATE_SUFFIX else _ELEMENTS_TEMPLATE_SUFFIX
+        raise SlideSourceError(
+            code="E806",
+            message=(
+                f"template_file of {where} must end with '{expected}' "
+                f"(templates rendering the other target use '{other}'): got '{authored}'"
+            ),
+        )
+
+
+# ==================================================================================================
 #  Preview (``scrolly expand``)
 # ==================================================================================================
 def render_slide_template_previews(slide_path: Path) -> list[tuple[str, str]]:
@@ -364,6 +451,7 @@ def _expand_one(el, source_dir: Path, include_stack: tuple[Path, ...]):
     from scrolly.slide.ir._framework.utils import _rebase_asset_paths, _resolve_file_fields
 
     if el.template_file is not None:
+        _check_template_suffix(str(el.template_file), _ELEMENTS_TEMPLATE_SUFFIX, "a template element")
         template_path = resolve_reference(el.template_file, source_dir, what="template_file")
         normalized = template_path.resolve()
         if normalized in include_stack:

@@ -109,8 +109,13 @@ def _templating_section() -> str:
         "caught before rendering (E804); rendered output must be a valid "
         "JSON5 element array (E803) — inspect it with "
         "`scrolly expand <deck> --slide <id>`. Wrap literal `{{` in template "
-        "files in `{% raw %}…{% endraw %}`. Plain `.slide.json` / "
-        "`.deck.json` files are never Jinja-processed."
+        "files in `{% raw %}…{% endraw %}`. Templating also works at slide "
+        "granularity: a `.slide.json` whose top level is just "
+        "`template_file:` (a `*.slide.json.j2` factory) plus `with:` renders "
+        "the whole slide from the factory — the deck file is unaffected. "
+        "Suffixes declare the render target (`.slide.json.j2` → slide object, "
+        "`.elements.json.j2` → element array; mismatch is E806). Plain "
+        "`.slide.json` / `.deck.json` files are never Jinja-processed."
     )
 
 

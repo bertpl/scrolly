@@ -35,6 +35,12 @@ def parse_json5_ir(source_path: Path, ir_cls: type[T], label: str) -> T:
 
     ``label`` is used in error messages (e.g. ``"slide"``).
     """
+    raw = parse_json5_source(source_path, label)
+    return validate_json5_ir(raw, source_path.parent, source_path, ir_cls, label)
+
+
+def parse_json5_source(source_path: Path, label: str) -> dict:
+    """Read a JSON5 file and return its raw object (the pre-validation half of ``parse_json5_ir``)."""
     try:
         text = source_path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -53,8 +59,16 @@ def parse_json5_ir(source_path: Path, ir_cls: type[T], label: str) -> T:
             code="E002",
             message=f"{label} source must be a JSON object, got {type(raw).__name__}: {source_path}",
         )
+    return raw
 
-    source_dir = source_path.parent
+
+def validate_json5_ir(raw: dict, source_dir: Path, source_path: Path, ir_cls: type[T], label: str) -> T:
+    """Resolve ``*_file`` fields against ``source_dir`` and validate ``raw`` against ``ir_cls``.
+
+    The post-parse half of ``parse_json5_ir``, split out so a
+    template-slide stub can validate its *rendered* object with the
+    template file's directory as the reference base.
+    """
     try:
         _resolve_file_fields(raw, source_dir)
     except FileNotFoundError as exc:
