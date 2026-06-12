@@ -227,24 +227,29 @@ class PayloadBundler:
     def manifest_and_stream(self) -> tuple[str, bytes]:
         """Build the payload manifest JSON and the raw byte stream.
 
-        Concatenates all unique payloads (in registration order) into
-        one binary stream and describes it in a manifest of the schema
-        ``{"payloads": […], "targets": […]}``. The manifest is embedded
-        in the inner document as a JSON ``<script>`` block; the stream
-        is appended to the document bytes in the single gzip blob (see
-        ``scrolly.render.bootstrap``), so canvas.js can slice it back
-        per the manifest's payload lengths.
+        Concatenates all unique payloads — ordered for compression, see
+        :func:`_stream_sort_key` — into one binary stream and describes
+        it in a manifest of the schema ``{"payloads": […], "targets":
+        […]}``. The manifest is embedded in the inner document as a JSON
+        ``<script>`` block; the stream is appended to the document bytes
+        in the single gzip blob (see ``scrolly.render.bootstrap``), so
+        canvas.js can slice it back per the manifest's payload lengths.
+        Target bindings carry the payload's *stream* index, so the
+        ordering is invisible to the JS side.
 
         Returns:
             Tuple of ``(manifest_json, stream_bytes)`` — both empty-ish
             but well-formed when no payloads were registered.
         """
+        order = sorted(range(len(self._payloads)), key=lambda i: _stream_sort_key(self._payloads[i], i))
+        remap = {old_index: new_index for new_index, old_index in enumerate(order)}
+        ordered_payloads = [self._payloads[i] for i in order]
         manifest_obj = {
-            "payloads": [_payload_entry(p) for p in self._payloads],
-            "targets": [{"id": t.target_id, "attr": t.attr, "payload": t.payload_index} for t in self._targets],
+            "payloads": [_payload_entry(p) for p in ordered_payloads],
+            "targets": [{"id": t.target_id, "attr": t.attr, "payload": remap[t.payload_index]} for t in self._targets],
         }
         manifest_json = json.dumps(manifest_obj, separators=(",", ":"))
-        stream = b"".join(p.payload for p in self._payloads)
+        stream = b"".join(p.payload for p in ordered_payloads)
         return manifest_json, stream
 
     # --------------------------------------------------------------------------
@@ -314,3 +319,28 @@ def _payload_entry(p: _Payload) -> dict:
     if p.mime is not None:
         return {"mode": p.mode, "mime": p.mime, "length": len(p.payload)}
     return {"mode": p.mode, "length": len(p.payload)}
+
+
+def _stream_sort_key(p: _Payload, registration_index: int) -> tuple[int, str, int]:
+    """Stream-placement key: compressible payloads first, similar payloads adjacent.
+
+    The stream is gzipped jointly with the document HTML in one blob
+    (32 KB window), so placement is about window locality. Text-mode
+    payloads (iframe ``srcdoc`` HTML — the only text-mode producer) go
+    first, adjacent to the document's own markup; SVG blobs second;
+    already-encoded bitmap blobs last, where they pass through as noise
+    without separating compressible neighbors. Within a group: mime
+    alphabetically (only meaningful for bitmaps), then registration
+    index. Registration order doubles as the similarity proxy —
+    sequentially generated assets (e.g. filmstrip frames) register in
+    their natural order, and measurement showed that preserving it
+    compresses better than size-based reordering. Fully deterministic,
+    preserving byte-reproducible builds.
+    """
+    if p.mode == "text":
+        group = 0
+    elif p.mime == "image/svg+xml":
+        group = 1
+    else:
+        group = 2
+    return (group, p.mime or "", registration_index)
