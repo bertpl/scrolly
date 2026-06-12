@@ -26,6 +26,29 @@ from scrolly.slide.ir._framework.animated_values import (
 
 
 # ==================================================================================================
+#  Shared field builders
+# ==================================================================================================
+def _content_file_field(inline_key: str, example: str) -> Path | None:
+    """Build the declaration for a ``*_file`` content field.
+
+    These fields exist on the models for schema truthfulness only: the
+    source may author content via ``<inline_key>_file`` instead of
+    ``<inline_key>``, but ``_resolve_file_fields`` inlines and pops the
+    ``*_file`` key before validation, so validated instances always carry
+    the inline field and never a populated ``*_file`` field.
+    """
+    return Field(
+        default=None,
+        description=(
+            f"Path to a file whose text becomes `{inline_key}`, relative to the slide "
+            f'source file (e.g. `"{example}"`). Read and inlined at parse time. '
+            f"Author exactly one of `{inline_key}` / `{inline_key}_file`; validated "
+            f"slides always carry `{inline_key}`."
+        ),
+    )
+
+
+# ==================================================================================================
 #  Shared validators
 # ==================================================================================================
 def _validate_object_fit_rules(
@@ -321,7 +344,14 @@ class HtmlElement(SlideElement, PrimitiveElement, frozen=True):
     SOURCE_KEY: ClassVar[str] = "html"
     DESCRIPTION: ClassVar[str] = "Inline raw HTML content."
 
-    html: str = Field(description="Raw HTML content, inserted verbatim into the slide.")
+    html: str = Field(
+        description=(
+            "Raw HTML content, inserted verbatim into the slide. "
+            'Authored inline or via `html_file: "path/to/snippet.html"` '
+            "(the file form reads the file at parse time)."
+        ),
+    )
+    html_file: Path | None = _content_file_field("html", "card.html")
 
 
 class IframeElement(SlideElement, PrimitiveElement, frozen=True):
@@ -355,6 +385,7 @@ class IframeElement(SlideElement, PrimitiveElement, frozen=True):
             "resolve under `about:srcdoc`."
         ),
     )
+    iframe_html_file: Path | None = _content_file_field("iframe_html", "page.html")
     border_width: int = Field(
         default=0,
         description=(
@@ -397,7 +428,14 @@ class MarkdownElement(SlideElement, PrimitiveElement, frozen=True):
     SOURCE_KEY: ClassVar[str] = "markdown"
     DESCRIPTION: ClassVar[str] = "Markdown content, rendered to HTML at build time."
 
-    markdown: str = Field(description="Markdown content, rendered to HTML at build time.")
+    markdown: str = Field(
+        description=(
+            "Markdown content, rendered to HTML at build time. "
+            'Authored inline or via `markdown_file: "path/to/content.md"` '
+            "(the file form reads the file at parse time)."
+        ),
+    )
+    markdown_file: Path | None = _content_file_field("markdown", "content.md")
     color: str = Field(
         default="inherit",
         description="CSS color value for the rendered text. Default 'inherit' picks up the slide-level body color.",
@@ -414,7 +452,14 @@ class MermaidElement(SlideElement, PrimitiveElement, frozen=True):
     SOURCE_KEY: ClassVar[str] = "mermaid"
     DESCRIPTION: ClassVar[str] = "Mermaid diagram, rendered client-side."
 
-    mermaid: str = Field(description="Mermaid diagram source code, rendered client-side by mermaid.js.")
+    mermaid: str = Field(
+        description=(
+            "Mermaid diagram source code, rendered client-side by mermaid.js. "
+            'Authored inline or via `mermaid_file: "path/to/diagram.mmd"` '
+            "(the file form reads the file at parse time)."
+        ),
+    )
+    mermaid_file: Path | None = _content_file_field("mermaid", "diagram.mmd")
 
 
 # ==================================================================================================

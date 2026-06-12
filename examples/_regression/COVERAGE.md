@@ -22,10 +22,10 @@ comments to intent (*why* an animation looks the way it does).
 
 | Type | Covered by |
 |---|---|
-| `markdown` | most slides; richest syntax (headings, lists, links, code spans, a fenced code block, emphasis) on `reference`, a table on `affected` |
+| `markdown` (`markdown_file`) | most slides; richest syntax (headings, lists, links, code spans, a fenced code block, emphasis) on `reference`, a table on `affected`; `markdown_file` on `postscript` |
 | `image` | `title` (glyph), `maint-bg` (jpg), `contributions` (timeline), `pressure` (png), `capability` (key), `affected` (logos) |
 | `image_sequence` | `cast`, `blank-gap`, `hidden-bytes`, `investigation`, `build-trojan` |
-| `html` | `title` (bg), `handover` (date callout), `anomaly` (terminal), `disclosure` (banner + progress bar) |
+| `html` (`html_file`) | `title` (bg), `handover` (date callout), `anomaly` (terminal), `disclosure` (banner + progress bar); `html_file` on `colophon` (card) |
 | `mermaid` (`mermaid_file`) | `ssh-hijack` |
 | `iframe` (`iframe_html_file`) | `pressure` (thread), `lessons` (takeaways panel) |
 
