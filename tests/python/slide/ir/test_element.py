@@ -537,7 +537,7 @@ def test_element_source_types_keys() -> None:
     registry = element_source_types()
 
     # --- assert -----------------------
-    assert set(registry) == {"html", "iframe", "image", "image_sequence", "markdown", "mermaid"}
+    assert set(registry) == {"container", "html", "iframe", "image", "image_sequence", "markdown", "mermaid"}
     assert registry["image_sequence"] is ImageSequenceElement
 
 

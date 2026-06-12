@@ -211,8 +211,8 @@ def test_regression_deck_reference_slide_is_content_driven(tmp_path):
 def test_load_deck_on_regression_deck():
     deck_file = EXAMPLES_DIR / "_regression" / "deck.deck.json"
     deck, slide_irs = load_deck(deck_file)
-    assert len(deck.slides) == 19
-    assert len(deck.edges) == 19
+    assert len(deck.slides) == 20
+    assert len(deck.edges) == 20
     assert set(slide_irs.keys()) == {s.id for s in deck.slides}
 
 

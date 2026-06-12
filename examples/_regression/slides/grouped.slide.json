@@ -1,0 +1,56 @@
+// Container feature demo. Three exercises in one slide:
+// 1. "header" — explicit-box container (banner + title + subtitle in
+//    container-relative coordinates), slid in from the left and faded
+//    as ONE unit via container-level keyframes.
+// 2. "stamp" — the same partial included twice via container_file at
+//    two boxes; named instantiations dot-prefix the children, so the
+//    shared child names don't collide.
+// 3. "stage" — a default-box (full-slide) container wrapping an
+//    existing-coordinates element; nested container inside proves
+//    two-level compositing (scale about the container anchor).
+{
+  title: "Containers",
+  scroll_range: 100,
+  snap_positions: [0, 50, 100],
+  elements: [
+    {
+      name: "header",
+      container: [
+        { name: "banner", html: "<div style=\"width:100%;height:100%;background:#5EB083\"></div>",
+          position: [0, 0], width: 100, height: 100 },
+        { name: "title", markdown: "## Grouped header", position: [3, 25], anchor: [0, 50],
+          width: 60, color: "#ffffff" },
+        { name: "subtitle", markdown: "### moves as one unit", position: [3, 70], anchor: [0, 50],
+          width: 60, color: "#ffffff" },
+      ],
+      position: { keyframes: [[0, [-100, 5]], [40, [0, 5]]] },
+      opacity: { keyframes: [[0, 0], [40, 1]] },
+      width: 100, height: 18,
+    },
+    { name: "stamp-left",
+      container_file: "../stamp.json",
+      position: [8, 35], width: 35, height: 25 },
+    { name: "stamp-right",
+      container_file: "../stamp.json",
+      position: [57, 35], width: 35, height: 25,
+      angle: { keyframes: [[50, 0], [100, -6]] } },
+    {
+      name: "stage",
+      container: [
+        { name: "footnote", markdown: "Default-box container: this text keeps its slide coordinates.",
+          position: [8, 70], width: 84 },
+        { name: "inner",
+          container: [
+            { name: "chip", html: "<div style=\"width:100%;height:100%;box-sizing:border-box;border:2px solid #2c3e50;border-radius:6px\"></div>",
+              position: [0, 0], width: 100, height: 100 },
+            { name: "chip-label", markdown: "nested", position: [50, 50], anchor: [50, 50], width: 80,
+              text_align: "center" },
+          ],
+          position: [8, 80], width: 20, height: 12, anchor: [0, 0],
+          scale: { keyframes: [[50, 1], [100, 1.3]] } },
+      ],
+      // Default box [0,0]–[100,100]: animating position shifts the group.
+      position: { keyframes: [[0, [0, 0]], [100, [0, -3]]] },
+    },
+  ],
+}

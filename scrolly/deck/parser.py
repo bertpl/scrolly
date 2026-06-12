@@ -14,6 +14,7 @@ from typing import Any
 
 import json5
 
+from scrolly._shared.paths import resolve_reference
 from scrolly.deck.model import Position, RawDeck, RawEdge, RawEndpoint, Side, Slide, SlideGroup
 from scrolly.errors import DeckParseError
 
@@ -150,7 +151,7 @@ def _parse_slide(raw: Any, deck_dir: Path, idx: int, ctx: str | None = None) -> 
     position = _parse_position(raw, ctx)
     source_raw = _require_str(raw, "source", ctx)
 
-    source = (deck_dir / source_raw).resolve()
+    source = resolve_reference(source_raw, deck_dir, what="slide source").resolve()
     return Slide(id=slide_id, position=position, source=source)
 
 

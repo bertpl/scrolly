@@ -158,8 +158,19 @@ class SlideElement(ElementIR, frozen=True):
 
     @classmethod
     def source_schema(cls) -> dict:
-        """JSON-serializable description of this element type's source schema."""
-        return cls.model_json_schema()
+        """JSON-serializable description of this element type's source schema.
+
+        Recursive element types (a container holding elements, possibly
+        containers) make pydantic emit a bare ``$ref`` root pointing into
+        ``$defs``; inline that root so every element schema presents its
+        ``title`` / ``properties`` at the top level uniformly.
+        """
+        schema = cls.model_json_schema()
+        if "$ref" in schema:
+            defs = schema.get("$defs", {})
+            root = defs[schema["$ref"].rsplit("/", 1)[-1]]
+            schema = {**root, "$defs": defs}
+        return schema
 
 
 # ==================================================================================================
@@ -462,6 +473,102 @@ class MermaidElement(SlideElement, PrimitiveElement, frozen=True):
     mermaid_file: Path | None = _content_file_field("mermaid", "diagram.mmd")
 
 
+class ContainerElement(SlideElement, PrimitiveElement, frozen=True):
+    """A positioned box that holds child elements in its own coordinate space.
+
+    Children express ``position`` / ``width`` / ``height`` as percentages
+    of the container's box, not the slide. The container's box defaults to
+    the full slide (``position [0, 0]``, ``width 100``, ``height 100``), so
+    wrapping existing elements changes nothing visually — animating the
+    container's ``position`` / ``opacity`` then moves or fades the group as
+    a unit. With an explicit box, the container re-coordinates its children,
+    making a child block position-independent and reusable.
+
+    The container's full animatable substrate composes onto children:
+    child opacity multiplies with container opacity, and the container's
+    ``anchor`` is the pivot for its ``scale`` / ``angle``. Pivots are
+    box-relative, never content-relative. The container occupies one
+    z-slot in the slide; children stack within it in array order.
+    Containers nest.
+    """
+
+    SOURCE_KEY: ClassVar[str] = "container"
+    DESCRIPTION: ClassVar[str] = "Positioned box holding child elements in its own %-coordinate space."
+
+    container: list[AnyElement] = Field(
+        description=(
+            "The child elements, rendered in array order (first = bottom, last = top) "
+            "within the container's stacking context. Child position / width / height "
+            "percentages are relative to the container's box. Authored inline or via "
+            '`container_file: "path/to/children.json"` (a JSON5 array of elements).'
+        ),
+    )
+    container_file: Path | None = Field(
+        default=None,
+        description=(
+            "Path to a JSON5 file containing the child-element array, relative to the "
+            "file it appears in. Parsed and inlined at parse time. Author exactly one "
+            "of `container` / `container_file`; validated slides always carry "
+            "`container`."
+        ),
+    )
+    position: AnimatedVec2 = Field(
+        default=AnimatedVec2((0.0, 0.0)),
+        description=(
+            "Container position as [x%, y%] of the enclosing coordinate space (slide, "
+            "or parent container when nested), or animated via keyframes. Default "
+            "[0, 0] — combined with the default full-size box, child coordinates "
+            "equal slide coordinates and animating this position shifts the whole "
+            "group."
+        ),
+    )
+    width: AnimatedSizeDim = Field(
+        default=AnimatedSizeDim(100.0),
+        description=(
+            "Container width as % of the enclosing coordinate space, or animated via "
+            'keyframes. Default 100 (full width). "auto" is not allowed on containers.'
+        ),
+    )
+    height: AnimatedSizeDim = Field(
+        default=AnimatedSizeDim(100.0),
+        description=(
+            "Container height as % of the enclosing coordinate space, or animated via "
+            'keyframes. Default 100 (full height). "auto" is not allowed on containers.'
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_container(self) -> ContainerElement:
+        """Validate container-specific constraints.
+
+        ``"auto"`` dimensions are rejected because the container's children
+        are absolutely positioned (out of flow): an auto-sized container box
+        collapses to zero and every %-sized child collapses with it.
+        """
+        if self.width.is_auto or self.height.is_auto:
+            raise SlideSourceError(
+                code="E309",
+                message='container width/height must be numeric or animated, not "auto"',
+            )
+        if not self.container:
+            raise SlideSourceError(code="E310", message="container must hold at least one child element")
+        return self
+
+
+AnyElement = (
+    ImageElement
+    | ImageSequenceElement
+    | HtmlElement
+    | IframeElement
+    | MarkdownElement
+    | MermaidElement
+    | ContainerElement
+)
+"""Union of every authorable element type, dispatched on the content key."""
+
+ContainerElement.model_rebuild()
+
+
 # ==================================================================================================
 #  Element source registry
 # ==================================================================================================
@@ -472,6 +579,7 @@ _ELEMENT_TYPES: tuple[type[SlideElement], ...] = (
     IframeElement,
     MarkdownElement,
     MermaidElement,
+    ContainerElement,
 )
 
 

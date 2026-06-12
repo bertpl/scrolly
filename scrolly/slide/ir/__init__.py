@@ -8,6 +8,8 @@ from scrolly.slide.ir._framework.animated_values import (
     Vec2Keyframes,
 )
 from scrolly.slide.ir._framework.element import (
+    AnyElement,
+    ContainerElement,
     HtmlElement,
     IframeElement,
     ImageElement,
@@ -24,6 +26,8 @@ __all__ = [
     "AnimatedScalar",
     "AnimatedSizeDim",
     "AnimatedVec2",
+    "AnyElement",
+    "ContainerElement",
     "HtmlElement",
     "IframeElement",
     "ImageElement",

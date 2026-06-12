@@ -15,8 +15,10 @@ source raises before the chain completes.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
+from scrolly._shared.paths import confine_paths
 from scrolly.deck import (
     Deck,
     infer_edges,
@@ -28,7 +30,7 @@ from scrolly.slide.ir import SlideIR
 from scrolly.slide.registry import get_ir_class_for_path
 
 
-def load_deck(deck_path: Path) -> tuple[Deck, dict[str, SlideIR]]:
+def load_deck(deck_path: Path, *, allow_paths: Sequence[Path] = ()) -> tuple[Deck, dict[str, SlideIR]]:
     """Parse, validate, and resolve a deck, returning it with its loaded slide IRs.
 
     Runs the full deck-loading chain: parse → validate raw → infer edges
@@ -37,8 +39,15 @@ def load_deck(deck_path: Path) -> tuple[Deck, dict[str, SlideIR]]:
     downstream. Validation is implicit in the load: any malformed or
     missing source raises before this function returns.
 
+    Path confinement is active for the whole load: every authored file
+    reference (slide sources, ``*_file`` content fields, includes,
+    image assets) must stay inside the deck root or one of
+    ``allow_paths`` (E506).
+
     Args:
         deck_path: Path to the ``.deck.json`` file.
+        allow_paths: Extra directory roots authored paths may resolve
+            into, granted explicitly by the caller (``--allow-path``).
 
     Returns:
         A tuple ``(deck, slide_irs)`` where ``deck`` is the fully-resolved
@@ -48,14 +57,15 @@ def load_deck(deck_path: Path) -> tuple[Deck, dict[str, SlideIR]]:
     Raises:
         ScrollyError: For any parse, validation, or slide-source failure.
     """
-    raw_deck = parse_deck(deck_path)
-    validate_raw_deck(raw_deck)
-    deck = infer_edges(raw_deck)
-    validate_deck(deck)
+    with confine_paths(deck_path.resolve().parent, allow_paths):
+        raw_deck = parse_deck(deck_path)
+        validate_raw_deck(raw_deck)
+        deck = infer_edges(raw_deck)
+        validate_deck(deck)
 
-    slide_irs: dict[str, SlideIR] = {}
-    for slide in deck.slides:
-        ir_cls = get_ir_class_for_path(slide.source)
-        slide_irs[slide.id] = ir_cls.from_file(slide.source)
+        slide_irs: dict[str, SlideIR] = {}
+        for slide in deck.slides:
+            ir_cls = get_ir_class_for_path(slide.source)
+            slide_irs[slide.id] = ir_cls.from_file(slide.source)
 
     return deck, slide_irs

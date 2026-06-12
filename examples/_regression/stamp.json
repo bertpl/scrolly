@@ -1,0 +1,9 @@
+// Shared container partial for the regression deck's container slide:
+// included twice via container_file under different names, proving the
+// dot-prefix namespacing (stamp-left.card / stamp-right.card).
+[
+  { name: "card", html: "<div style=\"width:100%;height:100%;box-sizing:border-box;background:#e8f0e9;border:1px solid #5EB083;border-radius:8px\"></div>",
+    position: [0, 0], width: 100, height: 100 },
+  { name: "card-text", markdown: "**Reused partial** — same file, two boxes.",
+    position: [8, 50], anchor: [0, 50], width: 84 },
+]

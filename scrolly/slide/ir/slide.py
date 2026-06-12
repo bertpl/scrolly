@@ -15,17 +15,26 @@ from typing import ClassVar, Literal, Self
 from pydantic import BaseModel, Field, model_validator
 
 from scrolly.errors import SlideSourceError
-from scrolly.slide.ir._framework.element import (
-    HtmlElement,
-    IframeElement,
-    ImageElement,
-    ImageSequenceElement,
-    MarkdownElement,
-    MermaidElement,
-)
+from scrolly.slide.ir._framework.element import AnyElement, ContainerElement
 from scrolly.slide.ir._framework.utils import parse_json5_ir, resolve_asset_paths
 
-AnyElement = ImageElement | ImageSequenceElement | HtmlElement | IframeElement | MarkdownElement | MermaidElement
+
+def _effective_element_names(elements: list, prefix: str) -> list[str]:
+    """Collect every named element's effective (dot-prefixed) name, recursively.
+
+    A named container prefixes its children's names (``header.title``);
+    an unnamed container passes the enclosing prefix through, so its
+    children compete in the surrounding name scope.
+    """
+    names: list[str] = []
+    for el in elements:
+        effective = f"{prefix}{el.name}" if el.name is not None else None
+        if effective is not None:
+            names.append(effective)
+        if isinstance(el, ContainerElement):
+            child_prefix = f"{effective}." if effective is not None else prefix
+            names.extend(_effective_element_names(el.container, child_prefix))
+    return names
 
 
 class SlideIR(BaseModel, frozen=True):
@@ -175,10 +184,16 @@ class SlideIR(BaseModel, frozen=True):
                     raise SlideSourceError(code="E206", message=f"snap_positions value {pos} must be >= 0")
 
         seen_names: set[str] = set()
-        for el in self.elements:
-            if el.name is not None:
-                if el.name in seen_names:
-                    raise SlideSourceError(code="E207", message=f"duplicate element name: {el.name!r}")
-                seen_names.add(el.name)
+        for name in _effective_element_names(self.elements, prefix=""):
+            if name in seen_names:
+                raise SlideSourceError(
+                    code="E207",
+                    message=(
+                        f"duplicate element name: {name!r}. Names are checked after container "
+                        f"expansion — give instantiating elements distinct `name`s to prefix "
+                        f"their children (e.g. `header.title`)."
+                    ),
+                )
+            seen_names.add(name)
 
         return self

@@ -1,0 +1,11 @@
+{
+  // Children position against the container's box; the box defaults to
+  // the full slide, so wrapping existing elements changes nothing.
+  container: [
+    { html: "<div style=\"width:100%;height:100%;background:#5EB083\"></div>", position: [0, 0], width: 100, height: 100 },
+    { markdown: "## Grouped title", position: [5, 33], width: 80 },
+  ],
+  position: [0, 5],
+  width: 100,
+  height: 15,
+}
