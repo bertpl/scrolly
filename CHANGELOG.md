@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.3.5 (2026-06-12)
 
 ### Added
 
@@ -17,16 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `*_file` content fields (`markdown_file`, `html_file`, `mermaid_file`, `iframe_html_file`) now appear in element schemas and docs, so they are discoverable instead of word-of-mouth.
 
-### Deprecated
-
-### Removed
-
-### Fixed
-
 ### Security
 
 - File references (slide sources, `*_file` fields, image assets) are now confined to the deck directory; grant additional roots explicitly with `--allow-path`.
-
 ## 0.3.4 (2026-06-12)
 
 ### Changed
