@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from scrolly.errors import SlideSourceError
+from scrolly.slide import element_source_types
 from scrolly.slide.ir import IframeElement, MermaidElement
 from scrolly.slide.ir.slide import SlideIR
 
@@ -223,6 +224,63 @@ def test_both_iframe_html_and_iframe_html_file_rejected(tmp_path: Path) -> None:
     )
     with pytest.raises(SlideSourceError, match="cannot specify both"):
         SlideIR.from_file(src)
+
+
+# ── Schema declares the *_file fields ────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("source_key", "file_key"),
+    [
+        ("markdown", "markdown_file"),
+        ("html", "html_file"),
+        ("mermaid", "mermaid_file"),
+        ("iframe", "iframe_html_file"),
+    ],
+)
+def test_schema_declares_file_field(source_key: str, file_key: str) -> None:
+    # --- arrange ----------------------
+    element_cls = element_source_types()[source_key]
+
+    # --- act --------------------------
+    schema = element_cls.source_schema()
+
+    # --- assert -----------------------
+    assert file_key in schema["properties"]
+    assert file_key not in schema.get("required", [])
+
+
+@pytest.mark.parametrize("source_key", ["image", "image_sequence"])
+def test_schema_has_no_file_field_for_path_elements(source_key: str) -> None:
+    # --- arrange / act ----------------
+    schema = element_source_types()[source_key].source_schema()
+
+    # --- assert -----------------------
+    assert not any(key.endswith("_file") for key in schema["properties"])
+
+
+def test_file_field_never_populated_after_parse(tmp_path: Path) -> None:
+    """The declared ``*_file`` fields are schema artifacts — resolution pops them."""
+    # --- arrange ----------------------
+    _write(tmp_path / "content.md", "# Hello")
+    src = _write(
+        tmp_path / "s.slide.json",
+        """\
+{
+  title: "T",
+  scroll_range: 100,
+  elements: [
+    { name: "txt", markdown_file: "content.md", position: [10, 10], width: 80, height: "auto" },
+  ],
+}
+""",
+    )
+
+    # --- act --------------------------
+    ir = SlideIR.from_file(src)
+
+    # --- assert -----------------------
+    assert ir.elements[0].markdown_file is None
 
 
 # ── Non-element dicts left untouched ─────────────────────────────

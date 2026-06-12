@@ -39,6 +39,7 @@ def build_ai_help(root_command: click.Command, version: str) -> str:
         _header(version),
         _commands_section(root_command),
         _file_schemas_section(),
+        _content_from_files_section(),
         _element_schemas_section(),
         _error_codes_section(),
     ]
@@ -72,6 +73,22 @@ def _file_schemas_section() -> str:
     for name in file_type_names():
         blocks.append(f"### `{name}`\n\n```json\n{file_schema_json(name)}\n```")
     return "\n\n".join(blocks)
+
+
+def _content_from_files_section() -> str:
+    """Render the one-paragraph rule for the ``*_file`` content fields."""
+    return (
+        "## Content from files\n\n"
+        "Text-content element fields can be authored from external files: "
+        "`markdown_file`, `html_file`, `mermaid_file`, and `iframe_html_file` "
+        "each name a file whose text is read and inlined at parse time, "
+        "replacing the corresponding inline field (`markdown`, `html`, "
+        "`mermaid`, `iframe_html`). Paths resolve relative to the slide "
+        "source file. Author exactly one form per element — specifying both "
+        "the inline field and its `*_file` form is an error (E012); a "
+        "missing file is an error (E505). Use the file form to keep large "
+        "content out of slide sources."
+    )
 
 
 def _element_schemas_section() -> str:
