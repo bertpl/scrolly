@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The compressed payload stream now orders content for better compression (iframe HTML first, then SVG, bitmaps last), slightly shrinking image- and iframe-heavy decks.
-- The help screen's payload statistics are now a pipeline-stage table — input, re-encoded, deduplicated — showing per-format counts and total size after each stage, with original input formats on the first row.
+- Built decks are slightly smaller — the compressed payload stream is now ordered for better compression.
+- The help screen's payload statistics are now a per-stage table (input → re-encoded → deduplicated).
 
 ### Deprecated
 
