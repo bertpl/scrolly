@@ -77,9 +77,15 @@ def split_front_matter(text: str, origin: str) -> tuple[dict, str]:
             try:
                 meta = json5.loads(raw)
             except ValueError as exc:
+                hint = ""
+                if _parses_as_yaml_mapping(raw):
+                    hint = (
+                        " The block parses as YAML — scrolly front-matter is JSON5, "
+                        "not YAML: wrap it in { }, quote string values."
+                    )
                 raise SlideSourceError(
                     code="E801",
-                    message=f"template front-matter is not valid JSON5: {origin}: {exc}",
+                    message=f"template front-matter is not valid JSON5: {origin}: {exc}.{hint}",
                 ) from None
             if not isinstance(meta, dict):
                 raise SlideSourceError(
@@ -91,6 +97,21 @@ def split_front_matter(text: str, origin: str) -> tuple[dict, str]:
         code="E801",
         message=f"template front-matter block is not closed (missing second '---' line): {origin}",
     )
+
+
+def _parses_as_yaml_mapping(raw: str) -> bool:
+    """Check whether a failed front-matter block is valid YAML — the classic mix-up.
+
+    ``---``-delimited front-matter is a YAML idiom everywhere else, so
+    authors (and agents) reaching for YAML out of habit deserve a
+    pointed hint rather than a bare JSON5 syntax error.
+    """
+    try:
+        import yaml
+
+        return isinstance(yaml.safe_load(raw), dict)
+    except Exception:  # noqa: BLE001 — any YAML failure just means no hint
+        return False
 
 
 def resolve_params(declared: dict, given: dict, origin: str) -> dict:

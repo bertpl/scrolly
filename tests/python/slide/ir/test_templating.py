@@ -69,6 +69,15 @@ def test_no_front_matter_means_empty_meta() -> None:
     assert body == "[]"
 
 
+def test_yaml_front_matter_gets_pointed_hint() -> None:
+    # --- arrange ----------------------
+    yaml_block = "---\ndescription: Badge\nparams:\n  label:\n    type: string\n---\n[]"
+
+    # --- act / assert -----------------
+    with pytest.raises(SlideSourceError, match="JSON5, "):
+        split_front_matter(yaml_block, "t")
+
+
 def test_unclosed_front_matter_rejected() -> None:
     # --- act / assert -----------------
     with pytest.raises(SlideSourceError, match="E801"):

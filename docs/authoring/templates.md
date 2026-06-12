@@ -33,7 +33,10 @@ reused belongs in a template file instead.
 
 A reusable template lives in a `*.elements.json.j2` file and may open
 with a **front-matter** block — a JSON5 object between two `---` lines
-— declaring its parameter contract:
+— declaring its parameter contract. Note the syntax: unlike the
+`---`-delimited front-matter convention elsewhere, this block is
+**JSON5, not YAML** (one syntax across the whole format); writing YAML
+here is caught with a pointed error:
 
 ```jinja
 ---
