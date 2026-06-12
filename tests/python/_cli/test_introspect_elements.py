@@ -23,7 +23,7 @@ def test_elements_returns_resolved_tree_for_all_slides() -> None:
     # --- assert -----------------------
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert len(payload["slides"]) == 21  # all regression deck slides present
+    assert len(payload["slides"]) == 23  # all regression deck slides present
 
 
 def test_elements_filter_restricts_to_named_slides() -> None:

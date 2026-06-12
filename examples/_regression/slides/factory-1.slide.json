@@ -1,0 +1,11 @@
+// Template-slide stub: layout lives once in the chapter factory; this
+// file holds only the instantiation. Sibling factory-2 reuses the same
+// factory with different args (and the default accent overridden).
+{
+  template_file: "../factories/chapter.slide.json.j2",
+  with: {
+    heading: "Slide factories",
+    part: "1/2",
+    body: "This whole slide is rendered from a factory template — title, banner, and this body all come from one `*.slide.json.j2` file, varying only the `with:` values.",
+  },
+}

@@ -26,8 +26,8 @@ def test_slides_emits_deck_topology() -> None:
     payload = json.loads(result.output)
     assert set(payload.keys()) == {"slides", "edges", "groups"}
     # Regression deck has 19 slides and 19 edges (matching the existing build tests).
-    assert len(payload["slides"]) == 21
-    assert len(payload["edges"]) == 21
+    assert len(payload["slides"]) == 23
+    assert len(payload["edges"]) == 23
 
 
 def test_slides_entry_fields() -> None:

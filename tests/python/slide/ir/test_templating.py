@@ -329,6 +329,106 @@ def test_both_template_forms_rejected(tmp_path: Path) -> None:
         SlideIR.from_file(src)
 
 
+# ── Slide factories (template-slide stubs) ───────────────────────
+
+
+_CHAPTER_FACTORY = """\
+---
+{
+  params: {
+    heading: { type: "string", required: true },
+    part:    { type: "string", default: "1/1" },
+  },
+}
+---
+{
+  title: "{{ heading }} ({{ part }})",
+  scroll_range: 100,
+  elements: [
+    { name: "h", markdown: "## {{ heading }}", position: [5, 5], width: 90 },
+  ],
+}
+"""
+
+
+def test_slide_stub_renders_factory(tmp_path: Path) -> None:
+    # --- arrange ----------------------
+    _write(tmp_path / "factories" / "chapter.slide.json.j2", _CHAPTER_FACTORY)
+    src = _write(
+        tmp_path / "s.slide.json",
+        '{ template_file: "factories/chapter.slide.json.j2", with: { heading: "Hi", part: "2/3" } }',
+    )
+
+    # --- act --------------------------
+    ir = SlideIR.from_file(src)
+
+    # --- assert -----------------------
+    assert ir.title == "Hi (2/3)"
+    assert ir.elements[0].markdown == "## Hi"
+
+
+def test_slide_stub_file_fields_resolve_against_factory_dir(tmp_path: Path) -> None:
+    # --- arrange ----------------------
+    _write(tmp_path / "factories" / "note.md", "# factory-side note")
+    factory = _CHAPTER_FACTORY.replace('markdown: "## {{ heading }}"', 'markdown_file: "note.md"')
+    _write(tmp_path / "factories" / "chapter.slide.json.j2", factory)
+    src = _write(
+        tmp_path / "s.slide.json",
+        '{ template_file: "factories/chapter.slide.json.j2", with: { heading: "Hi" } }',
+    )
+
+    # --- act --------------------------
+    ir = SlideIR.from_file(src)
+
+    # --- assert -----------------------
+    assert ir.elements[0].markdown == "# factory-side note"
+
+
+def test_slide_stub_extra_keys_rejected(tmp_path: Path) -> None:
+    # --- arrange ----------------------
+    _write(tmp_path / "factories" / "chapter.slide.json.j2", _CHAPTER_FACTORY)
+    src = _write(
+        tmp_path / "s.slide.json",
+        '{ template_file: "factories/chapter.slide.json.j2", with: { heading: "x" }, title: "no" }',
+    )
+
+    # --- act / assert -----------------
+    with pytest.raises(SlideSourceError, match="E208"):
+        SlideIR.from_file(src)
+
+
+def test_slide_stub_missing_required_param_is_e804(tmp_path: Path) -> None:
+    # --- arrange ----------------------
+    _write(tmp_path / "factories" / "chapter.slide.json.j2", _CHAPTER_FACTORY)
+    src = _write(
+        tmp_path / "s.slide.json",
+        '{ template_file: "factories/chapter.slide.json.j2", with: {} }',
+    )
+
+    # --- act / assert -----------------
+    with pytest.raises(SlideSourceError, match="E804"):
+        SlideIR.from_file(src)
+
+
+@pytest.mark.parametrize(
+    ("stub_target", "element_target"),
+    [("badge.elements.json.j2", None), (None, "chapter.slide.json.j2")],
+)
+def test_template_suffix_mismatch_is_e806(tmp_path: Path, stub_target: str | None, element_target: str | None) -> None:
+    # --- arrange ----------------------
+    _write(tmp_path / "badge.elements.json.j2", "[]")
+    _write(tmp_path / "chapter.slide.json.j2", "{}")
+    if stub_target is not None:
+        body = f'{{ template_file: "{stub_target}", with: {{}} }}'
+    else:
+        body = _slide(f'{{ template_file: "{element_target}", width: 100, height: 100 }}')
+    src = _write(tmp_path / "s.slide.json", body)
+
+    # --- act / assert -----------------
+    with pytest.raises(SlideSourceError, match="E806"):
+        SlideIR.from_file(src)
+
+
 # ── Preview + contract surfaces ──────────────────────────────────
 
 

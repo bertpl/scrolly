@@ -65,6 +65,7 @@ comments to intent (*why* an animation looks the way it does).
 | author-supplied `snap_positions` | most slides |
 | element-derived snaps (image_sequence hold-centers) | `cast`, `blank-gap`, `hidden-bytes`, `investigation` |
 | `font_scale` ≠ 1.0 | `title` (1.4), `anomaly` (1.1) |
+| template-slide stubs (slide factories) | `factory-1`, `factory-2` — one `*.slide.json.j2` chapter factory instantiated twice (required params, default + overridden accent) |
 | dense snaps (thumb-sizing) | `contributions` (23, Δ100 grid) |
 
 ## Deck / canvas features

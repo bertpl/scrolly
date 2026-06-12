@@ -1,0 +1,11 @@
+// Second instantiation of the chapter factory — different args plus an
+// explicit accent overriding the factory's default.
+{
+  template_file: "../factories/chapter.slide.json.j2",
+  with: {
+    heading: "Slide factories",
+    part: "2/2",
+    body: "Same factory, second stub: a distinct part marker and a blue accent. Editing the factory restyles every instantiation at once.",
+    accent: "#4a7fb5",
+  },
+}

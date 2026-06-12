@@ -77,6 +77,33 @@ Instantiate it with `template_file` + `with`:
 or misspelled params are precise errors, not mysteries in rendered
 text.
 
+## Slide factories
+
+Templating also works at whole-slide granularity. A **factory** is a
+`*.slide.json.j2` template rendering a complete slide object (title,
+scroll behavior, elements); a **template-slide stub** is a regular
+`.slide.json` file whose top level holds just the instantiation:
+
+```json5
+// slides/detail-1.slide.json — the whole file
+{
+  template_file: "../factories/chapter.slide.json.j2",
+  with: { heading: "Building the stack", part: "1/2" },
+}
+```
+
+The deck file never changes — it keeps pointing at `.slide.json`
+sources and stays a pure navigation manifest. Layout lives once in the
+factory; each stub holds only what varies. Front-matter params,
+validation, and `scrolly expand` work exactly as for element
+templates. A stub may contain nothing besides `template_file` and
+`with` — every slide field comes from the factory. Suffixes declare
+the render target: factories end in `.slide.json.j2`, element
+templates in `.elements.json.j2`; mixing them up is a build error.
+
+File references in a factory's output (asset paths, `*_file` fields)
+resolve against the **factory's** directory.
+
 ## How an instantiation behaves
 
 An expanded template becomes a [container](../concepts/elements.md#containers)
